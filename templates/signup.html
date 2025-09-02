@@ -26,42 +26,47 @@
         {% endwith %}
 
         <form action="{{ url_for('signup') }}" method="POST">
-            <!-- Name Fields -->
+            <!-- First Name -->
             <div class="input-group">
                 <i class="fas fa-user icon"></i>
-                <input type="text" name="first_name" placeholder="First Name" required>
+                <input type="text" name="first_name" placeholder="First Name" value="{{ form.first_name or '' }}"
+                    required>
             </div>
 
+            <!-- Last Name -->
             <div class="input-group">
                 <i class="fas fa-user icon"></i>
-                <input type="text" name="last_name" placeholder="Last Name" required>
+                <input type="text" name="last_name" placeholder="Last Name" value="{{ form.last_name or '' }}" required>
             </div>
 
+            <!-- Middle Name -->
             <div class="input-group">
                 <i class="fas fa-user icon"></i>
-                <input type="text" name="middle_name" placeholder="Middle Name (Optional)">
+                <input type="text" name="middle_name" placeholder="Middle Name (Optional)"
+                    value="{{ form.middle_name or '' }}">
             </div>
 
             <!-- Barangay ID -->
             <div class="input-group">
                 <i class="fas fa-id-card icon"></i>
-                <input type="text" name="barangay_id" placeholder="Barangay ID" required>
+                <input type="text" name="barangay_id" placeholder="Barangay ID" value="{{ form.barangay_id or '' }}"
+                    required>
             </div>
 
             <!-- Email -->
             <div class="input-group">
                 <i class="fas fa-envelope icon"></i>
-                <input type="email" name="email" placeholder="Email" required>
+                <input type="email" name="email" placeholder="Email" value="{{ form.email or '' }}" required>
             </div>
 
-            <!-- Password -->
+            <!-- Password (hindi sine-save for security) -->
             <div class="input-group">
                 <i class="fas fa-lock icon"></i>
                 <input type="password" name="password" placeholder="Password" id="passwordField" required>
                 <i class="fa-solid fa-eye toggle-password" id="togglePassword"></i>
             </div>
 
-            <!-- Confirm Password -->
+            <!-- Confirm Password (hindi sine-save for security) -->
             <div class="input-group">
                 <i class="fas fa-lock icon"></i>
                 <input type="password" name="confirm_password" placeholder="Confirm Password" id="confirmPasswordField"
@@ -72,11 +77,14 @@
             <!-- Address -->
             <div class="input-group">
                 <i class="fas fa-home icon"></i>
-                <input type="text" name="address" placeholder="Address" required>
+                <input type="text" name="address" placeholder="Address" value="{{ form.address or '' }}" required>
             </div>
+
 
             <button type="submit">Sign Up</button>
             <p>Already have an account? <a href="{{ url_for('signin') }}">Sign In</a></p>
+
+
         </form>
 
     </div>
