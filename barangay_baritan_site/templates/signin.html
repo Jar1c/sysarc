@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .popup {
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            text-align: center;
+            position: fixed;
+            /* fixed para laging visible */
+            top: 20px;
+            /* distance from top */
+            left: 50%;
+            /* center horizontally */
+            transform: translateX(-50%);
+            /* truly center */
+            font-weight: bold;
+            z-index: 9999;
+            /* laging nasa ibabaw */
+            min-width: 300px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Success */
+        .popup.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        /* Error */
+        .popup.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        /* Close button */
+        .close-btn {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+
+
+        @keyframes slideDown {
+            from {
+                top: -50px;
+                opacity: 0;
+            }
+
+            to {
+                top: 20px;
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Error Popup Container -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="popup {{ 'success' if category=='success' else 'error' }}">
+        {{ message }}
+        <span class="close-btn" onclick="this.parentElement.remove()">&times;</span>
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <div class="container">
+        <h2>Sign In</h2>
+        <form action="{{ url_for('signin') }}" method="POST">
+            <!-- Email -->
+            <div class="input-group">
+                <i class="fas fa-envelope icon"></i>
+                <input type="email" name="email" placeholder="Email" required>
+            </div>
+
+            <!-- Password -->
+            <div class="input-group">
+                <i class="fas fa-lock icon"></i>
+                <input type="password" name="password" placeholder="Password" id="passwordField" required>
+                <i class="fa-solid fa-eye toggle-password" id="togglePassword"></i>
+            </div>
+
+            <button type="submit">Sign In</button>
+            <p>Don't have an account? <a href="{{ url_for('signup') }}">Sign Up</a></p>
+            <p>Are you an admin? <a href="{{ url_for('admin_login') }}">Admin Login</a></p>
+        </form>
+    </div>
+
+    <script>
+        // Toggle password visibility
+        const togglePassword = document.querySelector('#togglePassword');
+        const passwordField = document.querySelector('#passwordField');
+
+        togglePassword.addEventListener('click', function () {
+            const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordField.setAttribute('type', type);
+            this.classList.toggle('fa-eye');
+            this.classList.toggle('fa-eye-slash');
+        });
+
+        // Auto-hide error messages after 5 seconds
+        document.querySelectorAll('.error-popup').forEach(popup => {
+            setTimeout(() => {
+                popup.style.opacity = '0';
+                setTimeout(() => popup.remove(), 300);
+            }, 5000);
+        });
+    </script>
+</body>
+
+</html>
