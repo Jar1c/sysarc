@@ -269,57 +269,61 @@ def signup():
         confirm = request.form['confirm_password']
         address = request.form['address']
 
+        form_data = {
+            "first_name": fname,
+            "last_name": lname,
+            "middle_name": mname,
+            "barangay_id": bid,
+            "email": email,
+            "address": address
+        }
+
         # Password validation
         if len(password) < 8:
             flash("Password must be at least 8 characters long!", "error")
-            return redirect(url_for("signup"))
+            return render_template("signup.html", form=form_data)
         if not re.search(r"[A-Z]", password):
             flash("Password must contain at least 1 uppercase letter!", "error")
-            return redirect(url_for("signup"))
+            return render_template("signup.html", form=form_data)
         if not re.search(r"\d", password):
             flash("Password must contain at least 1 number!", "error")
-            return redirect(url_for("signup"))
+            return render_template("signup.html", form=form_data)
         
         if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
             flash("Invalid email address!", "error")
-            return redirect(url_for("signup"))
+            return render_template("signup.html", form=form_data)
         
         if len(fname) < 2 or len(lname) < 2:
             flash("First and last name must be at least 2 characters!", "error")
-            return redirect(url_for("signup"))
+            return render_template("signup.html", form=form_data)
 
         if len(address) < 5:
             flash("Address is too short!", "error")
-            return redirect(url_for("signup"))
-
+            return render_template("signup.html", form=form_data)
 
         if password != confirm:
             flash("Passwords do not match!", "error")
-            return redirect(url_for("signup"))
+            return render_template("signup.html", form=form_data)
         
         existing_email = supabase.table("users").select("*").eq("email", email).execute()
         if existing_email.data:
             flash("Email already exists!", "error")
-            return redirect(url_for("signup"))
+            return render_template("signup.html", form=form_data)
 
         existing_bid = supabase.table("users").select("*").eq("barangay_id", bid).execute()
         if existing_bid.data:
             flash("Barangay ID already exists!", "error")
-            return redirect(url_for("signup"))
+            return render_template("signup.html", form=form_data)
 
-
-        hashed_password = generate_password_hash(password)  # hash for later use
+        hashed_password = generate_password_hash(password)
 
         try:
-            # 1️⃣ Sign up user sa Supabase Auth
             auth_response = supabase.auth.sign_up({
                 "email": email,
                 "password": password
             })
-            
 
             if auth_response.user:
-                # 2️⃣ Insert sa custom SQL table `users`
                 supabase.table("users").insert({
                     "id": str(auth_response.user.id),
                     "first_name": fname,
@@ -342,9 +346,9 @@ def signup():
                 flash("Email already exists!", "error")
             else:
                 flash(f"Registration failed: {error_msg}", "error")
-            return redirect(url_for("signup"))
+            return render_template("signup.html", form=form_data)
 
-    return render_template("signup.html")
+    return render_template("signup.html", form={})
 
 
 @app.route("/verify_success")
