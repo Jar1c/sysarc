@@ -521,48 +521,103 @@ body {
   margin-bottom: 0;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .about-content {
-    grid-template-columns: 1fr;
-    gap: 40px;
-    text-align: center;
+@media (max-width: 1024px) {
+  .main-section {
+    flex-direction: column;
+    gap: 20px;
   }
-  .captain-photo {
-    position: static;
-    order: -1;
+
+  .title h1 {
+    font-size: 48px;
   }
-  .captain-photo img {
-    width: 220px;
-    height: 280px;
+
+  .address h4 {
+    margin-bottom: 100px;
+    font-size: 18px;
   }
-  .about-text {
-    text-align: left;
+
+  .mv-grid {
+    grid-template-columns: 1fr; /* gawing single column */
+    gap: 30px;
   }
-  .about-text h2 {
-    font-size: 36px;
-    text-align: center;
-    margin-bottom: 30px;
-  }
-  .about-text p {
-    font-size: 15px;
-    text-align: left;
+
+  .footer-content {
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
   }
 }
 
-@media (max-width: 480px) {
-  .about-section {
-    padding: 60px 0;
+/* Mobile screens */
+@media (max-width: 768px) {
+  .nav-container {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
   }
-  .captain-photo img {
-    width: 180px;
-    height: 240px;
+
+  .menu {
+    flex-wrap: wrap;
+    gap: 16px;
   }
-  .about-text h2 {
-    font-size: 28px;
+
+  .title h1 {
+    font-size: 36px;
   }
-  .about-text p {
-    font-size: 14px;
-    line-height: 1.7;
+
+  .city-seal, .barangay-seal {
+    width: 90px;
+    height: 90px;
+  }
+
+  .headers h1 { font-size: 26px; }
+  .headers h2 { font-size: 22px; }
+  .headers h3 { font-size: 20px; }
+
+  .directory-table, 
+  .table-header, 
+  .table-row {
+    grid-template-columns: 1fr; /* gawing stacked sa mobile */
+    text-align: center;
+  }
+
+  .footer-content {
+    grid-template-columns: 1fr;
+    gap: 24px;
   }
 }
+
+/* Extra small screens (phones) */
+@media (max-width: 480px) {
+  .logo-circle {
+    width: 40px;
+    height: 40px;
+    font-size: 11px;
+  }
+
+  .title h1 {
+    font-size: 28px;
+  }
+
+  .address h4 {
+    font-size: 16px;
+    margin-bottom: 60px;
+  }
+
+  .mv-content {
+    padding: 24px 16px;
+    font-size: 14px;
+  }
+
+  .footer {
+    padding: 40px 0 0 0;
+  }
+
+  .footer-section h3 {
+    font-size: 18px;
+  }
+
+  .contact-info p, .office-hours p {
+    font-size: 14px;
+  }
+}
+
