@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Booking Form</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2c3e50;
+            --accent-color: #e74c3c;
+            --light-color: #f5f7fa;
+            --dark-color: #2c3e50;
+            --success-color: #27ae60;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--secondary-color), var(--dark-color));
+            color: white;
+            padding: 25px 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .form-container {
+            padding: 30px;
+        }
+
+        .form-section {
+            margin-bottom: 30px;
+        }
+
+        .form-section h2 {
+            color: var(--secondary-color);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-section h2 i {
+            color: var(--primary-color);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 14px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+
+        .equipment-list {
+            display: grid;
+            gap: 15px;
+        }
+
+        .equipment-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .equipment-info {
+            flex: 1;
+        }
+
+        .equipment-name {
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+
+        .equipment-unit {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+        }
+
+        .quantity-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .qty-input {
+            width: 70px;
+            text-align: center;
+            padding: 10px;
+        }
+
+        .qty-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .qty-btn:hover {
+            background: #2980b9;
+            transform: scale(1.05);
+        }
+
+        .btn-submit {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            padding: 16px 35px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            display: block;
+            margin: 30px auto 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 250px;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+
+        .required {
+            color: var(--accent-color);
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            background: #f9f9f9;
+            border-top: 1px solid #eee;
+        }
+
+        header {
+            position: relative;
+            /* importante para gumana ang absolute */
+            background: linear-gradient(135deg, var(--secondary-color), var(--dark-color));
+            color: white;
+            padding: 25px 30px;
+            text-align: center;
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            text-decoration: none;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: bold;
+        }
+
+        .back-btn:hover {
+            color: #f1c40f;
+        }
+
+        .flash {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .flash.success {
+            background-color: #27ae60;
+            color: white;
+        }
+
+        .flash.error {
+            background-color: #e74c3c;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <a href="{{ url_for('booking') }}" class="back-btn">
+                <i class="fas fa-arrow-left"></i>Back
+            </a>
+            <h1>Event Booking Form</h1>
+            <p>Reserve equipment for your upcoming event</p>
+        </header>
+
+        <div class="form-container">
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <div id="flash-messages">
+                {% for category, message in messages %}
+                <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
+
+            <form id="bookingForm" method="POST" action="{{ url_for('book_event') }}">
+                <div class="form-section">
+                    <h2><i class="fas fa-info-circle"></i> Event Details</h2>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="eventType">Event Type <span class="required">*</span></label>
+                            <select id="eventType" name="event_type" required>
+                                <option value="">Select event type</option>
+                                <option value="wedding">Wedding</option>
+                                <option value="birthday">Birthday Party</option>
+                                <option value="corporate">Corporate Event</option>
+                                <option value="seminar">Seminar</option>
+                                <option value="festival">Festival</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+
+
+                        <div class="form-group">
+                            <label for="eventDate">Date <span class="required">*</span></label>
+                            <input type="date" id="eventDate" name="event_date" required>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h2><i class="fas fa-user"></i> Contact Information</h2>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="phone">Phone Number <span class="required">*</span></label>
+                            <input type="tel" id="phone" name="phone" placeholder="Enter your phone number" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email">Email <span class="required">*</span></label>
+                            <input type="email" id="email" name="email" placeholder="Enter your email" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h2><i class="fas fa-boxes"></i> Equipment Selection</h2>
+
+
+                    <div class="equipment-list">
+                        <div class="equipment-item">
+                            <div class="equipment-info">
+                                <div class="equipment-name">Tent</div>
+                                <div class="equipment-unit">Pieces</div>
+                            </div>
+                            <div class="quantity-control">
+                                <button type="button" class="qty-btn" onclick="adjustQty('tent', -1)">-</button>
+                                <input type="number" id="tent-qty" name="tent_qty" class="qty-input" value="0" min="0"
+                                    max="20">
+                                <button type="button" class="qty-btn" onclick="adjustQty('tent', 1)">+</button>
+                            </div>
+                        </div>
+
+                        <div class="equipment-item">
+                            <div class="equipment-info">
+                                <div class="equipment-name">Chairs</div>
+                                <div class="equipment-unit">Quantity</div>
+                            </div>
+                            <div class="quantity-control">
+                                <button type="button" class="qty-btn" onclick="adjustQty('chairs', -1)">-</button>
+                                <input type="number" id="chairs-qty" name="chairs_qty" class="qty-input" value="0"
+                                    min="0" max="100">
+                                <button type="button" class="qty-btn" onclick="adjustQty('chairs', 1)">+</button>
+                            </div>
+                        </div>
+
+                        <div class="equipment-item">
+                            <div class="equipment-info">
+                                <div class="equipment-name">Others</div>
+                                <div class="equipment-unit">Quantity</div>
+                            </div>
+                            <div class="quantity-control">
+                                <button type="button" class="qty-btn" onclick="adjustQty('other', -1)">-</button>
+                                <input type="number" id="other-qty" name="other_qty" class="qty-input" value="0"
+                                    min="0">
+                                <button type="button" class="qty-btn" onclick="adjustQty('other', 1)">+</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="otherItems">Other Equipment Details</label>
+                        <textarea id="otherItems" name="other_items" rows="3"
+                            placeholder="Please specify other equipment you need"></textarea>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-submit">Submit Booking</button>
+            </form>
+        </div>
+
+        <footer>
+            <p>Event Booking System &copy; 2023. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <form id="bookingForm" method="POST" action="{{ url_for('book_event') }}">
+        ...
+    </form>
+
+    <script>
+        // Set minimum date to today
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('eventDate').setAttribute('min', today);
+
+        // Quantity buttons
+        function adjustQty(type, change) {
+            const input = document.getElementById(`${type}-qty`);
+            let newValue = parseInt(input.value) + change;
+            if (newValue < 0) newValue = 0;
+            if (type === 'tent' && newValue > 20) newValue = 20;
+            if (type === 'chairs' && newValue > 100) newValue = 100;
+            input.value = newValue;
+        }
+
+        // Optional: only validate required fields before submission
+        document.getElementById('bookingForm').addEventListener('submit', function (e) {
+            const eventType = document.getElementById('eventType').value;
+            const eventDate = document.getElementById('eventDate').value;
+            const phone = document.getElementById('phone').value;
+            const email = document.getElementById('email').value;
+
+            if (!eventType || !eventDate || !phone || !email) {
+                alert('Please fill in all required fields.');
+                e.preventDefault(); // only prevents submission if fields are empty
+            }
+            // DO NOT show a summary alert here
+            // Let Flask handle the success flash
+        });
+    </script>
+
+
+</body>
+
+</html>

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barangay Baritan</title>
+    <link rel="icon" type="image/png" href="/static/img/brgy_baritan_logo.png">
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Edu+NSW+ACT+Cursive:wght@400..700&display=swap"
+        rel="stylesheet">
+
+
+
+</head>
+
+<body>
+    <!-- Top Navigation -->
+    <section id="home"></section>
+    <header class="navbar">
+        <div class="nav-container">
+            <!-- Logo -->
+            <div href="#home" class="logo">
+                <div class="logo-circle">
+                    <img src="/static/img/brgy_baritan_logo.png" alt="Barangay Baritan Logo" style="width: 70px;">
+                </div>
+            </div>
+
+
+            <!-- Navigation Menu -->
+            <nav class="menu">
+                <a href="#home">HOME</a>
+                <a href="#contact">CONTACT US</a>
+                <a href="{{ url_for('signin') }}">LOG IN</a>
+                <a href="{{ url_for('signup') }}">SIGN UP</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <div class="container">
+            <!-- Government Headers -->
+            <div class="headers">
+                <h1>Republic of the Philippines</h1>
+                <h2>Metropolitan Manila</h2>
+                <h3>CITY OF MALABON</h3>
+            </div>
+
+            <!-- Main Section -->
+            <div class="main-section">
+                <!-- Left Logo (Malabon City Seal) -->
+                <div class="city-seal">
+                    <img src="/static/img/Ph_seal_Malabon.png" alt="Malabon City Seal">
+                </div>
+
+                <!-- Main Title -->
+                <div class="title">
+                    <h1>BARANGAY BARITAN</h1>
+                </div>
+
+                <!-- Right Logo (Barangay Baritan Seal) -->
+                <div class="barangay-seal">
+                    <img src="/static/img/brgy_baritan_logo.png" alt="Barangay Baritan Seal"
+                        style="width:160px; height: 200px;">
+                </div>
+            </div>
+
+            <!-- Address -->
+            <div class="address">
+                <h4>      ‎    </h4>
+                <!-- <h4>#1 STA. RITA STO. ROSARIO VILLAGES BARITAN, MALABON</h4> -->
+            </div>
+        </div>
+    </main>
+
+    <!-- About Section -->
+    
+
+ 
+
+    <section class="contact-section" id="contact">
+        <div class="container">
+            <!-- Physical Address -->
+            <div class="address-section">
+                <h2>PHYSICAL ADDRESS</h2>
+                <p class="address-text">1 Sta. Rita Sto. Rosario Villages Baritan, Malabon City 1470 Metro Manila
+                    Philippines | <a href="#" class="map-link">View in Google Map</a></p>
+            </div>
+
+            <!-- Mobile & Email Directory -->
+            <div class="directory-section">
+                <h2>MOBILE & EMAIL DIRECTORY</h2>
+
+                <div class="directory-table">
+                    <div class="table-header">
+                        <div class="header-item">PERSONNELS</div>
+                        <div class="header-item">CONTACT NUMBER</div>
+                        <div class="header-item">EMAIL ADDRESS</div>
+                    </div>
+
+                    <div class="table-row">
+                        <div class="table-cell" data-label="Personnel:">Barangay Chairman</div>
+                        <div class="table-cell" data-label="Contact:">09215822724</div>
+                        <div class="table-cell" data-label="Email:"></div>
+                    </div>
+
+                    <div class="table-row">
+                        <div class="table-cell" data-label="Personnel:">Barangay Official</div>
+                        <div class="table-cell" data-label="Contact:">09087786365 / 8 6673286</div>
+                        <div class="table-cell" data-label="Email:">Baritan.Malabonkmgs@gmail.com</div>
+                    </div>
+
+                    <div class="table-row">
+                        <div class="table-cell" data-label="Personnel:">CareTaker</div>
+                        <div class="table-cell" data-label="Contact:">09482142671</div>
+                        <div class="table-cell" data-label="Email:"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <!-- Contact Information -->
+                <div class="footer-section">
+                    <h3>Contact Information</h3>
+                    <div class="contact-info">
+                        <p><span class="icon">📍</span> #1 Sta. Rita Sto. Rosario Villages, Baritan, Malabon</p>
+                        <p><span class="icon">📞</span> +63 (02) 123-4567</p>
+                        <p><span class="icon">✉️</span> barangaybaritan@malabon.gov.ph</p>
+                    </div>
+                </div>
+
+                <!-- Office Hours -->
+                <div class="footer-section">
+                    <h3>Office Hours</h3>
+                    <div class="office-hours">
+                        <p>Monday - Friday: 8:00 AM - 5:00 PM</p>
+                        <p>Saturday: 8:00 AM - 12:00 PM</p>
+                        <p>Sunday: Closed</p>
+                    </div>
+                </div>
+
+                <!-- Follow Us -->
+                <div class="footer-section">
+                    <h3>Follow Us</h3>
+                    <div class="social-links">
+                        <a href="#" class="social-link facebook">f</a>
+                        <a href="#" class="social-link twitter">t</a>
+                        <a href="#" class="social-link instagram">i</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Copyright -->
+            <div class="copyright">
+                <p>© 2024 Barangay Baritan, City of Malabon. All rights reserved.</p>
+            </div>
+        </div>
+        
+        <script src="script.js"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Court and Equipment Booking System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #023e8a;
+            --secondary: #2c3e50;
+            --accent: #e74c3c;
+            --light: #f5f7fa;
+            --dark: #2c3e50;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --sidebar-width: 250px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--light);
+            color: #333;
+            line-height: 1.6;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: linear-gradient(135deg, var(--secondary), var(--dark));
+            color: white;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            padding: 20px 0;
+            overflow-y: auto;
+            transition: var(--transition);
+            z-index: 1000;
+        }
+
+        .sidebar-header {
+            text-align: center;
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+
+        .sidebar-close {
+            display: none;
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: white;
+            padding: 5px;
+            border-radius: 50%;
+            transition: var(--transition);
+        }
+
+        .sidebar-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .user-info {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .user-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--primary);
+            margin-bottom: 15px;
+        }
+
+        .user-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 20px 0;
+        }
+
+        .sidebar-menu li {
+            margin-bottom: 5px;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: var(--transition);
+            border-left: 4px solid transparent;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-left-color: var(--primary);
+            padding-left: 30px;
+        }
+
+        .sidebar-menu i {
+            margin-right: 10px;
+            font-size: 1.2rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        .sidebar-logout {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            padding: 12px 20px;
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.8);
+            background: none;
+            border: none;
+            cursor: pointer;
+            text-align: left;
+            transition: var(--transition);
+            border-left: 4px solid transparent;
+        }
+
+        .sidebar-logout:hover {
+            background: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+            border-left-color: #e74c3c;
+            padding-left: 30px;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 20px;
+            transition: var(--transition);
+        }
+
+        .header {
+            background: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .menu-toggle {
+            display: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            background: var(--light);
+            color: var(--dark);
+            transition: var(--transition);
+        }
+
+        .menu-toggle:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .page-title {
+            color: var(--dark);
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        /* Dashboard Content */
+        .dashboard-content {
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .dashboard-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .info-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            text-align: center;
+            transition: var(--transition);
+            border: 1px solid rgba(52, 152, 219, 0.1);
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .card i {
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+
+        .card h2 {
+            color: var(--dark);
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .card p {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+        }
+
+        .opening-hours {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+        }
+
+        .opening-hours i,
+        .opening-hours h2 {
+            color: white;
+        }
+
+        .opening-hours p {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .booking-section {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            margin-bottom: 30px;
+            border: 1px solid rgba(52, 152, 219, 0.1);
+        }
+
+        .booking-section h2 {
+            color: var(--dark);
+            margin-bottom: 25px;
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 600;
+        }
+
+        .booking-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+
+        .booking-option {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            transition: var(--transition);
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .booking-option::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+            transition: var(--transition);
+        }
+
+        .booking-option:hover::before {
+            left: 100%;
+        }
+
+        .booking-option:hover {
+            border-color: var(--primary);
+            background: white;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(52, 152, 219, 0.2);
+        }
+
+        .booking-option i {
+            font-size: 3rem;
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+
+        .booking-option h3 {
+            color: var(--dark);
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .booking-option p {
+            color: #7f8c8d;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--primary), #2980b9);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: var(--transition);
+            border: none;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: var(--transition);
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(52, 152, 219, 0.3);
+        }
+
+        /* Flash Messages */
+        #flash-messages {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            pointer-events: none;
+        }
+
+        .flash {
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-weight: 600;
+            text-align: center;
+            min-width: 250px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            animation: slideDown 0.5s forwards, fadeOut 0.5s 2.5s forwards;
+            pointer-events: auto;
+        }
+
+        .flash.success {
+            background: linear-gradient(135deg, var(--success), #2ecc71);
+            color: white;
+        }
+
+        .flash.error {
+            background: linear-gradient(135deg, var(--accent), #c0392b);
+            color: white;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+        /* Table Styles */
+        .booking-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+        }
+
+        .booking-table th,
+        .booking-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .booking-table th {
+            background: var(--primary);
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+        }
+
+        .booking-table tr:hover {
+            background: rgba(52, 152, 219, 0.05);
+        }
+
+        .booking-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 992px) {
+            .sidebar {
+                transform: translateX(-100%);
+                width: 0;
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+                width: var(--sidebar-width);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+
+            .sidebar-close {
+                display: block;
+            }
+
+            .header {
+                padding: 15px 20px;
+            }
+
+            .main-content {
+                padding: 15px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .info-cards,
+            .booking-options {
+                grid-template-columns: 1fr;
+            }
+
+            .page-title {
+                font-size: 1.5rem;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .booking-section {
+                padding: 20px;
+            }
+
+            .booking-table {
+                font-size: 0.9rem;
+            }
+
+            .booking-table th,
+            .booking-table td {
+                padding: 10px 8px;
+            }
+
+            .flash {
+                min-width: 200px;
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .sidebar {
+                width: 100%;
+                left: -100%;
+            }
+
+            .sidebar.active {
+                left: 0;
+                width: 100%;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .booking-table {
+                font-size: 0.8rem;
+            }
+
+            .booking-table th,
+            .booking-table td {
+                padding: 8px 6px;
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Sidebar Dashboard -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>Booking System</h2>
+            <span class="sidebar-close"><i class="fas fa-times"></i></span>
+        </div>
+
+        <div class="user-info">
+            <img src="https://ui-avatars.com/api/?name={{ user.first_name }}+{{ user.last_name }}&background=3498db&color=fff"
+                alt="User Avatar" class="user-avatar">
+            <h3 class="user-name">{{ user.first_name }} {{ user.last_name }}</h3>
+        </div>
+
+        <ul class="sidebar-menu">
+            <li><a href="#" class="active" data-target="dashboard"><i class="fas fa-home"></i> Dashboard</a></li>
+            <li><a href="#" data-target="bookings"><i class="fas fa-calendar-alt"></i> My Bookings</a></li>
+            <li><a href="#" data-target="change-password"><i class="fas fa-lock"></i> Change Password</a></li>
+            <li>
+                <form action="{{ url_for('logout') }}" method="POST" id="logoutForm">
+                    <button type="submit" class="sidebar-logout"><i class="fas fa-sign-out-alt"></i> Sign Out</button>
+                </form>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="header">
+            <div class="menu-toggle">
+                <i class="fas fa-bars"></i>
+            </div>
+            <img src="/static/img/brgy_baritan_logo.png" alt="brgy baritan" height="50">
+        </div>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div id="flash-messages">
+            {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <!-- Dashboard Content -->
+        <div class="dashboard-content active" id="dashboard">
+            <div class="info-cards">
+                <div class="card opening-hours">
+                    <i class="fas fa-clock"></i>
+                    <h2>Office Hours</h2>
+                    <p>Monday - Friday<br>8:00 AM - 5:00 PM</p>
+                </div>
+
+                <div class="card">
+                    <i class="fas fa-envelope"></i>
+                    <h2>Email Us</h2>
+                    <p>Baritan.Malabonkmgs@gmail.com</p>
+                </div>
+            </div>
+
+            <div class="booking-section">
+                <h2>Booking</h2>
+                <div class="booking-options">
+                    <div class="booking-option">
+                        <i class="fas fa-basketball-ball"></i>
+                        <h3>Court and equipment booking</h3>
+                        <p>Reserve court time for your games and practice sessions</p>
+                        <a href="{{ url_for('booking2_page') }}" class="btn">Book Now</a>
+                    </div>
+
+                    <div class="booking-option">
+                        <i class="fas fa-dumbbell"></i>
+                        <h3>Rent equipment only</h3>
+                        <p>Rent sports equipment for your activities</p>
+                        <a href="#" class="btn">Rent Now</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- My Bookings Content -->
+        <div class="dashboard-content" id="bookings">
+            <div class="booking-section">
+                <h2>My Bookings</h2>
+                <table class="booking-table">
+                    <thead>
+                        <tr>
+                            <th>Ticket id</th>
+                            <th>Event Type</th>
+                            <th>Event Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if bookings %}
+                        {% for booking in bookings %}
+                        <tr>
+                            <td>{{ booking.ticket_number }}</td>
+                            <td>{{ booking.event_type }}</td>
+                            <td>{{ booking.event_date }}</td>
+                            <td>{{ booking.status }}</td>
+                        </tr>
+                        {% endfor %}
+                        {% else %}
+                        <tr>
+                            <td colspan="4" style="text-align:center; padding: 30px;">
+                                <i class="fas fa-calendar-times" style="font-size: 2rem; color: #bdc3c7; margin-bottom: 10px;"></i>
+                                <br>No bookings found
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Change Password Content -->
+        <div class="dashboard-content" id="change-password">
+            <div class="booking-section">
+                <h2>Change Password</h2>
+                <p>Use this section to update your password.</p>
+                <!-- Change password form would go here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class BookingSystemUI {
+            constructor() {
+                this.sidebar = document.querySelector('.sidebar');
+                this.menuToggle = document.querySelector('.menu-toggle');
+                this.sidebarClose = document.querySelector('.sidebar-close');
+                this.init();
+            }
+
+            init() {
+                this.bindEvents();
+                this.autoHideFlashMessages();
+            }
+
+            bindEvents() {
+                // Toggle sidebar
+                this.menuToggle?.addEventListener('click', () => this.toggleSidebar());
+                this.sidebarClose?.addEventListener('click', () => this.closeSidebar());
+
+                // Handle navigation
+                document.querySelectorAll('.sidebar-menu a[data-target]').forEach(link => {
+                    link.addEventListener('click', (e) => this.handleNavigation(e));
+                });
+
+                // Close sidebar on outside click (mobile)
+                document.addEventListener('click', (e) => {
+                    if (window.innerWidth < 992 && 
+                        this.sidebar.classList.contains('active') &&
+                        !this.sidebar.contains(e.target) &&
+                        !this.menuToggle.contains(e.target)) {
+                        this.closeSidebar();
+                    }
+                });
+
+                // Handle escape key
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape' && this.sidebar.classList.contains('active')) {
+                        this.closeSidebar();
+                    }
+                });
+            }
+
+            toggleSidebar() {
+                this.sidebar.classList.toggle('active');
+            }
+
+            closeSidebar() {
+                this.sidebar.classList.remove('active');
+            }
+
+            handleNavigation(e) {
+                e.preventDefault();
+                const link = e.currentTarget;
+                const target = link.getAttribute('data-target');
+
+                if (!target) return;
+
+                // Update active states
+                this.updateActiveStates(link);
+                
+                // Show target content
+                this.showContent(target);
+                
+                // Update page title
+                this.updatePageTitle(link.textContent.trim());
+
+                // Close sidebar on mobile
+                if (window.innerWidth < 992) {
+                    this.closeSidebar();
+                }
+            }
+
+            updateActiveStates(activeLink) {
+                document.querySelectorAll('.sidebar-menu a').forEach(link => {
+                    link.classList.remove('active');
+                });
+                activeLink.classList.add('active');
+            }
+
+            showContent(targetId) {
+                document.querySelectorAll('.dashboard-content').forEach(section => {
+                    section.classList.remove('active');
+                });
+                
+                const targetSection = document.getElementById(targetId);
+                if (targetSection) {
+                    targetSection.classList.add('active');
+                }
+            }
+
+            updatePageTitle(title) {
+                const pageTitle = document.querySelector('.page-title');
+                if (pageTitle) {
+                    pageTitle.textContent = title;
+                }
+            }
+
+            autoHideFlashMessages() {
+                const flashContainer = document.getElementById('flash-messages');
+                if (flashContainer) {
+                    setTimeout(() => {
+                        flashContainer.style.animation = 'fadeOut 0.5s forwards';
+                        setTimeout(() => flashContainer.remove(), 500);
+                    }, 3000);
+                }
+            }
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            new BookingSystemUI();
+        });
+
+        // Add smooth scrolling for better UX
+        document.documentElement.style.scrollBehavior = 'smooth';
+
+        // Optimize images loading
+        document.querySelectorAll('img').forEach(img => {
+            img.loading = 'lazy';
+        });
+    </script>
+</body>
+
+</html>
