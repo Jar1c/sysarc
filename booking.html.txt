@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking</title>
+    <link rel="icon" type="image/png" href="/static/img/brgy_baritan_logo.png">
+    <link rel="stylesheet" href="/static/booking.css">
+    <style>
+        /* Simple modal styling */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .modal-content h2 {
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .modal-content input,
+        .modal-content textarea,
+        .modal-content button {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+
+        .modal-content button {
+            background: #023e8a;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        .close-btn {
+            float: right;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .time-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .time-wrapper input[type="time"] {
+            width: 100%;
+            height: 35px;
+            font-size: 14px;
+            color: black;
+            position: relative;
+            z-index: 2;
+            background: transparent;
+        }
+
+        /* Fake placeholder */
+        .time-wrapper input[type="time"]::before {
+            content: "------ Start Time";
+            position: absolute;
+            left: 25px;
+            /* adjust dito kung gano kalayo sa gilid */
+            top: 50%;
+            transform: translateY(-50%);
+            color: gray;
+            letter-spacing: 2px;
+            /* dagdag spacing sa pagitan ng dash */
+            pointer-events: none;
+        }
+
+        /* Pag may value or naka-focus, mawala si placeholder */
+        .time-wrapper input[type="time"]:focus::before,
+        .time-wrapper input[type="time"]:valid::before {
+            content: "";
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="hamburger" onclick="toggleSidebar()">
+            <div class="line"></div>
+            <div class="line"></div>
+            <div class="line"></div>
+        </div>
+        <ul class="nav-links">
+            <li><a href="#" class="active">Home</a></li>
+            <li><a href="#">Equipment</a></li>
+            <li><a href="#">Availability</a></li>
+            <li><a href="#">My Bookings</a></li>
+        </ul>
+    </nav>
+
+    <!-- Sidebar Menu -->
+    <div id="sidebar" class="sidebar">
+        <div class="sidebar-back" onclick="toggleSidebar()">
+            <span>←</span>
+        </div>
+        <div class="user-profile">
+            <div class="profile-icon">👤</div>
+        </div>
+        <ul class="sidebar-links">
+            <li><a href="#">Name ng resident <span>›</span></a></li>
+            <li><a href="#">ID number <span>›</span></a></li>
+            <li><a href="#">Font size <span>›</span></a></li>
+            <li><a href="#">Contact US <span>›</span></a></li>
+            <li><a href="#">Change password <span>›</span></a></li>
+        </ul>
+        <form action="{{ url_for('logout') }}" method="POST">
+            <button type="submit" class="logout-btn">LOGOUT</button>
+        </form>
+    </div>
+
+    <!-- Overlay -->
+    <div id="overlay" class="overlay" onclick="toggleSidebar()"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Home Page -->
+        <section id="home" class="page active">
+            <div class="info-section">
+                <div class="opening-info">
+                    <h2>Opening</h2>
+                    <p>Monday - Friday (8:00AM - 5:00 PM)</p>
+                </div>
+                <div class="email-info">
+                    <h2>Email Us</h2>
+                    <p>Baritan.Malabonkmgs@gmail.com</p>
+                </div>
+                <button class="book-event-btn" onclick="openModal()">BOOK AN EVENT</button>
+            </div>
+        </section>
+
+        <!-- Equipment Page -->
+        <section id="equipment" class="page">
+            <div class="equipment-grid">
+                <div class="equipment-item">
+                    <span>Chair</span>
+                </div>
+                <div class="equipment-item">
+                    <span>Table</span>
+                </div>
+                <div class="equipment-item">
+                    <span>Tent</span>
+                </div>
+            </div>
+            <div class="notice">
+                <p>Borrowed equipments must be returned complete and in good condition. Failure to comply may result in
+                    additional charges.</p>
+            </div>
+        </section>
+
+        <!-- Availability Page -->
+        <section id="availability" class="page">
+            <div class="availability-container">
+                <div class="calendar-section">
+                    <div class="calendar-header">
+                        <button class="nav-btn" onclick="previousMonth()">‹</button>
+                        <h2 id="monthYear">May 2025</h2>
+                        <button class="nav-btn" onclick="nextMonth()">›</button>
+                    </div>
+                    <div class="calendar">
+                        <div class="calendar-grid" id="calendarGrid">
+                            <!-- Calendar will be generated by JavaScript -->
+                        </div>
+                    </div>
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="legend-color available"></div>
+                            <span>Available</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color unavailable"></div>
+                            <span>Unavailable</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="schedule-section">
+                    <h2>Available Start Time</h2>
+                    <div class="time-slots">
+                        <div class="time-slot">MON 8:00 AM - 10:00 PM | 05/05/2025</div>
+                        <div class="time-slot">TUE 6:00 PM - 7:00 PM | 05/13/2025</div>
+                        <div class="time-slot">WED 3:00 PM - 4:00 PM | 05/14/2025</div>
+                        <div class="time-slot">THU 7:00 PM - 8:00 PM | 05/22/2025</div>
+                        <div class="time-slot">FRI 9:00 AM - 10:00 AM | 05/30/2025</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- My Bookings Page -->
+        <section id="mybookings" class="page">
+            <div class="bookings-container">
+                <div class="bookings-table-wrapper">
+                    <table class="bookings-table">
+                        <thead>
+                            <tr>
+                                <th>TICKET NUMBER</th>
+                                <th>EVENT TYPE</th>
+                                <th>STATUS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Dynamic data will come from Flask later -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Booking Form Modal -->
+    <div id="bookingModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">×</span>
+            <h2>Book an Event</h2>
+            <form action="{{ url_for('book_event') }}" method="POST">
+                <input type="text" name="full_name" placeholder="Full Name" required>
+                <input type="text" name="contact_number" placeholder="Contact Number" pattern="^\d{11}$"
+                    title="Enter 11 digit number" required>
+
+                <input type="text" name="event_name" placeholder="Event Name" required>
+                <input type="date" name="event_date" required>
+
+                <div class="time-wrapper">
+                    <input type="time" id="time_start" name="time_start" required>
+                    <span class="fake-placeholder">Start Time</span>
+                </div>
+
+                <div class="time-wrapper">
+                    <input type="time" id="time_end" name="time_end" required>
+                    <span class="fake-placeholder">End Time</span>
+                </div>
+
+                <textarea name="note" placeholder="Additional Notes"></textarea>
+                <button type="submit">Submit Booking</button>
+            </form>
+        </div>
+    </div>
+
+
+    <script>
+        let currentMonth = 4; // May is month 4 (0-indexed)
+        let currentYear = 2025;
+
+        const months = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+
+        const unavailableDates = [5, 13, 14, 22, 30]; // May dates that are unavailable
+
+        function generateCalendar() {
+            const monthYearElement = document.getElementById('monthYear');
+            const calendarGrid = document.getElementById('calendarGrid');
+
+            monthYearElement.textContent = `${months[currentMonth]} ${currentYear}`;
+
+            // Clear previous calendar
+            calendarGrid.innerHTML = '';
+
+            // Add day headers
+            const dayHeaders = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+            dayHeaders.forEach(day => {
+                const dayHeader = document.createElement('div');
+                dayHeader.className = 'calendar-day-header';
+                dayHeader.textContent = day;
+                calendarGrid.appendChild(dayHeader);
+            });
+
+            // Get first day of month and number of days
+            const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+            const daysInPrevMonth = new Date(currentYear, currentMonth, 0).getDate();
+
+            // Add previous month's trailing days
+            for (let i = firstDay - 1; i >= 0; i--) {
+                const dayElement = document.createElement('div');
+                dayElement.className = 'calendar-day prev-month';
+                dayElement.textContent = daysInPrevMonth - i;
+                calendarGrid.appendChild(dayElement);
+            }
+
+            // Add current month's days
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayElement = document.createElement('div');
+                dayElement.className = 'calendar-day';
+                dayElement.textContent = day;
+
+                // Check if day is unavailable
+                if (currentMonth === 4 && currentYear === 2025 && unavailableDates.includes(day)) {
+                    dayElement.classList.add('unavailable');
+                } else {
+                    dayElement.classList.add('available');
+                }
+
+                calendarGrid.appendChild(dayElement);
+            }
+
+            // Add next month's leading days
+            const totalCells = calendarGrid.children.length;
+            const remainingCells = 42 - totalCells; // 6 rows × 7 days
+            for (let day = 1; day <= remainingCells; day++) {
+                const dayElement = document.createElement('div');
+                dayElement.className = 'calendar-day next-month';
+                dayElement.textContent = day;
+                calendarGrid.appendChild(dayElement);
+            }
+        }
+
+        function previousMonth() {
+            currentMonth--;
+            if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            }
+            generateCalendar();
+        }
+
+        function nextMonth() {
+            currentMonth++;
+            if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            }
+            generateCalendar();
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
+
+        // Booking modal controls
+        function openModal() {
+            document.getElementById("bookingModal").style.display = "flex";
+        }
+
+        function closeModal() {
+            document.getElementById("bookingModal").style.display = "none";
+        }
+
+        // Navigation functionality
+        document.querySelectorAll('.nav-links a').forEach(link => {
+            link.addEventListener('click', function (e) {
+                e.preventDefault();
+
+                // Remove active class from all nav links
+                document.querySelectorAll('.nav-links a').forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+
+                // Hide all pages
+                document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+
+                // Show corresponding page
+                const pageName = this.textContent.toLowerCase().replace(' ', '');
+                const targetPage = document.getElementById(pageName);
+                if (targetPage) {
+                    targetPage.classList.add('active');
+                }
+
+                if (pageName === 'availability') {
+                    generateCalendar();
+                }
+            });
+        });
+
+        // Initialize calendar on page load
+        window.addEventListener('load', function () {
+            generateCalendar();
+        });
+    </script>
+</body>
+
+</html>

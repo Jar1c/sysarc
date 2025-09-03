@@ -241,15 +241,15 @@ import uuid
 import os
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24)  # Mas secure kaysa hardcoded key
+app.secret_key = os.urandom(24) 
 
-# --- Supabase Config ---
+
 SUPABASE_URL = "https://vehpeqlxmucsgasedcuh.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZlaHBlcWx4bXVjc2dhc2VkY3VoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjYxNjIyMiwiZXhwIjoyMDcyMTkyMjIyfQ.Xp5JiKtJVPMfZR1ethvOwguVBwjbIYKapi-1STLLfd8"
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
-# --- ROUTES ---
+
 @app.route("/")
 def home():
     return render_template("index.html")
@@ -434,7 +434,93 @@ def booking():
     if "user" not in session:
         flash("Please login first!", "error")
         return redirect(url_for("signin"))
-    return render_template("booking.html")
+    
+    # Get user data from database using the session user ID
+    user_id = session["user"]["id"]
+    user_data = supabase.table("users").select("*").eq("id", user_id).execute()
+    
+    if user_data.data:
+        user = user_data.data[0]
+        return render_template("booking.html", user=user)
+    else:
+        flash("User not found!", "error")
+        return redirect(url_for("signin"))
+
+
+# Route to show booking2 form
+@app.route("/booking2", methods=["GET"])
+def booking2_page():
+    if "user" not in session:
+        flash("Please login first!", "error")
+        return redirect(url_for("signin"))
+    return render_template("booking2.html")
+
+
+
+@app.route("/book_event", methods=["POST"])
+def book_event():
+    if "user" not in session:
+        flash("Please login first!", "error")
+        return redirect(url_for("signin"))
+
+    user_id = session["user"]["id"]
+
+    # Check if user already has a pending or approved booking
+    existing_booking = supabase.table("bookings") \
+        .select("*") \
+        .eq("user_id", user_id) \
+        .in_("status", ["Pending", "Approved"]) \
+        .execute()
+
+    if existing_booking.data and len(existing_booking.data) > 0:
+        flash("You already booked! You can't book multiple.", "error")
+        return redirect(url_for("booking2_page"))
+
+    try:
+        # Get form data
+        event_type = request.form.get("event_type", "").strip()
+        event_date = request.form.get("event_date", "").strip()
+        contact_number = request.form.get("phone", "").strip()
+        email = request.form.get("email", "").strip()
+        tent_qty = int(request.form.get("tent_qty", 0) or 0)
+        chairs_qty = int(request.form.get("chairs_qty", 0) or 0)
+        other_items = request.form.get("other_items", "").strip()
+
+        # Generate IDs
+        booking_id = str(uuid.uuid4())
+        ticket_number = "TKT-" + str(uuid.uuid4())[:8].upper()
+
+        booking_data = {
+            "id": booking_id,
+            "user_id": user_id,
+            "ticket_number": ticket_number,
+            "event_type": event_type,
+            "event_date": event_date,
+            "contact_number": contact_number,
+            "email": email,
+            "tent_qty": tent_qty,
+            "chairs_qty": chairs_qty,
+            "other_items": other_items,
+            "status": "Pending",
+            "created_at": datetime.now().isoformat()
+        }
+
+        # Insert into Supabase
+        supabase.table("bookings").insert(booking_data).execute()
+
+        # If no exception, consider success
+        flash(f"Booking submitted successfully! Ticket: {ticket_number}", "success")
+        return redirect(url_for("booking2_page"))
+
+    except Exception as e:
+        flash(f"Unexpected error: {str(e)}", "error")
+        return redirect(url_for("booking2_page"))
+
+
+
+
+
+
 
 
 
@@ -498,7 +584,7 @@ def admin_portal():
 def logout():
     session.clear()
     flash("You have been logged out!", "success")
-    return redirect(url_for("signin"))
+    return redirect(url_for("home"))
 
 @app.route("/signout", methods=["POST"])
 def signout():

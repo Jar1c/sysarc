@@ -4,297 +4,586 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Equipment Booking System</title>
-    <link rel="stylesheet" href="/static/booking.css">
+    <title>Court and Equipment Booking System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2c3e50;
+            --accent-color: #e74c3c;
+            --light-color: #f5f7fa;
+            --dark-color: #2c3e50;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --sidebar-width: 250px;
+            --header-height: 70px;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: linear-gradient(135deg, var(--secondary-color), var(--dark-color));
+            color: white;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            padding: 20px 0;
+            overflow-y: auto;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .sidebar-header {
+            text-align: center;
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .user-info {
+            padding: 20px;
+            text-align: center;
+        }
+
+        .user-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--primary-color);
+            margin-bottom: 15px;
+        }
+
+        .user-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .user-email {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 20px 0;
+        }
+
+        .sidebar-menu li {
+            margin-bottom: 5px;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .sidebar-menu i {
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+
+        /* Sidebar logout button styling */
+        .sidebar-menu form {
+            margin: 0;
+            /* remove default form margin */
+        }
+
+        .sidebar-logout {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            padding: 12px 20px;
+            font-size: 1rem;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.8);
+            background: none;
+            border: none;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-logout i {
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+
+        .sidebar-logout:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-left: 4px solid var(--primary-color);
+        }
+
+
+
+
+        /* Main Content Styles */
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 20px;
+        }
+
+        .header {
+            background-color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .menu-toggle {
+            display: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .page-title {
+            color: var(--dark-color);
+            font-size: 1.8rem;
+        }
+
+        .info-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card i {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+
+        .card h2 {
+            color: var(--dark-color);
+            margin-bottom: 15px;
+        }
+
+        .card p {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+        }
+
+        .opening-hours {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+        }
+
+        .opening-hours i {
+            color: white;
+        }
+
+        .opening-hours h2 {
+            color: white;
+        }
+
+        .opening-hours p {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .booking-section {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+            margin-bottom: 30px;
+        }
+
+        .booking-section h2 {
+            color: var(--dark-color);
+            margin-bottom: 25px;
+            text-align: center;
+            font-size: 2rem;
+        }
+
+        .booking-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+
+        .booking-option {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .booking-option:hover {
+            border-color: var(--primary-color);
+            background: white;
+        }
+
+        .booking-option i {
+            font-size: 3rem;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+
+        .booking-option h3 {
+            color: var(--dark-color);
+            margin-bottom: 15px;
+        }
+
+        .booking-option p {
+            color: #7f8c8d;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            display: inline-block;
+            background: var(--primary-color);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            padding: 20px;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        /* Dashboard Content */
+        .dashboard-content {
+            display: none;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+            margin-bottom: 30px;
+        }
+
+        .dashboard-content.active {
+            display: block;
+        }
+
+        .dashboard-content h2 {
+            color: var(--dark-color);
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        #flash-messages {
+            position: fixed;
+            top: 20px;
+            /* distance from top */
+            left: 50%;
+            /* horizontal center */
+            transform: translateX(-50%);
+            /* center exactly */
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            /* extra centering */
+            width: 100%;
+            /* make container full width */
+        }
+
+        .flash {
+            padding: 15px 25px;
+            border-radius: 8px;
+            font-weight: bold;
+            text-align: center;
+            min-width: 250px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            animation: slideDown 0.5s forwards, fadeOut 0.5s 2.5s forwards;
+        }
+
+        .flash.success {
+            background-color: #27ae60;
+            color: white;
+        }
+
+        .flash.error {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+                /* only vertical movement */
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+
+            to {
+                opacity: 0;
+            }
+        }
+
+
+
+
+
+        /* Responsive Styles */
+        @media (max-width: 992px) {
+            .sidebar {
+                transform: translateX(-100%);
+                width: 0;
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+                width: var(--sidebar-width);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+        }
+
+        @media (max-width: 768px) {
+
+            .info-cards,
+            .booking-options {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
 </head>
 
 <body>
-    <!-- Navigation Bar -->
-    <nav class="navbar">
-        <div class="hamburger" onclick="toggleSidebar()">
-            <div class="line"></div>
-            <div class="line"></div>
-            <div class="line"></div>
+    <!-- Sidebar Dashboard -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>Booking System</h2>
         </div>
-        <ul class="nav-links">
-            <li><a href="#" class="active">Home</a></li>
-            <li><a href="#">Equipment</a></li>
-            <li><a href="#">Availability</a></li>
-            <li><a href="#">My Bookings</a></li>
-        </ul>
-    </nav>
 
-    <!-- Sidebar Menu -->
-    <div id="sidebar" class="sidebar">
-        <div class="sidebar-back" onclick="toggleSidebar()">
-            <span>←</span>
+        <div class="user-info">
+            <img src="https://ui-avatars.com/api/?name={{ user.first_name }}+{{ user.last_name }}&background=3498db&color=fff"
+                alt="User Avatar" class="user-avatar">
+            <h3 class="user-name">{{ user.first_name }} {{ user.last_name }}</h3>
         </div>
-        <div class="user-profile">
-            <div class="profile-icon">👤</div>
-        </div>
-        <ul class="sidebar-links">
-            <li><a href="#">Name ng resident <span>›</span></a></li>
-            <li><a href="#">ID number <span>›</span></a></li>
-            <li><a href="#">Font size <span>›</span></a></li>
-            <li><a href="#">Contact US <span>›</span></a></li>
-            <li><a href="#">Change password <span>›</span></a></li>
-        </ul>
-        <form action="{{ url_for('logout') }}" method="POST">
-            <button type="submit" class="logout-btn">LOGOUT</button>
-        </form>
 
+        <ul class="sidebar-menu">
+            <li><a href="#" class="active" data-target="dashboard"><i class="fas fa-home"></i> Dashboard</a></li>
+            <li><a href="#" data-target="bookings"><i class="fas fa-calendar-alt"></i> My Bookings</a></li>
+            <li><a href="#" data-target="change-password"><i class="fas fa-lock"></i> Change Password</a></li>
+            <li>
+                <form action="{{ url_for('logout') }}" method="POST" id="logoutForm">
+                    <button type="submit" class="sidebar-logout"><i class="fas fa-sign-out-alt"></i> Sign Out</button>
+                </form>
+            </li>
+        </ul>
     </div>
 
-    <!-- Overlay -->
-    <div id="overlay" class="overlay" onclick="toggleSidebar()"></div>
-
     <!-- Main Content -->
-    <main class="main-content">
-        <!-- Home Page -->
-        <section id="home" class="page active">
-            <div class="info-section">
-                <div class="opening-info">
-                    <h2>Opening</h2>
-                    <p>Monday - Friday (8:00AM - 5:00 PM)</p>
+    <div class="main-content">
+        <div class="header">
+            <div class="menu-toggle">
+                <i class="fas fa-bars"></i>
+            </div>
+            <h1 class="page-title">Dashboard</h1>
+            <div class="header-actions">
+                <button class="btn">Make a Booking</button>
+            </div>
+        </div>
+
+        <!-- Dashboard Content -->
+        <div class="dashboard-content active" id="dashboard">
+            <div class="info-cards">
+                <div class="card opening-hours">
+                    <i class="fas fa-clock"></i>
+                    <h2>Opening Hours</h2>
+                    <p>Monday - Friday<br>8:00 AM - 5:00 PM</p>
                 </div>
-                <div class="email-info">
+
+                <div class="card">
+                    <i class="fas fa-envelope"></i>
                     <h2>Email Us</h2>
                     <p>Baritan.Malabonkmgs@gmail.com</p>
                 </div>
-                <button class="book-event-btn">BOOK AN EVENT</button>
             </div>
-        </section>
 
-        <!-- Equipment Page -->
-        <section id="equipment" class="page">
-            <div class="equipment-grid">
-                <div class="equipment-item">
-                    <span>Chair</span>
-                </div>
-                <div class="equipment-item">
-                    <span>Table</span>
-                </div>
-                <div class="equipment-item">
-                    <span>Tent</span>
-                </div>
-            </div>
-            <div class="notice">
-                <p>Borrowed equipments must be returned complete and in good condition. Failure to comply may result in
-                    additional charges.</p>
-            </div>
-        </section>
+            <div class="booking-section">
 
-        <!-- Availability Page -->
-        <section id="availability" class="page">
-            <div class="availability-container">
-                <div class="calendar-section">
-                    <div class="calendar-header">
-                        <button class="nav-btn" onclick="previousMonth()">‹</button>
-                        <h2 id="monthYear">May 2025</h2>
-                        <button class="nav-btn" onclick="nextMonth()">›</button>
-                    </div>
-                    <div class="calendar">
-                        <div class="calendar-grid" id="calendarGrid">
-                            <!-- Calendar will be generated by JavaScript -->
-                        </div>
-                    </div>
-                    <div class="legend">
-                        <div class="legend-item">
-                            <div class="legend-color available"></div>
-                            <span>Available</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-color unavailable"></div>
-                            <span>Unavailable</span>
-                        </div>
-                    </div>
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                <div id="flash-messages">
+                    {% for category, message in messages %}
+                    <div class="flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
                 </div>
-                <div class="schedule-section">
-                    <h2>Available Start Time</h2>
-                    <div class="time-slots">
-                        <div class="time-slot">MON 8:00 AM - 10:00 PM | 05/05/2025</div>
-                        <div class="time-slot">TUE 6:00 PM - 7:00 PM | 05/13/2025</div>
-                        <div class="time-slot">WED 3:00 PM - 4:00 PM | 05/14/2025</div>
-                        <div class="time-slot">THU 7:00 PM - 8:00 PM | 05/22/2025</div>
-                        <div class="time-slot">FRI 9:00 AM - 10:00 AM | 05/30/2025</div>
+                {% endif %}
+                {% endwith %}
+
+                <h2>Booking</h2>
+                <div class="booking-options">
+                    <div class="booking-option">
+                        <i class="fas fa-basketball-ball"></i>
+                        <h3>Court and equipment booking</h3>
+                        <p>Reserve court time for your games and practice sessions</p>
+                        <a href="{{ url_for('booking2_page') }}" class="btn">Book Now</a>
+                    </div>
+
+                    <div class="booking-option">
+                        <i class="fas fa-dumbbell"></i>
+                        <h3>Rent equipment only</h3>
+                        <p>Rent sports equipment for your activities</p>
+                        <a href="#" class="btn">Rent Now</a>
                     </div>
                 </div>
             </div>
-        </section>
+        </div>
 
-        <!-- My Bookings Page -->
-        <section id="mybookings" class="page">
-            <div class="bookings-container">
-                <div class="bookings-table-wrapper">
-                    <table class="bookings-table">
-                        <thead>
-                            <tr>
-                                <th>TICKET NUMBER</th>
-                                <th>EVENT TYPE</th>
-                                <th>STATUS</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>Evnt001</td>
-                                <td>Christmas Party</td>
-                                <td>Under Review</td>
-                            </tr>
-                            <tr>
-                                <td>Evnt002</td>
-                                <td>Birthday Party</td>
-                                <td>Under Review</td>
-                            </tr>
-                            <tr>
-                                <td>Evnt003</td>
-                                <td>Leagues</td>
-                                <td>Under Review</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+        <!-- My Bookings Content -->
+        <div class="dashboard-content" id="bookings">
+            <h2>My Bookings</h2>
+            <p>Here you can view and manage your current and past bookings.</p>
+            <!-- Booking content would go here -->
+        </div>
 
-                <div class="validation-section">
-                    <h2>Please submit below documents for validation of your bookings to Baritan.Malabonkmgs@gmail.com
-                    </h2>
-                    <ul class="requirements-list">
-                        <li>Copy of Barangay ID/Certificate</li>
-                        <li>Copy of BirthCertificate (if applicable)</li>
-                        <li>Memorandum (if applicable)</li>
-                        <li>Other proof that will certify the booked event is legitimate.</li>
-                    </ul>
-                </div>
-            </div>
-        </section>
-    </main>
+        <!-- Change Password Content -->
+        <div class="dashboard-content" id="change-password">
+            <h2>Change Password</h2>
+            <p>Use this section to update your password.</p>
+            <!-- Change password form would go here -->
+        </div>
+
+        <!-- Settings Content -->
+        <div class="dashboard-content" id="settings">
+            <h2>Settings</h2>
+            <p>Customize your account settings and preferences.</p>
+            <!-- Settings content would go here -->
+        </div>
+
+        <footer>
+            <p>Court and Equipment Booking System &copy; 2023. All rights reserved.</p>
+        </footer>
+    </div>
 
     <script>
-        let currentMonth = 4; // May is month 4 (0-indexed)
-        let currentYear = 2025;
+        // Toggle sidebar on mobile
+        document.querySelector('.menu-toggle').addEventListener('click', function () {
+            document.querySelector('.sidebar').classList.toggle('active');
+        });
 
-        const months = [
-            'January', 'February', 'March', 'April', 'May', 'June',
-            'July', 'August', 'September', 'October', 'November', 'December'
-        ];
-
-        const unavailableDates = [5, 13, 14, 22, 30]; // May dates that are unavailable
-
-        function generateCalendar() {
-            const monthYearElement = document.getElementById('monthYear');
-            const calendarGrid = document.getElementById('calendarGrid');
-
-            monthYearElement.textContent = `${months[currentMonth]} ${currentYear}`;
-
-            // Clear previous calendar
-            calendarGrid.innerHTML = '';
-
-            // Add day headers
-            const dayHeaders = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-            dayHeaders.forEach(day => {
-                const dayHeader = document.createElement('div');
-                dayHeader.className = 'calendar-day-header';
-                dayHeader.textContent = day;
-                calendarGrid.appendChild(dayHeader);
-            });
-
-            // Get first day of month and number of days
-            const firstDay = new Date(currentYear, currentMonth, 1).getDay();
-            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-            const daysInPrevMonth = new Date(currentYear, currentMonth, 0).getDate();
-
-            // Add previous month's trailing days
-            for (let i = firstDay - 1; i >= 0; i--) {
-                const dayElement = document.createElement('div');
-                dayElement.className = 'calendar-day prev-month';
-                dayElement.textContent = daysInPrevMonth - i;
-                calendarGrid.appendChild(dayElement);
-            }
-
-            // Add current month's days
-            for (let day = 1; day <= daysInMonth; day++) {
-                const dayElement = document.createElement('div');
-                dayElement.className = 'calendar-day';
-                dayElement.textContent = day;
-
-                // Check if day is unavailable (for May 2025)
-                if (currentMonth === 4 && currentYear === 2025 && unavailableDates.includes(day)) {
-                    dayElement.classList.add('unavailable');
-                } else {
-                    dayElement.classList.add('available');
-                }
-
-                calendarGrid.appendChild(dayElement);
-            }
-
-            // Add next month's leading days
-            const totalCells = calendarGrid.children.length;
-            const remainingCells = 42 - totalCells; // 6 rows × 7 days
-            for (let day = 1; day <= remainingCells; day++) {
-                const dayElement = document.createElement('div');
-                dayElement.className = 'calendar-day next-month';
-                dayElement.textContent = day;
-                calendarGrid.appendChild(dayElement);
-            }
-        }
-
-        function previousMonth() {
-            currentMonth--;
-            if (currentMonth < 0) {
-                currentMonth = 11;
-                currentYear--;
-            }
-            generateCalendar();
-        }
-
-        function nextMonth() {
-            currentMonth++;
-            if (currentMonth > 11) {
-                currentMonth = 0;
-                currentYear++;
-            }
-            generateCalendar();
-        }
-
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('overlay');
-
-            sidebar.classList.toggle('active');
-            overlay.classList.toggle('active');
-        }
-
-        // Navigation functionality
-        document.querySelectorAll('.nav-links a').forEach(link => {
+        // Switch between dashboard sections
+        document.querySelectorAll('.sidebar-menu a').forEach(link => {
             link.addEventListener('click', function (e) {
                 e.preventDefault();
 
-                // Remove active class from all nav links
-                document.querySelectorAll('.nav-links a').forEach(l => l.classList.remove('active'));
+                // Remove active class from all links
+                document.querySelectorAll('.sidebar-menu a').forEach(item => {
+                    item.classList.remove('active');
+                });
+
                 // Add active class to clicked link
                 this.classList.add('active');
 
-                // Hide all pages
-                document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+                // Hide all content sections
+                document.querySelectorAll('.dashboard-content').forEach(section => {
+                    section.classList.remove('active');
+                });
 
-                // Show corresponding page
-                const pageName = this.textContent.toLowerCase().replace(' ', '');
-                const targetPage = document.getElementById(pageName);
-                if (targetPage) {
-                    targetPage.classList.add('active');
+                // Show the targeted section (if it has data-target)
+                const target = this.getAttribute('data-target');
+                if (target) {
+                    document.getElementById(target).classList.add('active');
+                    // Update page title
+                    document.querySelector('.page-title').textContent = this.textContent.trim();
                 }
 
-                // Generate calendar if availability page is shown
-                if (pageName === 'availability') {
-                    generateCalendar();
+                // Close sidebar on mobile after selection
+                if (window.innerWidth < 992) {
+                    document.querySelector('.sidebar').classList.remove('active');
                 }
             });
         });
 
-        // Initialize calendar on page load
-        window.addEventListener('load', function () {
-            generateCalendar();
-        });
+        // Auto-hide flash messages after 3 seconds
+        setTimeout(() => {
+            const flashContainer = document.getElementById('flash-messages');
+            if (flashContainer) {
+                flashContainer.remove();
+            }
+        }, 3000); // 3000ms = 3 seconds
     </script>
+
+
 </body>
 
 </html>
