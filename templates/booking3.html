@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Event Booking Form</title>
+    <title>Equipment Booking Form</title>
     <link rel="icon" type="image/png" href="/static/img/brgy_baritan_logo.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -20,7 +19,7 @@
             --secondary-color: #2c3e50;
             --accent-color: #e74c3c;
             --light-color: #f5f7fa;
-            --dark-color: #023e8a   ;
+            --dark-color: #023e8a;
             --success-color: #27ae60;
         }
 
@@ -35,7 +34,7 @@
             align-items: center;
         }
 
-                /* Scrollbar styling */
+        /* Scrollbar styling */
         ::-webkit-scrollbar {
             width: 8px;
         }
@@ -65,6 +64,7 @@
         }
 
         header {
+            position: relative;
             background: linear-gradient(135deg, var(--secondary-color), var(--dark-color));
             color: white;
             padding: 25px 30px;
@@ -74,11 +74,29 @@
         header h1 {
             font-size: 2.2rem;
             margin-bottom: 10px;
+            text-transform: uppercase;
         }
 
         header p {
             font-size: 1.1rem;
             opacity: 0.9;
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            text-decoration: none;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: bold;
+        }
+
+        .back-btn:hover {
+            color: #f1c40f;
         }
 
         .form-container {
@@ -125,6 +143,9 @@
             margin-bottom: 8px;
             font-weight: 600;
             color: var(--dark-color);
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
         }
 
         input,
@@ -168,11 +189,15 @@
         .equipment-name {
             font-weight: 600;
             color: var(--dark-color);
+            text-transform: uppercase;
+            font-size: 1.1rem;
+            letter-spacing: 0.5px;
         }
 
         .equipment-unit {
             font-size: 0.9rem;
             color: #7f8c8d;
+            text-transform: uppercase;
         }
 
         .quantity-control {
@@ -185,6 +210,7 @@
             width: 70px;
             text-align: center;
             padding: 10px;
+            font-weight: bold;
         }
 
         .qty-btn {
@@ -221,6 +247,8 @@
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             width: 100%;
             max-width: 250px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .btn-submit:hover {
@@ -243,32 +271,6 @@
             font-size: 0.9rem;
             background: #f9f9f9;
             border-top: 1px solid #eee;
-        }
-
-        header {
-            position: relative;
-            /* importante para gumana ang absolute */
-            background: linear-gradient(135deg, var(--secondary-color), var(--dark-color));
-            color: white;
-            padding: 25px 30px;
-            text-align: center;
-        }
-
-        .back-btn {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            color: white;
-            text-decoration: none;
-            font-size: 1.1rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: bold;
-        }
-
-        .back-btn:hover {
-            color: #f1c40f;
         }
 
         .flash {
@@ -296,111 +298,88 @@
         <header>
             <a href="{{ url_for('booking') }}" class="back-btn">
                 <i class="fas fa-arrow-left"></i>
-            </a>
-            <h1>Court and equipment booking</h1>
-            <p>Reserve equipment for your upcoming event</p>
+            </a>    
+            <h1>FOR EQUIPMENT BOOKING</h1>
+            <p>Reserve equipment for your needs</p>
         </header>
 
-        <div class="form-container">
-
-            {% with messages = get_flashed_messages(with_categories=true) %}
+        <!-- Flash messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-            <div id="flash-messages">
                 {% for category, message in messages %}
-                <div class="flash {{ category }}">{{ message }}</div>
+                    <div class="flash {{ category }}">{{ message }}</div>
                 {% endfor %}
-            </div>
             {% endif %}
-            {% endwith %}
+        {% endwith %}
 
-            <form id="bookingForm" method="POST" action="{{ url_for('book_event') }}">
+        <div class="form-container">
+            <form id="bookingForm" action="{{ url_for('booking3') }}" method="POST">
                 <div class="form-section">
-                    <h2><i class="fas fa-info-circle"></i> Event Details</h2>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="eventType">Event Type <span class="required">*</span></label>
-                            <select id="eventType" name="event_type" required>
-                                <option value="">Select event type</option>
-                                <option value="wedding">Wedding</option>
-                                <option value="birthday">Birthday Party</option>
-                                <option value="corporate">Corporate Event</option>
-                                <option value="seminar">Seminar</option>
-                                <option value="festival">Festival</option>
-                                <option value="other">Other</option>
-                            </select>
-                        </div>
-
-
-                        <div class="form-group">
-                            <label for="eventDate">Date <span class="required">*</span></label>
-                            <input type="date" id="eventDate" name="event_date" required>
-                        </div>
-
+                    <h2><i class="fas fa-calendar-alt"></i> Booking Details</h2>
+                    
+                    <div class="form-group">
+                        <label for="eventDate">DATE <span class="required">*</span></label>
+                        <input type="date" id="eventDate" name="event_date" required>
                     </div>
                 </div>
 
                 <div class="form-section">
                     <h2><i class="fas fa-user"></i> Contact Information</h2>
-
+                    
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="phone">Phone Number <span class="required">*</span></label>
+                            <label for="phone">PHONE NUMBER <span class="required">*</span></label>
                             <input type="tel" id="phone" name="phone" placeholder="Enter your phone number" required>
                         </div>
 
                         <div class="form-group">
-                            <label for="email">Email <span class="required">*</span></label>
+                            <label for="email">EMAIL <span class="required">*</span></label>
                             <input type="email" id="email" name="email" placeholder="Enter your email" required>
                         </div>
                     </div>
                 </div>
 
                 <div class="form-section">
-                    <h2><i class="fas fa-boxes"></i> Equipment Selection</h2>
-
-
+                    <h2><i class="fas fa-boxes"></i> EQUIPMENT</h2>
+                    
                     <div class="equipment-list">
                         <div class="equipment-item">
                             <div class="equipment-info">
-                                <div class="equipment-name">Tent</div>
-                                <div class="equipment-unit">Pieces</div>
+                                <div class="equipment-name">TENT</div>
+                                <div class="equipment-unit">PCS</div>
                             </div>
                             <div class="quantity-control">
                                 <button type="button" class="qty-btn" onclick="adjustQty('tent', -1)">-</button>
-                                <input type="number" id="tent-qty" name="tent_qty" class="qty-input" value="0" min="0"
-                                    max="20">
+                                <input type="number" id="tent-qty" name="tent_qty" class="qty-input" value="0" min="0" max="20">
                                 <button type="button" class="qty-btn" onclick="adjustQty('tent', 1)">+</button>
                             </div>
                         </div>
 
                         <div class="equipment-item">
                             <div class="equipment-info">
-                                <div class="equipment-name">Chairs</div>
-                                <div class="equipment-unit">Quantity</div>
+                                <div class="equipment-name">CHAIR</div>
+                                <div class="equipment-unit">QTY</div>
                             </div>
                             <div class="quantity-control">
                                 <button type="button" class="qty-btn" onclick="adjustQty('chairs', -1)">-</button>
-                                <input type="number" id="chairs-qty" name="chairs_qty" class="qty-input" value="0"
-                                    min="0" max="100">
+                                <input type="number" id="chairs-qty" name="chairs_qty" class="qty-input" value="0" min="0" max="100">
                                 <button type="button" class="qty-btn" onclick="adjustQty('chairs', 1)">+</button>
                             </div>
                         </div>
 
                         <div class="equipment-item">
                             <div class="equipment-info">
-                                <div class="equipment-name">Others</div>
-                                <div class="equipment-unit">Quantity</div>
+                                <div class="equipment-name">OTHERS</div>
+                                <div class="equipment-unit">QTY</div>
                             </div>
                             <div class="quantity-control">
                                 <button type="button" class="qty-btn" onclick="adjustQty('other', -1)">-</button>
-                                <input type="number" id="other-qty" name="other_qty" class="qty-input" value="0"
-                                    min="0">
+                                <input type="number" id="other-qty" name="other_qty" class="qty-input" value="0" min="0">
                                 <button type="button" class="qty-btn" onclick="adjustQty('other', 1)">+</button>
                             </div>
                         </div>
                     </div>
-
+                    
                     <div class="form-group">
                         <label for="otherItems">Other Equipment Details</label>
                         <textarea id="otherItems" name="other_items" rows="3"
@@ -411,11 +390,8 @@
                 <button type="submit" class="btn-submit">Submit Booking</button>
             </form>
         </div>
-    </div>
 
-    <form id="bookingForm" method="POST" action="{{ url_for('book_event') }}">
-        ...
-    </form>
+    </div>
 
     <script>
         // Set minimum date to today
@@ -432,23 +408,18 @@
             input.value = newValue;
         }
 
-        // Optional: only validate required fields before submission
+        // Form validation
         document.getElementById('bookingForm').addEventListener('submit', function (e) {
-            const eventType = document.getElementById('eventType').value;
             const eventDate = document.getElementById('eventDate').value;
             const phone = document.getElementById('phone').value;
             const email = document.getElementById('email').value;
 
-            if (!eventType || !eventDate || !phone || !email) {
+            if (!eventDate || !phone || !email) {
                 alert('Please fill in all required fields.');
-                e.preventDefault(); // only prevents submission if fields are empty
+                e.preventDefault();
             }
-            // DO NOT show a summary alert here
-            // Let Flask handle the success flash
+            // Form will submit normally if validation passes
         });
     </script>
-
-
 </body>
-
 </html>

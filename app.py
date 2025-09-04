@@ -236,6 +236,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from supabase import create_client, Client
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask import Flask, request, jsonify, session
 from datetime import datetime
 import uuid
 import os
@@ -434,16 +435,61 @@ def booking():
         return redirect(url_for("signin"))
     
     user_id = session["user"]["id"]
-    
+
     # Get user info
     user_data = supabase.table("users").select("*").eq("id", user_id).execute()
     user = user_data.data[0] if user_data.data else None
-    
-    # Get user's bookings
-    bookings_data = supabase.table("bookings").select("*").eq("user_id", user_id).execute()
+
+    # My Bookings: Pending or Approved only
+    bookings_data = supabase.table("bookings") \
+        .select("*") \
+        .eq("user_id", user_id) \
+        .in_("status", ["Pending", "Approved"]) \
+        .order("event_date", desc=False) \
+        .execute()
     bookings = bookings_data.data if bookings_data.data else []
 
-    return render_template("booking.html", user=user, bookings=bookings)
+    # Booking History: Completed, Cancelled
+    history_data = supabase.table("bookings") \
+        .select("*") \
+        .eq("user_id", user_id) \
+        .in_("status", ["Completed", "Cancelled"]) \
+        .order("event_date", desc=True) \
+        .execute()
+    booking_history = history_data.data if history_data.data else []
+
+    return render_template(
+        "booking.html", 
+        user=user, 
+        bookings=bookings, 
+        booking_history=booking_history
+    )
+
+
+@app.route('/cancel_booking', methods=['POST'])
+def cancel_booking():
+    if "user" not in session:
+        return jsonify({"success": False, "message": "Please login first!"})
+    
+    try:
+        data = request.get_json()
+        booking_id = data.get('booking_id')
+        
+        if not booking_id:
+            return jsonify({"success": False, "message": "No booking ID provided"})
+        
+        # Update status to Cancelled instead of deleting
+        supabase.table("bookings") \
+            .update({"status": "Cancelled"}) \
+            .eq("id", booking_id) \
+            .eq("user_id", session["user"]["id"]) \
+            .execute()
+        
+        return jsonify({"success": True, "message": "Booking cancelled successfully"})
+    
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Error: {str(e)}"})
+
 
 
 # Route to show booking2 form
@@ -453,6 +499,65 @@ def booking2_page():
         flash("Please login first!", "error")
         return redirect(url_for("signin"))
     return render_template("booking2.html")
+
+@app.route("/booking3", methods=["GET", "POST"])
+def booking3():
+    if "user" not in session:
+        flash("Please login first!", "error")
+        return redirect(url_for("signin"))
+
+    if request.method == "POST":
+        user_id = session["user"]["id"]
+
+        # Check if user already has a pending/approved booking
+        existing_booking = supabase.table("bookings") \
+            .select("*") \
+            .eq("user_id", user_id) \
+            .in_("status", ["Pending", "Approved"]) \
+            .execute()
+
+        if existing_booking.data:
+            flash("You already booked! You can't book multiple.", "error")
+            return redirect(url_for("booking3"))
+
+        # Collect form data - EVENT_TYPE REMOVED
+        event_date = request.form.get("event_date", "").strip()
+        contact_number = request.form.get("phone", "").strip()
+        email = request.form.get("email", "").strip()
+        tent_qty = int(request.form.get("tent_qty", 0) or 0)
+        chairs_qty = int(request.form.get("chairs_qty", 0) or 0)
+        other_items = request.form.get("other_items", "").strip()
+
+        # Generate IDs
+        booking_id = str(uuid.uuid4())
+        ticket_number = "TKT-" + str(uuid.uuid4())[:8].upper()
+
+        booking_data = {
+            "id": booking_id,
+            "user_id": user_id,
+            "ticket_number": ticket_number,
+            "event_date": event_date,
+            "contact_number": contact_number,
+            "email": email,
+            "tent_qty": tent_qty,
+            "chairs_qty": chairs_qty,
+            "other_items": other_items,
+            "status": "Pending",
+            "created_at": datetime.now().isoformat()
+            # EVENT_TYPE WILL AUTOMATICALLY BE 'General' FROM DATABASE DEFAULT
+        }
+
+        try:
+            supabase.table("bookings").insert(booking_data).execute()
+            flash(f"Booking submitted successfully! Ticket: {ticket_number}", "success")
+            return redirect(url_for("booking3"))
+        except Exception as e:
+            flash(f"Unexpected error: {str(e)}", "error")
+            return redirect(url_for("booking3"))
+
+    return render_template("booking3.html")
+
+
 
 
 

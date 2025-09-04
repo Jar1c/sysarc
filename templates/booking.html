@@ -35,6 +35,26 @@
             min-height: 100vh;
         }
 
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f3f4f6;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #023e8a;
+            border-radius: 10px;
+            transition: background 0.3s;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #2563eb;
+        }
+
         /* Sidebar */
         .sidebar {
             width: var(--sidebar-width);
@@ -454,6 +474,91 @@
             border-bottom: none;
         }
 
+        /* Cancel Button Styles */
+        .btn-cancel {
+            background: linear-gradient(135deg, var(--accent), #c0392b);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: var(--transition);
+            border: none;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .btn-cancel:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3);
+        }
+
+        /* Status Badges */
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-pending {
+            background-color: #ffeaa7;
+            color: #d35400;
+        }
+
+        .status-approved {
+            background-color: #d1f7c4;
+            color: #27ae60;
+        }
+
+        .status-cancelled {
+            background-color: #ffcdd2;
+            color: #c0392b;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .modal h3 {
+            color: var(--dark);
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .modal p {
+            margin-bottom: 25px;
+            color: #7f8c8d;
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
         /* Responsive Design */
         @media (max-width: 992px) {
             .sidebar {
@@ -544,6 +649,14 @@
             .booking-table td {
                 padding: 8px 6px;
             }
+
+            .modal-content {
+                padding: 20px;
+            }
+
+            .modal-buttons {
+                flex-direction: column;
+            }
         }
 
         /* Loading Animation */
@@ -580,6 +693,7 @@
         <ul class="sidebar-menu">
             <li><a href="#" class="active" data-target="dashboard"><i class="fas fa-home"></i> Dashboard</a></li>
             <li><a href="#" data-target="bookings"><i class="fas fa-calendar-alt"></i> My Bookings</a></li>
+            <li><a href="#" data-target="booking-history"><i class="fas fa-history"></i> Booking History</a></li>
             <li><a href="#" data-target="change-password"><i class="fas fa-lock"></i> Change Password</a></li>
             <li>
                 <form action="{{ url_for('logout') }}" method="POST" id="logoutForm">
@@ -621,7 +735,7 @@
                 <div class="card">
                     <i class="fas fa-envelope"></i>
                     <h2>Email Us</h2>
-                    <p>Baritan.Malabonkmgs@gmail.com</p>
+                    <p>Baritan.Malabonkmgs@gmail.com</p>    
                 </div>
             </div>
 
@@ -639,7 +753,7 @@
                         <i class="fas fa-dumbbell"></i>
                         <h3>Rent equipment only</h3>
                         <p>Rent sports equipment for your activities</p>
-                        <a href="#" class="btn">Rent Now</a>
+                        <a href="{{ url_for('booking3') }}" class="btn">Rent Now</a>
                     </div>
                 </div>
             </div>
@@ -652,10 +766,11 @@
                 <table class="booking-table">
                     <thead>
                         <tr>
-                            <th>Ticket id</th>
+                            <th>Ticket ID</th>
                             <th>Event Type</th>
                             <th>Event Date</th>
                             <th>Status</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -665,14 +780,85 @@
                             <td>{{ booking.ticket_number }}</td>
                             <td>{{ booking.event_type }}</td>
                             <td>{{ booking.event_date }}</td>
-                            <td>{{ booking.status }}</td>
+                            <td>
+                                <span class="status-badge 
+                                    {% if booking.status == 'Pending' %}status-pending
+                                    {% elif booking.status == 'Approved' %}status-approved
+                                    {% elif booking.status == 'Cancelled' %}status-cancelled
+                                    {% endif %}">
+                                    {{ booking.status }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if booking.status != 'Cancelled' %}
+                                <button class="btn-cancel" data-booking-id="{{ booking.id }}">
+                                    <i class="fas fa-times"></i> Cancel
+                                </button>
+                                {% else %}
+                                <span class="status-cancelled">Cancelled</span>
+                                {% endif %}
+                            </td>
                         </tr>
                         {% endfor %}
                         {% else %}
                         <tr>
-                            <td colspan="4" style="text-align:center; padding: 30px;">
+                            <td colspan="5" style="text-align:center; padding: 30px;">
                                 <i class="fas fa-calendar-times" style="font-size: 2rem; color: #bdc3c7; margin-bottom: 10px;"></i>
                                 <br>No bookings found
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Booking History Content -->
+        <div class="dashboard-content" id="booking-history">
+            <div class="booking-section">
+                <h2>Booking History</h2>
+                <table class="booking-table">
+                    <thead>
+                        <tr>
+                            <th>Ticket ID</th>
+                            <th>Event Type</th>
+                            <th>Event Date</th>
+                            <th>Booking Date</th>
+                            <th>Status</th>
+                            <th>Completed On</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if booking_history %}
+                        {% for booking in booking_history %}
+                        <tr>
+                            <td>{{ booking.ticket_number }}</td>
+                            <td>{{ booking.event_type }}</td>
+                            <td>{{ booking.event_date }}</td>
+                            <td>{{ booking.booking_date }}</td>
+                            <td>
+                                <span class="status-badge 
+                                    {% if booking.status == 'Completed' %}status-approved
+                                    {% elif booking.status == 'Cancelled' %}status-cancelled
+                                    {% else %}status-pending
+                                    {% endif %}">
+                                    {{ booking.status }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if booking.status == 'Completed' %}
+                                {{ booking.completed_date or booking.event_date }}
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% else %}
+                        <tr>
+                            <td colspan="6" style="text-align:center; padding: 30px;">
+                                <i class="fas fa-history" style="font-size: 2rem; color: #bdc3c7; margin-bottom: 10px;"></i>
+                                <br>No booking history found
                             </td>
                         </tr>
                         {% endif %}
@@ -685,8 +871,19 @@
         <div class="dashboard-content" id="change-password">
             <div class="booking-section">
                 <h2>Change Password</h2>
-                <p>Use this section to update your password.</p>
                 <!-- Change password form would go here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Cancel Confirmation Modal -->
+    <div class="modal" id="cancelModal">
+        <div class="modal-content">
+            <h3>Cancel Booking</h3>
+            <p>Are you sure you want to cancel this booking? This action cannot be undone.</p>
+            <div class="modal-buttons">
+                <button class="btn" id="confirmCancel">Yes, Cancel Booking</button>
+                <button class="btn-cancel" id="closeModal">No, Keep Booking</button>
             </div>
         </div>
     </div>
@@ -697,6 +894,8 @@
                 this.sidebar = document.querySelector('.sidebar');
                 this.menuToggle = document.querySelector('.menu-toggle');
                 this.sidebarClose = document.querySelector('.sidebar-close');
+                this.cancelModal = document.getElementById('cancelModal');
+                this.currentBookingId = null;
                 this.init();
             }
 
@@ -729,6 +928,22 @@
                 document.addEventListener('keydown', (e) => {
                     if (e.key === 'Escape' && this.sidebar.classList.contains('active')) {
                         this.closeSidebar();
+                    }
+                });
+
+                // Cancel booking buttons
+                document.querySelectorAll('.btn-cancel').forEach(button => {
+                    button.addEventListener('click', (e) => this.showCancelModal(e));
+                });
+
+                // Modal buttons
+                document.getElementById('confirmCancel')?.addEventListener('click', () => this.cancelBooking());
+                document.getElementById('closeModal')?.addEventListener('click', () => this.hideModal());
+                
+                // Close modal when clicking outside
+                this.cancelModal?.addEventListener('click', (e) => {
+                    if (e.target === this.cancelModal) {
+                        this.hideModal();
                     }
                 });
             }
@@ -788,12 +1003,81 @@
                 }
             }
 
+            showCancelModal(e) {
+                e.preventDefault();
+                const button = e.currentTarget;
+                this.currentBookingId = button.getAttribute('data-booking-id');
+                this.cancelModal.style.display = 'flex';
+            }
+
+            hideModal() {
+                this.cancelModal.style.display = 'none';
+                this.currentBookingId = null;
+            }
+
+            async cancelBooking() {
+                if (!this.currentBookingId) return;
+                
+                try {
+                    // Show loading state
+                    const confirmButton = document.getElementById('confirmCancel');
+                    const originalText = confirmButton.textContent;
+                    confirmButton.innerHTML = '<span class="loading"></span> Cancelling...';
+                    confirmButton.disabled = true;
+                    
+                    // Send cancel request to server
+                    const response = await fetch('/cancel_booking', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            booking_id: this.currentBookingId
+                        })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        // Show success message and reload the page
+                        this.showFlashMessage('Booking cancelled successfully!', 'success');
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1500);
+                    } else {
+                        this.showFlashMessage(result.message || 'Error cancelling booking', 'error');
+                    }
+                } catch (error) {
+                    this.showFlashMessage('Network error. Please try again.', 'error');
+                } finally {
+                    this.hideModal();
+                }
+            }
+
+            showFlashMessage(message, type) {
+                const flashContainer = document.getElementById('flash-messages') || document.createElement('div');
+                flashContainer.id = 'flash-messages';
+                
+                const flashMessage = document.createElement('div');
+                flashMessage.className = `flash ${type}`;
+                flashMessage.textContent = message;
+                
+                flashContainer.appendChild(flashMessage);
+                document.body.appendChild(flashContainer);
+                
+                this.autoHideFlashMessages();
+            }
+
             autoHideFlashMessages() {
                 const flashContainer = document.getElementById('flash-messages');
                 if (flashContainer) {
                     setTimeout(() => {
                         flashContainer.style.animation = 'fadeOut 0.5s forwards';
-                        setTimeout(() => flashContainer.remove(), 500);
+                        setTimeout(() => {
+                            if (flashContainer.parentNode) {
+                                flashContainer.parentNode.removeChild(flashContainer);
+                            }
+                        }, 500);
                     }, 3000);
                 }
             }
