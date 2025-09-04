@@ -262,7 +262,6 @@ def signup():
     if request.method == 'POST':
         fname = request.form['first_name']
         lname = request.form['last_name']
-        mname = request.form.get('middle_name')
         bid = request.form['barangay_id']
         email = request.form['email']
         password = request.form["password"]
@@ -272,7 +271,6 @@ def signup():
         form_data = {
             "first_name": fname,
             "last_name": lname,
-            "middle_name": mname,
             "barangay_id": bid,
             "email": email,
             "address": address
@@ -328,7 +326,6 @@ def signup():
                     "id": str(auth_response.user.id),
                     "first_name": fname,
                     "last_name": lname,
-                    "middle_name": mname,
                     "barangay_id": bid,
                     "email": email,
                     "password": hashed_password,
@@ -362,7 +359,7 @@ def verify_success():
 # def update_custom_verification(user_id):
 #     supabase.table("users").update({"is_verified": True}).eq("id", user_id).execute()
     
-@app.route('/signin', methods=['GET','POST'])
+@app.route('/signin', methods=['GET', 'POST'])
 def signin():
     if request.method == 'POST':
         email = request.form['email'].strip()
@@ -401,7 +398,7 @@ def signin():
 
             # Check verification in custom table
             if not user_data.get("is_verified", False):
-                flash("Account not verified yet! Please check your email.", "error")
+                flash("Open your Gmail to verify your account!", "error")
                 return redirect(url_for("signin"))
 
             # Set session
@@ -419,10 +416,11 @@ def signin():
                 return redirect(url_for('booking'))
 
         except Exception as e:
-            flash(f"Login failed: {str(e)}", "error")
+            flash("Login failed. Please check your email to verify your account.", "error")
             return redirect(url_for("signin"))
 
     return render_template("signin.html")
+
 
 
 
