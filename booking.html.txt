@@ -4,393 +4,1323 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Booking</title>
+    <title>Court and Equipment Booking System</title>
     <link rel="icon" type="image/png" href="/static/img/brgy_baritan_logo.png">
-    <link rel="stylesheet" href="/static/booking.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Simple modal styling */
-        .modal {
-            display: none;
+        :root {
+            --primary: #023e8a;
+            --secondary: #2c3e50;
+            --accent: #e74c3c;
+            --light: #f5f7fa;
+            --dark: #023e8a;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --sidebar-width: 250px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--light);
+            color: #333;
+            line-height: 1.6;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f3f4f6;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #023e8a;
+            border-radius: 10px;
+            transition: background 0.3s;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #2563eb;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: linear-gradient(135deg, var(--secondary), var(--dark));
+            color: white;
+            height: 100vh;
             position: fixed;
-            z-index: 999;
             left: 0;
             top: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            justify-content: center;
-            align-items: center;
+            padding: 20px 0;
+            overflow-y: auto;
+            transition: var(--transition);
+            z-index: 1000;
         }
 
-        .modal-content {
-            background: #fff;
+        .sidebar-header {
+            text-align: center;
             padding: 20px;
-            border-radius: 12px;
-            max-width: 400px;
-            width: 100%;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
         }
 
-        .modal-content h2 {
+        .sidebar-close {
+            display: none;
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: white;
+            padding: 5px;
+            border-radius: 50%;
+            transition: var(--transition);
+        }
+
+        .sidebar-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .user-info {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .user-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--primary);
             margin-bottom: 15px;
+        }
+
+        .user-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 20px 0;
+        }
+
+        .sidebar-menu li {
+            margin-bottom: 5px;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: var(--transition);
+            border-left: 4px solid transparent;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-left-color: var(--primary);
+            padding-left: 30px;
+        }
+
+        .sidebar-menu i {
+            margin-right: 10px;
+            font-size: 1.2rem;
+            width: 20px;
             text-align: center;
         }
 
-        .modal-content input,
-        .modal-content textarea,
-        .modal-content button {
+        .sidebar-logout {
+            display: flex;
+            align-items: center;
             width: 100%;
-            padding: 10px;
-            margin: 8px 0;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-        }
-
-        .modal-content button {
-            background: #023e8a;
-            color: white;
+            padding: 12px 20px;
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.8);
+            background: none;
             border: none;
             cursor: pointer;
+            text-align: left;
+            transition: var(--transition);
+            border-left: 4px solid transparent;
         }
 
-        .close-btn {
-            float: right;
-            font-size: 20px;
+        .sidebar-logout:hover {
+            background: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+            border-left-color: #e74c3c;
+            padding-left: 30px;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 20px;
+            transition: var(--transition);
+        }
+
+        .header {
+            background: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .menu-toggle {
+            display: none;
+            font-size: 1.5rem;
             cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            background: var(--light);
+            color: var(--dark);
+            transition: var(--transition);
         }
 
-        .time-wrapper {
+        .menu-toggle:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .page-title {
+            color: var(--dark);
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        /* Dashboard Content */
+        .dashboard-content {
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .dashboard-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .info-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            text-align: center;
+            transition: var(--transition);
+            border: 1px solid rgba(52, 152, 219, 0.1);
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .card i {
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+
+        .card h2 {
+            color: var(--dark);
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .card p {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+        }
+
+        .opening-hours {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+        }
+
+        .opening-hours i,
+        .opening-hours h2 {
+            color: white;
+        }
+
+        .opening-hours p {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .booking-section {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            margin-bottom: 30px;
+            border: 1px solid rgba(52, 152, 219, 0.1);
+        }
+
+        .booking-section h2 {
+            color: var(--dark);
+            margin-bottom: 25px;
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 600;
+        }
+
+        .booking-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+
+        .booking-option {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            transition: var(--transition);
+            border: 2px solid transparent;
             position: relative;
-            width: 100%;
+            overflow: hidden;
         }
 
-        .time-wrapper input[type="time"] {
-            width: 100%;
-            height: 35px;
-            font-size: 14px;
-            color: black;
-            position: relative;
-            z-index: 2;
-            background: transparent;
-        }
-
-        /* Fake placeholder */
-        .time-wrapper input[type="time"]::before {
-            content: "------ Start Time";
+        .booking-option::before {
+            content: '';
             position: absolute;
-            left: 25px;
-            /* adjust dito kung gano kalayo sa gilid */
-            top: 50%;
-            transform: translateY(-50%);
-            color: gray;
-            letter-spacing: 2px;
-            /* dagdag spacing sa pagitan ng dash */
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+            transition: var(--transition);
+        }
+
+        .booking-option:hover::before {
+            left: 100%;
+        }
+
+        .booking-option:hover {
+            border-color: var(--primary);
+            background: white;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(52, 152, 219, 0.2);
+        }
+
+        .booking-option i {
+            font-size: 3rem;
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+
+        .booking-option h3 {
+            color: var(--dark);
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .booking-option p {
+            color: #7f8c8d;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--primary), #2980b9);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: var(--transition);
+            border: none;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: var(--transition);
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(52, 152, 219, 0.3);
+        }
+
+        /* Flash Messages */
+        #flash-messages {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            width: 100%;
             pointer-events: none;
         }
 
-        /* Pag may value or naka-focus, mawala si placeholder */
-        .time-wrapper input[type="time"]:focus::before,
-        .time-wrapper input[type="time"]:valid::before {
-            content: "";
+        .flash {
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-weight: 600;
+            text-align: center;
+            min-width: 250px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            animation: slideDown 0.5s forwards, fadeOut 0.5s 2.5s forwards;
+            pointer-events: auto;
+        }
+
+        .flash.success {
+            background: linear-gradient(135deg, var(--success), #2ecc71);
+            color: white;
+        }
+
+        .flash.error {
+            background: linear-gradient(135deg, var(--accent), #c0392b);
+            color: white;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+
+            to {
+                opacity: 0;
+            }
+        }
+
+        /* Table Styles */
+        .booking-table-container {
+            overflow-x: auto;
+            margin: 0 -10px;
+            padding: 0 10px;
+        }
+        
+        .booking-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            min-width: 600px;
+        }
+
+        .booking-table th,
+        .booking-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .booking-table th {
+            background: var(--primary);
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+        }
+
+        .booking-table tr:hover {
+            background: rgba(52, 152, 219, 0.05);
+        }
+
+        .booking-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Equipment cell styling */
+        .equipment-cell {
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .equipment-cell.expandable {
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .equipment-cell.expandable:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .equipment-cell.expandable::after {
+            content: '⋯';
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+        }
+        
+        .equipment-cell.expanded {
+            white-space: normal;
+            overflow: visible;
+            position: relative;
+            z-index: 10;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        
+        .equipment-cell.expanded::after {
+            content: '▲';
+        }
+
+        /* Cancel Button Styles */
+        .btn-cancel {
+            background: linear-gradient(135deg, var(--accent), #c0392b);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: var(--transition);
+            border: none;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .btn-cancel:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3);
+        }
+
+        /* Status Badges */
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-pending {
+            background-color: #ffeaa7;
+            color: #d35400;
+        }
+
+        .status-approved {
+            background-color: #d1f7c4;
+            color: #27ae60;
+        }
+
+        .status-cancelled {
+            background-color: #ffcdd2;
+            color: #c0392b;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .modal h3 {
+            color: var(--dark);
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .modal p {
+            margin-bottom: 25px;
+            color: #7f8c8d;
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 992px) {
+            .sidebar {
+                transform: translateX(-100%);
+                width: 0;
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+                width: var(--sidebar-width);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+
+            .sidebar-close {
+                display: block;
+            }
+
+            .header {
+                padding: 15px 20px;
+            }
+
+            .main-content {
+                padding: 15px;
+            }
+        }
+
+        @media (max-width: 768px) {
+
+            .info-cards,
+            .booking-options {
+                grid-template-columns: 1fr;
+            }
+
+            .page-title {
+                font-size: 1.5rem;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .booking-section {
+                padding: 20px;
+            }
+
+            .booking-table {
+                font-size: 0.9rem;
+            }
+
+            .booking-table th,
+            .booking-table td {
+                padding: 10px 8px;
+            }
+            
+            .equipment-cell {
+                max-width: 150px;
+            }
+
+            .flash {
+                min-width: 200px;
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 600px) {
+            /* Transform table to card layout on small screens */
+            .booking-table {
+                min-width: unset;
+                display: block;
+                width: 100%;
+            }
+            
+            .booking-table thead {
+                display: none;
+            }
+            
+            .booking-table tbody {
+                display: block;
+                width: 100%;
+            }
+            
+            .booking-table tr {
+                display: block;
+                margin-bottom: 15px;
+                border: 1px solid #e0e0e0;
+                border-radius: 10px;
+                padding: 15px;
+                background: white;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            }
+            
+            .booking-table td {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 10px 5px;
+                border-bottom: 1px solid #f0f0f0;
+                text-align: right;
+                border: none;
+            }
+            
+            .booking-table td:last-child {
+                border-bottom: none;
+            }
+            
+            .booking-table td::before {
+                content: attr(data-label);
+                font-weight: 600;
+                color: var(--dark);
+                text-align: left;
+                padding-right: 15px;
+                flex: 1;
+            }
+                                        
+            /* Add data labels for accessibility */
+            .booking-table td:nth-child(1):before { content: "Ticket ID: "; }
+            .booking-table td:nth-child(2):before { content: "Event Type: "; }
+            .booking-table td:nth-child(3):before { content: "Event Date: "; }
+            .booking-table td:nth-child(4):before { content: "Booking Date: "; }
+            .booking-table td:nth-child(5):before { content: "Equipment: "; }
+            .booking-table td:nth-child(6):before { content: "Status: "; }
+            
+            
+            /* Special handling for equipment cell */
+            .booking-table td:nth-child(7) {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .booking-table td:nth-child(7)::before {
+                margin-bottom: 5px;
+            }
+            
+            .equipment-cell {
+                max-width: 100%;
+                white-space: normal;
+                text-overflow: unset;
+            }
+            
+            /* Center the no bookings message */
+            .booking-table tr td[colspan] {
+                display: table-cell;
+                text-align: center;
+                padding: 30px 15px;
+            }
+            
+            .booking-table tr td[colspan] i {
+                display: block;
+                margin: 0 auto 10px;
+            }
+            
+            /* Adjust status badges for mobile */
+            .status-badge {
+                padding: 5px 10px;
+                font-size: 0.75rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .sidebar {
+                width: 100%;
+                left: -100%;
+            }
+
+            .sidebar.active {
+                left: 0;
+                width: 100%;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .booking-table {
+                font-size: 0.8rem;
+            }
+
+            .booking-table th,
+            .booking-table td {
+                padding: 8px 6px;
+            }
+
+            .modal-content {
+                padding: 20px;
+            }
+
+            .modal-buttons {
+                flex-direction: column;
+            }
+            
+            /* Improve touch targets for mobile */
+            .sidebar-menu a,
+            .btn,
+            .btn-cancel {
+                min-height: 44px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            /* Adjust flash messages for mobile */
+            .flash {
+                min-width: unset;
+                width: 90%;
+                margin: 0 5%;
+                font-size: 0.9rem;
+                padding: 12px 20px;
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
         }
     </style>
 </head>
 
 <body>
-    <!-- Navigation Bar -->
-    <nav class="navbar">
-        <div class="hamburger" onclick="toggleSidebar()">
-            <div class="line"></div>
-            <div class="line"></div>
-            <div class="line"></div>
+    <!-- Sidebar Dashboard -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>Booking System</h2>
+            <!-- <span class="sidebar-close"><i class="fas fa-times"></i></span> -->
         </div>
-        <ul class="nav-links">
-            <li><a href="#" class="active">Home</a></li>
-            <li><a href="#">Equipment</a></li>
-            <li><a href="#">Availability</a></li>
-            <li><a href="#">My Bookings</a></li>
-        </ul>
-    </nav>
 
-    <!-- Sidebar Menu -->
-    <div id="sidebar" class="sidebar">
-        <div class="sidebar-back" onclick="toggleSidebar()">
-            <span>←</span>
+        <div class="user-info">
+            <img src="https://ui-avatars.com/api/?name={{ user.first_name }}+{{ user.last_name }}&background=3498db&color=fff"
+                alt="User Avatar" class="user-avatar">
+            <h3 class="user-name">{{ user.first_name }} {{ user.last_name }}</h3>
         </div>
-        <div class="user-profile">
-            <div class="profile-icon">👤</div>
-        </div>
-        <ul class="sidebar-links">
-            <li><a href="#">Name ng resident <span>›</span></a></li>
-            <li><a href="#">ID number <span>›</span></a></li>
-            <li><a href="#">Font size <span>›</span></a></li>
-            <li><a href="#">Contact US <span>›</span></a></li>
-            <li><a href="#">Change password <span>›</span></a></li>
+
+        <ul class="sidebar-menu">
+            <li><a href="#" class="active" data-target="dashboard"><i class="fas fa-home"></i> Dashboard</a></li>
+            <li><a href="#" data-target="bookings"><i class="fas fa-calendar-alt"></i> My Bookings</a></li>
+            <li><a href="#" data-target="booking-history"><i class="fas fa-history"></i> Booking History</a></li>
+            <li><a href="#" data-target="change-password"><i class="fas fa-lock"></i> Change Password</a></li>
+            <li>
+                <form action="{{ url_for('logout') }}" method="POST" id="logoutForm">
+                    <button type="submit" class="sidebar-logout"><i class="fas fa-sign-out-alt"></i> Sign Out</button>
+                </form>
+            </li>
         </ul>
-        <form action="{{ url_for('logout') }}" method="POST">
-            <button type="submit" class="logout-btn">LOGOUT</button>
-        </form>
     </div>
 
-    <!-- Overlay -->
-    <div id="overlay" class="overlay" onclick="toggleSidebar()"></div>
-
     <!-- Main Content -->
-    <main class="main-content">
-        <!-- Home Page -->
-        <section id="home" class="page active">
-            <div class="info-section">
-                <div class="opening-info">
-                    <h2>Opening</h2>
-                    <p>Monday - Friday (8:00AM - 5:00 PM)</p>
+    <div class="main-content">
+        <div class="header">
+            <div class="menu-toggle">
+                <i class="fas fa-bars"></i>
+            </div>
+            <img src="/static/img/brgy_baritan_logo.png" alt="brgy baritan" height="50">
+        </div>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div id="flash-messages">
+            {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <!-- Dashboard Content -->
+        <div class="dashboard-content active" id="dashboard">
+            <div class="info-cards">
+                <div class="card opening-hours">
+                    <i class="fas fa-clock"></i>
+                    <h2>Office Hours</h2>
+                    <p>Monday - Friday<br>8:00 AM - 5:00 PM</p>
                 </div>
-                <div class="email-info">
+
+                <div class="card">
+                    <i class="fas fa-envelope"></i>
                     <h2>Email Us</h2>
                     <p>Baritan.Malabonkmgs@gmail.com</p>
                 </div>
-                <button class="book-event-btn" onclick="openModal()">BOOK AN EVENT</button>
             </div>
-        </section>
 
-        <!-- Equipment Page -->
-        <section id="equipment" class="page">
-            <div class="equipment-grid">
-                <div class="equipment-item">
-                    <span>Chair</span>
-                </div>
-                <div class="equipment-item">
-                    <span>Table</span>
-                </div>
-                <div class="equipment-item">
-                    <span>Tent</span>
-                </div>
-            </div>
-            <div class="notice">
-                <p>Borrowed equipments must be returned complete and in good condition. Failure to comply may result in
-                    additional charges.</p>
-            </div>
-        </section>
+            <div class="booking-section">
+                <h2>Booking</h2>
+                <div class="booking-options">
+                    <div class="booking-option">
+                        <i class="fas fa-basketball-ball"></i>
+                        <h3>Court and equipment booking</h3>
+                        <p>Reserve court time for your games and practice sessions</p>
+                        <a href="{{ url_for('booking2_page') }}" class="btn">Book Now</a>
+                    </div>
 
-        <!-- Availability Page -->
-        <section id="availability" class="page">
-            <div class="availability-container">
-                <div class="calendar-section">
-                    <div class="calendar-header">
-                        <button class="nav-btn" onclick="previousMonth()">‹</button>
-                        <h2 id="monthYear">May 2025</h2>
-                        <button class="nav-btn" onclick="nextMonth()">›</button>
-                    </div>
-                    <div class="calendar">
-                        <div class="calendar-grid" id="calendarGrid">
-                            <!-- Calendar will be generated by JavaScript -->
-                        </div>
-                    </div>
-                    <div class="legend">
-                        <div class="legend-item">
-                            <div class="legend-color available"></div>
-                            <span>Available</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-color unavailable"></div>
-                            <span>Unavailable</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="schedule-section">
-                    <h2>Available Start Time</h2>
-                    <div class="time-slots">
-                        <div class="time-slot">MON 8:00 AM - 10:00 PM | 05/05/2025</div>
-                        <div class="time-slot">TUE 6:00 PM - 7:00 PM | 05/13/2025</div>
-                        <div class="time-slot">WED 3:00 PM - 4:00 PM | 05/14/2025</div>
-                        <div class="time-slot">THU 7:00 PM - 8:00 PM | 05/22/2025</div>
-                        <div class="time-slot">FRI 9:00 AM - 10:00 AM | 05/30/2025</div>
+                    <div class="booking-option">
+                        <i class="fas fa-dumbbell"></i>
+                        <h3>Rent equipment only</h3>
+                        <p>Rent sports equipment for your activities</p>
+                        <a href="{{ url_for('booking3') }}" class="btn">Rent Now</a>
                     </div>
                 </div>
             </div>
-        </section>
+        </div>
 
-        <!-- My Bookings Page -->
-        <section id="mybookings" class="page">
-            <div class="bookings-container">
-                <div class="bookings-table-wrapper">
-                    <table class="bookings-table">
+        <!-- My Bookings Content -->
+        <div class="dashboard-content" id="bookings">
+            <div class="booking-section">
+                <h2>My Bookings</h2>
+                <div class="booking-table-container">
+                    <table class="booking-table">
                         <thead>
                             <tr>
-                                <th>TICKET NUMBER</th>
-                                <th>EVENT TYPE</th>
-                                <th>STATUS</th>
+                                <th>Ticket ID</th>
+                                <th>Event Type</th>
+                                <th>Event Date</th>
+                                <th>Equipment</th>
+                                <th>Status</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Dynamic data will come from Flask later -->
+                            {% if bookings %}
+                            {% for booking in bookings %}
+                            <tr>
+                                <td>{{ booking.ticket_number }}</td>
+                                <td>{{ booking.event_type }}</td>
+                                <td>{{ booking.event_date }}</td>
+                                <td class="equipment-cell expandable" title="Click to view full details">
+                                    {% if booking.tent_qty > 0 %}
+                                    🏕️ Tent x{{ booking.tent_qty }}<br>
+                                    {% endif %}
+                                    {% if booking.chairs_qty > 0 %}
+                                    🪑 Chairs x{{ booking.chairs_qty }}<br>
+                                    {% endif %}
+                                    {% if booking.other_items %}
+                                    📝 {{ booking.other_items }}
+                                    {% endif %}
+                                    {% if booking.tent_qty == 0 and booking.chairs_qty == 0 and not booking.other_items %}
+                                    -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="status-badge 
+                                    {% if booking.status == 'Pending' %}status-pending
+                                    {% elif booking.status == 'Approved' %}status-approved
+                                    {% elif booking.status == 'Cancelled' %}status-cancelled
+                                    {% endif %}">
+                                        {{ booking.status }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if booking.status != 'Cancelled' %}
+                                    <button class="btn-cancel" data-booking-id="{{ booking.id }}">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </button>
+                                    {% else %}
+                                    <span class="status-cancelled">Cancelled</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            {% else %}
+                            <tr>
+                                <td colspan="6" style="text-align:center; padding: 30px;">
+                                    <i class="fas fa-calendar-times"
+                                        style="font-size: 2rem; color: #bdc3c7; margin-bottom: 10px;"></i>
+                                    <br>No bookings found
+                                </td>
+                            </tr>
+                            {% endif %}
                         </tbody>
                     </table>
                 </div>
             </div>
-        </section>
-    </main>
+        </div>
 
-    <!-- Booking Form Modal -->
-    <div id="bookingModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeModal()">×</span>
-            <h2>Book an Event</h2>
-            <form action="{{ url_for('book_event') }}" method="POST">
-                <input type="text" name="full_name" placeholder="Full Name" required>
-                <input type="text" name="contact_number" placeholder="Contact Number" pattern="^\d{11}$"
-                    title="Enter 11 digit number" required>
-
-                <input type="text" name="event_name" placeholder="Event Name" required>
-                <input type="date" name="event_date" required>
-
-                <div class="time-wrapper">
-                    <input type="time" id="time_start" name="time_start" required>
-                    <span class="fake-placeholder">Start Time</span>
+        <!-- Booking History Content -->
+        <div class="dashboard-content" id="booking-history">
+            <div class="booking-section">
+                <h2>Booking History</h2>
+                <div class="booking-table-container">
+                    <table class="booking-table">
+                        <thead>
+                            <tr>
+                                <th>Ticket ID</th>
+                                <th>Event Type</th>
+                                <th>Event Date</th>
+                                <th>Booking Date</th>
+                                <th>Equipment</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if booking_history %}
+                            {% for booking in booking_history %}
+                            <tr>
+                                <td>{{ booking.ticket_number }}</td>
+                                <td>{{ booking.event_type }}</td>
+                                <td>{{ booking.event_date }}</td>
+                                <td>{{ booking.booking_date }}</td>
+                                <td class="equipment-cell expandable" title="Click to view full details">
+                                    {% if booking.tent_qty > 0 %}
+                                    🏕️ Tent x{{ booking.tent_qty }}<br>
+                                    {% endif %}
+                                    {% if booking.chairs_qty > 0 %}
+                                    🪑 Chairs x{{ booking.chairs_qty }}<br>
+                                    {% endif %}
+                                    {% if booking.other_items %}
+                                    📝 {{ booking.other_items }}
+                                    {% endif %}
+                                    {% if booking.tent_qty == 0 and booking.chairs_qty == 0 and not booking.other_items %}
+                                    -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="status-badge 
+                                    {% if booking.status == 'Completed' %}status-approved
+                                    {% elif booking.status == 'Cancelled' %}status-cancelled
+                                    {% else %}status-pending
+                                    {% endif %}">
+                                        {{ booking.status }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            {% else %}
+                            <tr>
+                                <td colspan="6" style="text-align:center; padding: 30px;">
+                                    <i class="fas fa-history"
+                                        style="font-size: 2rem; color: #bdc3c7; margin-bottom: 10px;"></i>
+                                    <br>No booking history found
+                                </td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
                 </div>
+            </div>
+        </div>
 
-                <div class="time-wrapper">
-                    <input type="time" id="time_end" name="time_end" required>
-                    <span class="fake-placeholder">End Time</span>
-                </div>
-
-                <textarea name="note" placeholder="Additional Notes"></textarea>
-                <button type="submit">Submit Booking</button>
-            </form>
+        <!-- Change Password Content -->
+        <div class="dashboard-content" id="change-password">
+            <div class="booking-section">
+                <h2>Change Password</h2>
+                <!-- Change password form would go here -->
+            </div>
         </div>
     </div>
 
+    <!-- Cancel Confirmation Modal -->
+    <div class="modal" id="cancelModal">
+        <div class="modal-content">
+            <h3>Cancel Booking</h3>
+            <p>Are you sure you want to cancel this booking? This action cannot be undone.</p>
+            <div class="modal-buttons">
+                <button class="btn" id="confirmCancel">Yes, Cancel Booking</button>
+                <button class="btn-cancel" id="closeModal">No, Keep Booking</button>
+            </div>
+        </div>
+    </div>
 
     <script>
-        let currentMonth = 4; // May is month 4 (0-indexed)
-        let currentYear = 2025;
-
-        const months = [
-            'January', 'February', 'March', 'April', 'May', 'June',
-            'July', 'August', 'September', 'October', 'November', 'December'
-        ];
-
-        const unavailableDates = [5, 13, 14, 22, 30]; // May dates that are unavailable
-
-        function generateCalendar() {
-            const monthYearElement = document.getElementById('monthYear');
-            const calendarGrid = document.getElementById('calendarGrid');
-
-            monthYearElement.textContent = `${months[currentMonth]} ${currentYear}`;
-
-            // Clear previous calendar
-            calendarGrid.innerHTML = '';
-
-            // Add day headers
-            const dayHeaders = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-            dayHeaders.forEach(day => {
-                const dayHeader = document.createElement('div');
-                dayHeader.className = 'calendar-day-header';
-                dayHeader.textContent = day;
-                calendarGrid.appendChild(dayHeader);
-            });
-
-            // Get first day of month and number of days
-            const firstDay = new Date(currentYear, currentMonth, 1).getDay();
-            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-            const daysInPrevMonth = new Date(currentYear, currentMonth, 0).getDate();
-
-            // Add previous month's trailing days
-            for (let i = firstDay - 1; i >= 0; i--) {
-                const dayElement = document.createElement('div');
-                dayElement.className = 'calendar-day prev-month';
-                dayElement.textContent = daysInPrevMonth - i;
-                calendarGrid.appendChild(dayElement);
+        class BookingSystemUI {
+            constructor() {
+                this.sidebar = document.querySelector('.sidebar');
+                this.menuToggle = document.querySelector('.menu-toggle');
+                this.sidebarClose = document.querySelector('.sidebar-close');
+                this.cancelModal = document.getElementById('cancelModal');
+                this.currentBookingId = null;
+                this.init();
             }
 
-            // Add current month's days
-            for (let day = 1; day <= daysInMonth; day++) {
-                const dayElement = document.createElement('div');
-                dayElement.className = 'calendar-day';
-                dayElement.textContent = day;
-
-                // Check if day is unavailable
-                if (currentMonth === 4 && currentYear === 2025 && unavailableDates.includes(day)) {
-                    dayElement.classList.add('unavailable');
-                } else {
-                    dayElement.classList.add('available');
-                }
-
-                calendarGrid.appendChild(dayElement);
+            init() {
+                this.bindEvents();
+                this.autoHideFlashMessages();
+                this.setupEquipmentCellExpansion();
             }
 
-            // Add next month's leading days
-            const totalCells = calendarGrid.children.length;
-            const remainingCells = 42 - totalCells; // 6 rows × 7 days
-            for (let day = 1; day <= remainingCells; day++) {
-                const dayElement = document.createElement('div');
-                dayElement.className = 'calendar-day next-month';
-                dayElement.textContent = day;
-                calendarGrid.appendChild(dayElement);
+            bindEvents() {
+                // Toggle sidebar
+                this.menuToggle?.addEventListener('click', () => this.toggleSidebar());
+                this.sidebarClose?.addEventListener('click', () => this.closeSidebar());
+
+                // Handle navigation
+                document.querySelectorAll('.sidebar-menu a[data-target]').forEach(link => {
+                    link.addEventListener('click', (e) => this.handleNavigation(e));
+                });
+
+                // Close sidebar on outside click (mobile)
+                document.addEventListener('click', (e) => {
+                    if (window.innerWidth < 992 &&
+                        this.sidebar.classList.contains('active') &&
+                        !this.sidebar.contains(e.target) &&
+                        !this.menuToggle.contains(e.target)) {
+                        this.closeSidebar();
+                    }
+                });
+
+                // Handle escape key
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape' && this.sidebar.classList.contains('active')) {
+                        this.closeSidebar();
+                    }
+                });
+
+                // Cancel booking buttons
+                document.querySelectorAll('.btn-cancel').forEach(button => {
+                    button.addEventListener('click', (e) => this.showCancelModal(e));
+                });
+
+                // Modal buttons
+                document.getElementById('confirmCancel')?.addEventListener('click', () => this.cancelBooking());
+                document.getElementById('closeModal')?.addEventListener('click', () => this.hideModal());
+
+                // Close modal when clicking outside
+                this.cancelModal?.addEventListener('click', (e) => {
+                    if (e.target === this.cancelModal) {
+                        this.hideModal();
+                    }
+                });
             }
-        }
-
-        function previousMonth() {
-            currentMonth--;
-            if (currentMonth < 0) {
-                currentMonth = 11;
-                currentYear--;
+            
+            setupEquipmentCellExpansion() {
+                // Add click event to all expandable equipment cells
+                document.querySelectorAll('.equipment-cell.expandable').forEach(cell => {
+                    cell.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        cell.classList.toggle('expanded');
+                    });
+                });
+                
+                // Close expanded cells when clicking elsewhere
+                document.addEventListener('click', (e) => {
+                    if (!e.target.closest('.equipment-cell')) {
+                        document.querySelectorAll('.equipment-cell.expanded').forEach(cell => {
+                            cell.classList.remove('expanded');
+                        });
+                    }
+                });
             }
-            generateCalendar();
-        }
 
-        function nextMonth() {
-            currentMonth++;
-            if (currentMonth > 11) {
-                currentMonth = 0;
-                currentYear++;
+            toggleSidebar() {
+                this.sidebar.classList.toggle('active');
             }
-            generateCalendar();
-        }
 
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('overlay');
+            closeSidebar() {
+                this.sidebar.classList.remove('active');
+            }
 
-            sidebar.classList.toggle('active');
-            overlay.classList.toggle('active');
-        }
-
-        // Booking modal controls
-        function openModal() {
-            document.getElementById("bookingModal").style.display = "flex";
-        }
-
-        function closeModal() {
-            document.getElementById("bookingModal").style.display = "none";
-        }
-
-        // Navigation functionality
-        document.querySelectorAll('.nav-links a').forEach(link => {
-            link.addEventListener('click', function (e) {
+            handleNavigation(e) {
                 e.preventDefault();
+                const link = e.currentTarget;
+                const target = link.getAttribute('data-target');
 
-                // Remove active class from all nav links
-                document.querySelectorAll('.nav-links a').forEach(l => l.classList.remove('active'));
-                this.classList.add('active');
+                if (!target) return;
 
-                // Hide all pages
-                document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+                // Update active states
+                this.updateActiveStates(link);
 
-                // Show corresponding page
-                const pageName = this.textContent.toLowerCase().replace(' ', '');
-                const targetPage = document.getElementById(pageName);
-                if (targetPage) {
-                    targetPage.classList.add('active');
+                // Show target content
+                this.showContent(target);
+
+                // Update page title
+                this.updatePageTitle(link.textContent.trim());
+
+                // Close sidebar on mobile
+                if (window.innerWidth < 992) {
+                    this.closeSidebar();
                 }
+            }
 
-                if (pageName === 'availability') {
-                    generateCalendar();
+            updateActiveStates(activeLink) {
+                document.querySelectorAll('.sidebar-menu a').forEach(link => {
+                    link.classList.remove('active');
+                });
+                activeLink.classList.add('active');
+            }
+
+            showContent(targetId) {
+                document.querySelectorAll('.dashboard-content').forEach(section => {
+                    section.classList.remove('active');
+                });
+
+                const targetSection = document.getElementById(targetId);
+                if (targetSection) {
+                    targetSection.classList.add('active');
                 }
-            });
+            }
+
+            updatePageTitle(title) {
+                const pageTitle = document.querySelector('.page-title');
+                if (pageTitle) {
+                    pageTitle.textContent = title;
+                }
+            }
+
+            showCancelModal(e) {
+                e.preventDefault();
+                const button = e.currentTarget;
+                this.currentBookingId = button.getAttribute('data-booking-id');
+                this.cancelModal.style.display = 'flex';
+            }
+
+            hideModal() {
+                this.cancelModal.style.display = 'none';
+                this.currentBookingId = null;
+            }
+
+            async cancelBooking() {
+                if (!this.currentBookingId) return;
+
+                try {
+                    // Show loading state
+                    const confirmButton = document.getElementById('confirmCancel');
+                    const originalText = confirmButton.textContent;
+                    confirmButton.innerHTML = '<span class="loading"></span> Cancelling...';
+                    confirmButton.disabled = true;
+
+                    // Send cancel request to server
+                    const response = await fetch('/cancel_booking', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            booking_id: this.currentBookingId
+                        })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        // Show success message and reload the page
+                        this.showFlashMessage('Booking cancelled successfully!', 'success');
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1500);
+                    } else {
+                        this.showFlashMessage(result.message || 'Error cancelling booking', 'error');
+                    }
+                } catch (error) {
+                    this.showFlashMessage('Network error. Please try again.', 'error');
+                } finally {
+                    this.hideModal();
+                }
+            }
+
+            showFlashMessage(message, type) {
+                const flashContainer = document.getElementById('flash-messages') || document.createElement('div');
+                flashContainer.id = 'flash-messages';
+
+                const flashMessage = document.createElement('div');
+                flashMessage.className = `flash ${type}`;
+                flashMessage.textContent = message;
+
+                flashContainer.appendChild(flashMessage);
+                document.body.appendChild(flashContainer);
+
+                this.autoHideFlashMessages();
+            }
+
+            autoHideFlashMessages() {
+                const flashContainer = document.getElementById('flash-messages');
+                if (flashContainer) {
+                    setTimeout(() => {
+                        flashContainer.style.animation = 'fadeOut 0.5s forwards';
+                        setTimeout(() => {
+                            if (flashContainer.parentNode) {
+                                flashContainer.parentNode.removeChild(flashContainer);
+                            }
+                        }, 500);
+                    }, 3000);
+                }
+            }
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            new BookingSystemUI();
         });
 
-        // Initialize calendar on page load
-        window.addEventListener('load', function () {
-            generateCalendar();
+        // Add smooth scrolling for better UX
+        document.documentElement.style.scrollBehavior = 'smooth';
+
+        // Optimize images loading
+        document.querySelectorAll('img').forEach(img => {
+            img.loading = 'lazy';
         });
     </script>
 </body>

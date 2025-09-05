@@ -459,7 +459,7 @@
             margin: 0 -10px;
             padding: 0 10px;
         }
-        
+
         .booking-table {
             width: 100%;
             border-collapse: collapse;
@@ -501,16 +501,16 @@
             text-overflow: ellipsis;
             white-space: nowrap;
         }
-        
+
         .equipment-cell.expandable {
             cursor: pointer;
             position: relative;
         }
-        
+
         .equipment-cell.expandable:hover {
             background-color: #f8f9fa;
         }
-        
+
         .equipment-cell.expandable::after {
             content: '⋯';
             position: absolute;
@@ -519,16 +519,16 @@
             transform: translateY(-50%);
             color: #6c757d;
         }
-        
+
         .equipment-cell.expanded {
             white-space: normal;
             overflow: visible;
             position: relative;
             z-index: 10;
             background-color: white;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
-        
+
         .equipment-cell.expanded::after {
             content: '▲';
         }
@@ -678,7 +678,7 @@
             .booking-table td {
                 padding: 10px 8px;
             }
-            
+
             .equipment-cell {
                 max-width: 150px;
             }
@@ -690,22 +690,23 @@
         }
 
         @media (max-width: 600px) {
+
             /* Transform table to card layout on small screens */
             .booking-table {
                 min-width: unset;
                 display: block;
                 width: 100%;
             }
-            
+
             .booking-table thead {
                 display: none;
             }
-            
+
             .booking-table tbody {
                 display: block;
                 width: 100%;
             }
-            
+
             .booking-table tr {
                 display: block;
                 margin-bottom: 15px;
@@ -713,9 +714,9 @@
                 border-radius: 10px;
                 padding: 15px;
                 background: white;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             }
-            
+
             .booking-table td {
                 display: flex;
                 justify-content: space-between;
@@ -725,11 +726,11 @@
                 text-align: right;
                 border: none;
             }
-            
+
             .booking-table td:last-child {
                 border-bottom: none;
             }
-            
+
             .booking-table td::before {
                 content: attr(data-label);
                 font-weight: 600;
@@ -738,47 +739,55 @@
                 padding-right: 15px;
                 flex: 1;
             }
-                                        
-            /* Add data labels for accessibility */
-            .booking-table td:nth-child(1):before { content: "Ticket ID: "; }
-            .booking-table td:nth-child(2):before { content: "Event Type: "; }
-            .booking-table td:nth-child(3):before { content: "Event Date: "; }
-            .booking-table td:nth-child(4):before { content: "Booking Date: "; }
-            .booking-table td:nth-child(5):before { content: "Equipment: "; }
-            .booking-table td:nth-child(6):before { content: "Status: "; }
-            
+
             /* Special handling for equipment cell */
-            .booking-table td:nth-child(7) {
-                flex-direction: column;
-                align-items: flex-start;
+            .booking-table td[data-label="Equipment"] {
+                flex-direction: row;
+                /* ✅ inline na */
+                align-items: center;
+                /* center vertically */
+                flex-wrap: wrap;
+                /* para kung mahaba, lilipat ng line pero nasa kanan pa rin */
             }
-            
-            .booking-table td:nth-child(7)::before {
-                margin-bottom: 5px;
+
+            .booking-table td[data-label="Equipment"]::before {
+                margin-bottom: 0;
+                /* tanggalin extra spacing */
             }
-            
+
             .equipment-cell {
                 max-width: 100%;
                 white-space: normal;
                 text-overflow: unset;
             }
-            
+
             /* Center the no bookings message */
             .booking-table tr td[colspan] {
                 display: table-cell;
                 text-align: center;
                 padding: 30px 15px;
             }
-            
+
             .booking-table tr td[colspan] i {
                 display: block;
                 margin: 0 auto 10px;
             }
-            
+
             /* Adjust status badges for mobile */
             .status-badge {
                 padding: 5px 10px;
                 font-size: 0.75rem;
+            }
+
+            /* Ensure action buttons are visible on mobile */
+            .booking-table td[data-label="Action"] {
+                justify-content: flex-end;
+                padding-top: 15px;
+                border-top: 1px dashed #e0e0e0;
+            }
+
+            .booking-table td[data-label="Action"]::before {
+                display: inline-block;
             }
         }
 
@@ -814,7 +823,7 @@
             .modal-buttons {
                 flex-direction: column;
             }
-            
+
             /* Improve touch targets for mobile */
             .sidebar-menu a,
             .btn,
@@ -824,7 +833,7 @@
                 align-items: center;
                 justify-content: center;
             }
-            
+
             /* Adjust flash messages for mobile */
             .flash {
                 min-width: unset;
@@ -957,10 +966,11 @@
                             {% if bookings %}
                             {% for booking in bookings %}
                             <tr>
-                                <td>{{ booking.ticket_number }}</td>
-                                <td>{{ booking.event_type }}</td>
-                                <td>{{ booking.event_date }}</td>
-                                <td class="equipment-cell expandable" title="Click to view full details">
+                                <td data-label="Ticket ID">{{ booking.ticket_number }}</td>
+                                <td data-label="Event Type">{{ booking.event_type }}</td>
+                                <td data-label="Event Date">{{ booking.event_date }}</td>
+                                <td data-label="Equipment" class="equipment-cell expandable"
+                                    title="Click to view full details">
                                     {% if booking.tent_qty > 0 %}
                                     🏕️ Tent x{{ booking.tent_qty }}<br>
                                     {% endif %}
@@ -970,20 +980,21 @@
                                     {% if booking.other_items %}
                                     📝 {{ booking.other_items }}
                                     {% endif %}
-                                    {% if booking.tent_qty == 0 and booking.chairs_qty == 0 and not booking.other_items %}
+                                    {% if booking.tent_qty == 0 and booking.chairs_qty == 0 and not booking.other_items
+                                    %}
                                     -
                                     {% endif %}
                                 </td>
-                                <td>
+                                <td data-label="Status">
                                     <span class="status-badge 
-                                    {% if booking.status == 'Pending' %}status-pending
-                                    {% elif booking.status == 'Approved' %}status-approved
-                                    {% elif booking.status == 'Cancelled' %}status-cancelled
-                                    {% endif %}">
+                                {% if booking.status == 'Pending' %}status-pending
+                                {% elif booking.status == 'Approved' %}status-approved
+                                {% elif booking.status == 'Cancelled' %}status-cancelled
+                                {% endif %}">
                                         {{ booking.status }}
                                     </span>
                                 </td>
-                                <td>
+                                <td data-label="Action">
                                     {% if booking.status != 'Cancelled' %}
                                     <button class="btn-cancel" data-booking-id="{{ booking.id }}">
                                         <i class="fas fa-times"></i> Cancel
@@ -1017,7 +1028,7 @@
                     <table class="booking-table">
                         <thead>
                             <tr>
-                                <th>Ticket ID</th>
+                                <th>Ticket ID</极速4th>
                                 <th>Event Type</th>
                                 <th>Event Date</th>
                                 <th>Booking Date</th>
@@ -1029,11 +1040,12 @@
                             {% if booking_history %}
                             {% for booking in booking_history %}
                             <tr>
-                                <td>{{ booking.ticket_number }}</td>
-                                <td>{{ booking.event_type }}</td>
-                                <td>{{ booking.event_date }}</td>
-                                <td>{{ booking.booking_date }}</td>
-                                <td class="equipment-cell expandable" title="Click to view full details">
+                                <td data-label="Ticket ID">{{ booking.ticket_number }}</td>
+                                <td data-label="Event Type">{{ booking.event_type }}</td>
+                                <td data-label="Event Date">{{ booking.event_date }}</td>
+                                <td data-label="Booking Date">{{ booking.booking_date }}</td>
+                                <td data-label="Equipment" class="equipment-cell expandable"
+                                    title="Click to view full details">
                                     {% if booking.tent_qty > 0 %}
                                     🏕️ Tent x{{ booking.tent_qty }}<br>
                                     {% endif %}
@@ -1043,16 +1055,17 @@
                                     {% if booking.other_items %}
                                     📝 {{ booking.other_items }}
                                     {% endif %}
-                                    {% if booking.tent_qty == 0 and booking.chairs_qty == 0 and not booking.other_items %}
+                                    {% if booking.tent_qty == 0 and booking.chairs_qty == 0 and not booking.other_items
+                                    %}
                                     -
                                     {% endif %}
                                 </td>
-                                <td>
+                                <td data-label="Status">
                                     <span class="status-badge 
-                                    {% if booking.status == 'Completed' %}status-approved
-                                    {% elif booking.status == 'Cancelled' %}status-cancelled
-                                    {% else %}status-pending
-                                    {% endif %}">
+                                {% if booking.status == 'Completed' %}status-approved
+                                {% elif booking.status == 'Cancelled' %}status-cancelled
+                                {% else %}status-pending
+                                {% endif %}">
                                         {{ booking.status }}
                                     </span>
                                 </td>
@@ -1154,7 +1167,7 @@
                     }
                 });
             }
-            
+
             setupEquipmentCellExpansion() {
                 // Add click event to all expandable equipment cells
                 document.querySelectorAll('.equipment-cell.expandable').forEach(cell => {
@@ -1163,7 +1176,7 @@
                         cell.classList.toggle('expanded');
                     });
                 });
-                
+
                 // Close expanded cells when clicking elsewhere
                 document.addEventListener('click', (e) => {
                     if (!e.target.closest('.equipment-cell')) {
