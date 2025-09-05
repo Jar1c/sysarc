@@ -223,8 +223,15 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .info-cards {
@@ -429,6 +436,7 @@
                 opacity: 0;
                 transform: translateY(-30px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -436,11 +444,22 @@
         }
 
         @keyframes fadeOut {
-            from { opacity: 1; }
-            to { opacity: 0; }
+            from {
+                opacity: 1;
+            }
+
+            to {
+                opacity: 0;
+            }
         }
 
         /* Table Styles */
+        .booking-table-container {
+            overflow-x: auto;
+            margin: 0 -10px;
+            padding: 0 10px;
+        }
+        
         .booking-table {
             width: 100%;
             border-collapse: collapse;
@@ -448,6 +467,7 @@
             border-radius: 10px;
             overflow: hidden;
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            min-width: 600px;
         }
 
         .booking-table th,
@@ -472,6 +492,45 @@
 
         .booking-table tr:last-child td {
             border-bottom: none;
+        }
+
+        /* Equipment cell styling */
+        .equipment-cell {
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .equipment-cell.expandable {
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .equipment-cell.expandable:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .equipment-cell.expandable::after {
+            content: '⋯';
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+        }
+        
+        .equipment-cell.expanded {
+            white-space: normal;
+            overflow: visible;
+            position: relative;
+            z-index: 10;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        
+        .equipment-cell.expanded::after {
+            content: '▲';
         }
 
         /* Cancel Button Styles */
@@ -593,6 +652,7 @@
         }
 
         @media (max-width: 768px) {
+
             .info-cards,
             .booking-options {
                 grid-template-columns: 1fr;
@@ -618,10 +678,107 @@
             .booking-table td {
                 padding: 10px 8px;
             }
+            
+            .equipment-cell {
+                max-width: 150px;
+            }
 
             .flash {
                 min-width: 200px;
                 font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 600px) {
+            /* Transform table to card layout on small screens */
+            .booking-table {
+                min-width: unset;
+                display: block;
+                width: 100%;
+            }
+            
+            .booking-table thead {
+                display: none;
+            }
+            
+            .booking-table tbody {
+                display: block;
+                width: 100%;
+            }
+            
+            .booking-table tr {
+                display: block;
+                margin-bottom: 15px;
+                border: 1px solid #e0e0e0;
+                border-radius: 10px;
+                padding: 15px;
+                background: white;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            }
+            
+            .booking-table td {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 10px 5px;
+                border-bottom: 1px solid #f0f0f0;
+                text-align: right;
+                border: none;
+            }
+            
+            .booking-table td:last-child {
+                border-bottom: none;
+            }
+            
+            .booking-table td::before {
+                content: attr(data-label);
+                font-weight: 600;
+                color: var(--dark);
+                text-align: left;
+                padding-right: 15px;
+                flex: 1;
+            }
+                                        
+            /* Add data labels for accessibility */
+            .booking-table td:nth-child(1):before { content: "Ticket ID: "; }
+            .booking-table td:nth-child(2):before { content: "Event Type: "; }
+            .booking-table td:nth-child(3):before { content: "Event Date: "; }
+            .booking-table td:nth-child(4):before { content: "Booking Date: "; }
+            .booking-table td:nth-child(5):before { content: "Equipment: "; }
+            .booking-table td:nth-child(6):before { content: "Status: "; }
+            
+            /* Special handling for equipment cell */
+            .booking-table td:nth-child(7) {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .booking-table td:nth-child(7)::before {
+                margin-bottom: 5px;
+            }
+            
+            .equipment-cell {
+                max-width: 100%;
+                white-space: normal;
+                text-overflow: unset;
+            }
+            
+            /* Center the no bookings message */
+            .booking-table tr td[colspan] {
+                display: table-cell;
+                text-align: center;
+                padding: 30px 15px;
+            }
+            
+            .booking-table tr td[colspan] i {
+                display: block;
+                margin: 0 auto 10px;
+            }
+            
+            /* Adjust status badges for mobile */
+            .status-badge {
+                padding: 5px 10px;
+                font-size: 0.75rem;
             }
         }
 
@@ -657,6 +814,25 @@
             .modal-buttons {
                 flex-direction: column;
             }
+            
+            /* Improve touch targets for mobile */
+            .sidebar-menu a,
+            .btn,
+            .btn-cancel {
+                min-height: 44px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            /* Adjust flash messages for mobile */
+            .flash {
+                min-width: unset;
+                width: 90%;
+                margin: 0 5%;
+                font-size: 0.9rem;
+                padding: 12px 20px;
+            }
         }
 
         /* Loading Animation */
@@ -671,7 +847,9 @@
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
     </style>
 </head>
@@ -681,7 +859,7 @@
     <div class="sidebar">
         <div class="sidebar-header">
             <h2>Booking System</h2>
-           <!-- <span class="sidebar-close"><i class="fas fa-times"></i></span> -->
+            <!-- <span class="sidebar-close"><i class="fas fa-times"></i></span> -->
         </div>
 
         <div class="user-info">
@@ -735,7 +913,7 @@
                 <div class="card">
                     <i class="fas fa-envelope"></i>
                     <h2>Email Us</h2>
-                    <p>Baritan.Malabonkmgs@gmail.com</p>    
+                    <p>Baritan.Malabonkmgs@gmail.com</p>
                 </div>
             </div>
 
@@ -763,53 +941,71 @@
         <div class="dashboard-content" id="bookings">
             <div class="booking-section">
                 <h2>My Bookings</h2>
-                <table class="booking-table">
-                    <thead>
-                        <tr>
-                            <th>Ticket ID</th>
-                            <th>Event Type</th>
-                            <th>Event Date</th>
-                            <th>Status</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% if bookings %}
-                        {% for booking in bookings %}
-                        <tr>
-                            <td>{{ booking.ticket_number }}</td>
-                            <td>{{ booking.event_type }}</td>
-                            <td>{{ booking.event_date }}</td>
-                            <td>
-                                <span class="status-badge 
+                <div class="booking-table-container">
+                    <table class="booking-table">
+                        <thead>
+                            <tr>
+                                <th>Ticket ID</th>
+                                <th>Event Type</th>
+                                <th>Event Date</th>
+                                <th>Equipment</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if bookings %}
+                            {% for booking in bookings %}
+                            <tr>
+                                <td>{{ booking.ticket_number }}</td>
+                                <td>{{ booking.event_type }}</td>
+                                <td>{{ booking.event_date }}</td>
+                                <td class="equipment-cell expandable" title="Click to view full details">
+                                    {% if booking.tent_qty > 0 %}
+                                    🏕️ Tent x{{ booking.tent_qty }}<br>
+                                    {% endif %}
+                                    {% if booking.chairs_qty > 0 %}
+                                    🪑 Chairs x{{ booking.chairs_qty }}<br>
+                                    {% endif %}
+                                    {% if booking.other_items %}
+                                    📝 {{ booking.other_items }}
+                                    {% endif %}
+                                    {% if booking.tent_qty == 0 and booking.chairs_qty == 0 and not booking.other_items %}
+                                    -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="status-badge 
                                     {% if booking.status == 'Pending' %}status-pending
                                     {% elif booking.status == 'Approved' %}status-approved
                                     {% elif booking.status == 'Cancelled' %}status-cancelled
                                     {% endif %}">
-                                    {{ booking.status }}
-                                </span>
-                            </td>
-                            <td>
-                                {% if booking.status != 'Cancelled' %}
-                                <button class="btn-cancel" data-booking-id="{{ booking.id }}">
-                                    <i class="fas fa-times"></i> Cancel
-                                </button>
-                                {% else %}
-                                <span class="status-cancelled">Cancelled</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                        {% else %}
-                        <tr>
-                            <td colspan="5" style="text-align:center; padding: 30px;">
-                                <i class="fas fa-calendar-times" style="font-size: 2rem; color: #bdc3c7; margin-bottom: 10px;"></i>
-                                <br>No bookings found
-                            </td>
-                        </tr>
-                        {% endif %}
-                    </tbody>
-                </table>
+                                        {{ booking.status }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if booking.status != 'Cancelled' %}
+                                    <button class="btn-cancel" data-booking-id="{{ booking.id }}">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </button>
+                                    {% else %}
+                                    <span class="status-cancelled">Cancelled</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            {% else %}
+                            <tr>
+                                <td colspan="6" style="text-align:center; padding: 30px;">
+                                    <i class="fas fa-calendar-times"
+                                        style="font-size: 2rem; color: #bdc3c7; margin-bottom: 10px;"></i>
+                                    <br>No bookings found
+                                </td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -817,53 +1013,63 @@
         <div class="dashboard-content" id="booking-history">
             <div class="booking-section">
                 <h2>Booking History</h2>
-                <table class="booking-table">
-                    <thead>
-                        <tr>
-                            <th>Ticket ID</th>
-                            <th>Event Type</th>
-                            <th>Event Date</th>
-                            <th>Booking Date</th>
-                            <th>Status</th>
-                            <th>Completed On</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% if booking_history %}
-                        {% for booking in booking_history %}
-                        <tr>
-                            <td>{{ booking.ticket_number }}</td>
-                            <td>{{ booking.event_type }}</td>
-                            <td>{{ booking.event_date }}</td>
-                            <td>{{ booking.booking_date }}</td>
-                            <td>
-                                <span class="status-badge 
+                <div class="booking-table-container">
+                    <table class="booking-table">
+                        <thead>
+                            <tr>
+                                <th>Ticket ID</th>
+                                <th>Event Type</th>
+                                <th>Event Date</th>
+                                <th>Booking Date</th>
+                                <th>Equipment</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if booking_history %}
+                            {% for booking in booking_history %}
+                            <tr>
+                                <td>{{ booking.ticket_number }}</td>
+                                <td>{{ booking.event_type }}</td>
+                                <td>{{ booking.event_date }}</td>
+                                <td>{{ booking.booking_date }}</td>
+                                <td class="equipment-cell expandable" title="Click to view full details">
+                                    {% if booking.tent_qty > 0 %}
+                                    🏕️ Tent x{{ booking.tent_qty }}<br>
+                                    {% endif %}
+                                    {% if booking.chairs_qty > 0 %}
+                                    🪑 Chairs x{{ booking.chairs_qty }}<br>
+                                    {% endif %}
+                                    {% if booking.other_items %}
+                                    📝 {{ booking.other_items }}
+                                    {% endif %}
+                                    {% if booking.tent_qty == 0 and booking.chairs_qty == 0 and not booking.other_items %}
+                                    -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="status-badge 
                                     {% if booking.status == 'Completed' %}status-approved
                                     {% elif booking.status == 'Cancelled' %}status-cancelled
                                     {% else %}status-pending
                                     {% endif %}">
-                                    {{ booking.status }}
-                                </span>
-                            </td>
-                            <td>
-                                {% if booking.status == 'Completed' %}
-                                {{ booking.completed_date or booking.event_date }}
-                                {% else %}
-                                -
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                        {% else %}
-                        <tr>
-                            <td colspan="6" style="text-align:center; padding: 30px;">
-                                <i class="fas fa-history" style="font-size: 2rem; color: #bdc3c7; margin-bottom: 10px;"></i>
-                                <br>No booking history found
-                            </td>
-                        </tr>
-                        {% endif %}
-                    </tbody>
-                </table>
+                                        {{ booking.status }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            {% else %}
+                            <tr>
+                                <td colspan="6" style="text-align:center; padding: 30px;">
+                                    <i class="fas fa-history"
+                                        style="font-size: 2rem; color: #bdc3c7; margin-bottom: 10px;"></i>
+                                    <br>No booking history found
+                                </td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -902,6 +1108,7 @@
             init() {
                 this.bindEvents();
                 this.autoHideFlashMessages();
+                this.setupEquipmentCellExpansion();
             }
 
             bindEvents() {
@@ -916,7 +1123,7 @@
 
                 // Close sidebar on outside click (mobile)
                 document.addEventListener('click', (e) => {
-                    if (window.innerWidth < 992 && 
+                    if (window.innerWidth < 992 &&
                         this.sidebar.classList.contains('active') &&
                         !this.sidebar.contains(e.target) &&
                         !this.menuToggle.contains(e.target)) {
@@ -939,11 +1146,30 @@
                 // Modal buttons
                 document.getElementById('confirmCancel')?.addEventListener('click', () => this.cancelBooking());
                 document.getElementById('closeModal')?.addEventListener('click', () => this.hideModal());
-                
+
                 // Close modal when clicking outside
                 this.cancelModal?.addEventListener('click', (e) => {
                     if (e.target === this.cancelModal) {
                         this.hideModal();
+                    }
+                });
+            }
+            
+            setupEquipmentCellExpansion() {
+                // Add click event to all expandable equipment cells
+                document.querySelectorAll('.equipment-cell.expandable').forEach(cell => {
+                    cell.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        cell.classList.toggle('expanded');
+                    });
+                });
+                
+                // Close expanded cells when clicking elsewhere
+                document.addEventListener('click', (e) => {
+                    if (!e.target.closest('.equipment-cell')) {
+                        document.querySelectorAll('.equipment-cell.expanded').forEach(cell => {
+                            cell.classList.remove('expanded');
+                        });
                     }
                 });
             }
@@ -965,10 +1191,10 @@
 
                 // Update active states
                 this.updateActiveStates(link);
-                
+
                 // Show target content
                 this.showContent(target);
-                
+
                 // Update page title
                 this.updatePageTitle(link.textContent.trim());
 
@@ -989,7 +1215,7 @@
                 document.querySelectorAll('.dashboard-content').forEach(section => {
                     section.classList.remove('active');
                 });
-                
+
                 const targetSection = document.getElementById(targetId);
                 if (targetSection) {
                     targetSection.classList.add('active');
@@ -1017,14 +1243,14 @@
 
             async cancelBooking() {
                 if (!this.currentBookingId) return;
-                
+
                 try {
                     // Show loading state
                     const confirmButton = document.getElementById('confirmCancel');
                     const originalText = confirmButton.textContent;
                     confirmButton.innerHTML = '<span class="loading"></span> Cancelling...';
                     confirmButton.disabled = true;
-                    
+
                     // Send cancel request to server
                     const response = await fetch('/cancel_booking', {
                         method: 'POST',
@@ -1035,9 +1261,9 @@
                             booking_id: this.currentBookingId
                         })
                     });
-                    
+
                     const result = await response.json();
-                    
+
                     if (result.success) {
                         // Show success message and reload the page
                         this.showFlashMessage('Booking cancelled successfully!', 'success');
@@ -1057,14 +1283,14 @@
             showFlashMessage(message, type) {
                 const flashContainer = document.getElementById('flash-messages') || document.createElement('div');
                 flashContainer.id = 'flash-messages';
-                
+
                 const flashMessage = document.createElement('div');
                 flashMessage.className = `flash ${type}`;
                 flashMessage.textContent = message;
-                
+
                 flashContainer.appendChild(flashMessage);
                 document.body.appendChild(flashContainer);
-                
+
                 this.autoHideFlashMessages();
             }
 
