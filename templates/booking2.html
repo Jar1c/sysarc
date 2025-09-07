@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -20,7 +19,7 @@
             --secondary-color: #2c3e50;
             --accent-color: #e74c3c;
             --light-color: #f5f7fa;
-            --dark-color: #023e8a   ;
+            --dark-color: #023e8a;
             --success-color: #27ae60;
         }
 
@@ -35,7 +34,7 @@
             align-items: center;
         }
 
-                /* Scrollbar styling */
+        /* Scrollbar styling */
         ::-webkit-scrollbar {
             width: 8px;
         }
@@ -56,7 +55,7 @@
         }
 
         .container {
-            max-width: 800px;
+            max-width: 900px;
             width: 100%;
             background: white;
             border-radius: 15px;
@@ -69,6 +68,7 @@
             color: white;
             padding: 25px 30px;
             text-align: center;
+            position: relative;
         }
 
         header h1 {
@@ -110,7 +110,7 @@
             margin-bottom: 20px;
         }
 
-        @media (max-width: 600px) {
+        @media (max-width: 768px) {
             .form-row {
                 grid-template-columns: 1fr;
             }
@@ -146,8 +146,9 @@
             box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
         }
 
-        .equipment-list {
+        .equipment-grid {
             display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 15px;
         }
 
@@ -159,6 +160,12 @@
             background-color: #f9f9f9;
             border-radius: 8px;
             border-left: 4px solid var(--primary-color);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .equipment-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
 
         .equipment-info {
@@ -245,15 +252,6 @@
             border-top: 1px solid #eee;
         }
 
-        header {
-            position: relative;
-            /* importante para gumana ang absolute */
-            background: linear-gradient(135deg, var(--secondary-color), var(--dark-color));
-            color: white;
-            padding: 25px 30px;
-            text-align: center;
-        }
-
         .back-btn {
             position: absolute;
             top: 20px;
@@ -288,6 +286,80 @@
             background-color: #e74c3c;
             color: white;
         }
+        
+        /* Improved Other Equipment Section */
+        .other-equipment-section {
+            background-color: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 25px;
+            border: 2px dashed #023e8a;
+        }
+        
+        .other-equipment-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            color: #023e8a;
+        }
+        
+        .other-equipment-header i {
+            font-size: 1.5rem;
+            margin-right: 10px;
+            color: #023e8a;
+        }
+        
+        .other-equipment-header h3 {
+            margin: 0;
+            color: #023e8a;
+        }
+        
+        .other-input-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 15px;
+        }
+        
+        @media (max-width: 576px) {
+            .other-input-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .other-input-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .other-input-group label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #023e8a;
+        }
+        
+        .other-note {
+            font-size: 0.85rem;
+            color: #023e8a;
+            margin-top: 8px;
+        }
+        
+        .add-item-btn {
+            background: #023e8a;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 15px;
+            transition: background 0.3s;
+        }
+        
+        .add-item-btn:hover {
+            background: #023e8a;
+        }
     </style>
 </head>
 
@@ -295,9 +367,9 @@
     <div class="container">
         <header>
             <a href="{{ url_for('booking') }}" class="back-btn">
-                <i class="fas fa-arrow-left"></i>
+                <i class="fas fa-arrow-left"></i> Back
             </a>
-            <h1>Court and equipment booking</h1>
+            <h1>COURT AND EQUIPMENT BOOKING</h1>
             <p>Reserve equipment for your upcoming event</p>
         </header>
 
@@ -327,16 +399,20 @@
                                 <option value="corporate">Corporate Event</option>
                                 <option value="seminar">Seminar</option>
                                 <option value="festival">Festival</option>
+                                <option value="sports">Sports Event</option>
                                 <option value="other">Other</option>
                             </select>
                         </div>
-
 
                         <div class="form-group">
                             <label for="eventDate">Date <span class="required">*</span></label>
                             <input type="date" id="eventDate" name="event_date" required>
                         </div>
-
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="eventDescription">Event Description</label>
+                        <textarea id="eventDescription" name="event_description" rows="2" placeholder="Brief description of your event"></textarea>
                     </div>
                 </div>
 
@@ -344,6 +420,11 @@
                     <h2><i class="fas fa-user"></i> Contact Information</h2>
 
                     <div class="form-row">
+                        <div class="form-group">
+                            <label for="fullName">Full Name <span class="required">*</span></label>
+                            <input type="text" id="fullName" name="full_name" placeholder="Enter your full name" required>
+                        </div>
+                        
                         <div class="form-group">
                             <label for="phone">Phone Number <span class="required">*</span></label>
                             <input type="tel" id="phone" name="phone" placeholder="Enter your phone number" required>
@@ -353,14 +434,18 @@
                             <label for="email">Email <span class="required">*</span></label>
                             <input type="email" id="email" name="email" placeholder="Enter your email" required>
                         </div>
+                        
+                        <div class="form-group">
+                            <label for="address">Address</label>
+                            <input type="text" id="address" name="address" placeholder="Enter your address">
+                        </div>
                     </div>
                 </div>
 
                 <div class="form-section">
                     <h2><i class="fas fa-boxes"></i> Equipment Selection</h2>
 
-
-                    <div class="equipment-list">
+                    <div class="equipment-grid">
                         <div class="equipment-item">
                             <div class="equipment-info">
                                 <div class="equipment-name">Tent</div>
@@ -386,25 +471,121 @@
                                 <button type="button" class="qty-btn" onclick="adjustQty('chairs', 1)">+</button>
                             </div>
                         </div>
-
+                        
                         <div class="equipment-item">
                             <div class="equipment-info">
-                                <div class="equipment-name">Others</div>
-                                <div class="equipment-unit">Quantity</div>
+                                <div class="equipment-name">Basketball</div>
+                                <div class="equipment-unit">Pieces</div>
                             </div>
                             <div class="quantity-control">
-                                <button type="button" class="qty-btn" onclick="adjustQty('other', -1)">-</button>
-                                <input type="number" id="other-qty" name="other_qty" class="qty-input" value="0"
-                                    min="0">
-                                <button type="button" class="qty-btn" onclick="adjustQty('other', 1)">+</button>
+                                <button type="button" class="qty-btn" onclick="adjustQty('basketball', -1)">-</button>
+                                <input type="number" id="basketball-qty" name="basketball_qty" class="qty-input" value="0"
+                                    min="0" max="10">
+                                <button type="button" class="qty-btn" onclick="adjustQty('basketball', 1)">+</button>
+                            </div>
+                        </div>
+                        
+                        <div class="equipment-item">
+                            <div class="equipment-info">
+                                <div class="equipment-name">Basketball Net</div>
+                                <div class="equipment-unit">Pieces</div>
+                            </div>
+                            <div class="quantity-control">
+                                <button type="button" class="qty-btn" onclick="adjustQty('basketball_net', -1)">-</button>
+                                <input type="number" id="basketball_net-qty" name="basketball_net_qty" class="qty-input" value="0"
+                                    min="0" max="4">
+                                <button type="button" class="qty-btn" onclick="adjustQty('basketball_net', 1)">+</button>
+                            </div>
+                        </div>
+                        
+                        <div class="equipment-item">
+                            <div class="equipment-info">
+                                <div class="equipment-name">Volleyball</div>
+                                <div class="equipment-unit">Pieces</div>
+                            </div>
+                            <div class="quantity-control">
+                                <button type="button" class="qty-btn" onclick="adjustQty('volleyball', -1)">-</button>
+                                <input type="number" id="volleyball-qty" name="volleyball_qty" class="qty-input" value="0"
+                                    min="0" max="10">
+                                <button type="button" class="qty-btn" onclick="adjustQty('volleyball', 1)">+</button>
+                            </div>
+                        </div>
+                        
+                        <div class="equipment-item">
+                            <div class="equipment-info">
+                                <div class="equipment-name">Volleyball Net</div>
+                                <div class="equipment-unit">Pieces</div>
+                            </div>
+                            <div class="quantity-control">
+                                <button type="button" class="qty-btn" onclick="adjustQty('volleyball_net', -1)">-</button>
+                                <input type="number" id="volleyball_net-qty" name="volleyball_net_qty" class="qty-input" value="0"
+                                    min="0" max="4">
+                                <button type="button" class="qty-btn" onclick="adjustQty('volleyball_net', 1)">+</button>
+                            </div>
+                        </div>
+                        
+                        <div class="equipment-item">
+                            <div class="equipment-info">
+                                <div class="equipment-name">Long Table</div>
+                                <div class="equipment-unit">Pieces</div>
+                            </div>
+                            <div class="quantity-control">
+                                <button type="button" class="qty-btn" onclick="adjustQty('long_table', -1)">-</button>
+                                <input type="number" id="long_table-qty" name="long_table_qty" class="qty-input" value="0"
+                                    min="0" max="20">
+                                <button type="button" class="qty-btn" onclick="adjustQty('long_table', 1)">+</button>
+                            </div>
+                        </div>
+                        
+                        <div class="equipment-item">
+                            <div class="equipment-info">
+                                <div class="equipment-name">Wooden Table</div>
+                                <div class="equipment-unit">Pieces</div>
+                            </div>
+                            <div class="quantity-control">
+                                <button type="button" class="qty-btn" onclick="adjustQty('wooden_table', -1)">-</button>
+                                <input type="number" id="wooden_table-qty" name="wooden_table_qty" class="qty-input" value="0"
+                                    min="0" max="20">
+                                <button type="button" class="qty-btn" onclick="adjustQty('wooden_table', 1)">+</button>
                             </div>
                         </div>
                     </div>
 
+                    <!-- Improved Other Equipment Section -->
+                    <div class="other-equipment-section">
+                        <div class="other-equipment-header">
+                            <i class="fas fa-plus-square"></i>
+                            <h3>Other Equipment Needed</h3>
+                        </div>
+                        
+                        <p style="margin-bottom: 15px; color: #023e8a;">Specify any additional equipment not listed above:</p>
+                        
+                        <div class="other-input-grid">
+                            <div class="other-input-group">
+                                <label for="otherItem">Equipment Name</label>
+                                <input type="text" id="otherItem" name="other_items" placeholder="e.g., Sound System, Microphone">
+                                <div class="other-note">Enter the name of the equipment you need</div>
+                            </div>
+                            
+                            <div class="other-input-group">
+                                <label for="otherQty">Quantity</label>
+                                <input type="number" id="otherQty" name="other_qty" min="0" placeholder="0">
+                                <div class="other-note">How many do you need?</div>
+                            </div>
+                        </div>
+                        
+                        <button type="button" class="add-item-btn" id="addOtherItem">
+                            <i class="fas fa-plus"></i> Add Another Item
+                        </button>
+                        
+                        <div id="additionalItems"></div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h2><i class="fas fa-sticky-note"></i> Additional Notes</h2>
                     <div class="form-group">
-                        <label for="otherItems">Other Equipment Details</label>
-                        <textarea id="otherItems" name="other_items" rows="3"
-                            placeholder="Please specify other equipment you need"></textarea>
+                        <textarea id="additionalNotes" name="additional_notes" rows="3" placeholder="Any special requests or additional information we should know?"></textarea>
                     </div>
                 </div>
 
@@ -413,50 +594,104 @@
         </div>
     </div>
 
-    <form id="bookingForm" method="POST" action="{{ url_for('book_event') }}">
-        ...
-    </form>
-
     <script>
         // Set minimum date to today
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('eventDate').setAttribute('min', today);
 
-        // Quantity buttons
+        // Quantity adjustment function
         function adjustQty(type, change) {
             const input = document.getElementById(`${type}-qty`);
             let newValue = parseInt(input.value) + change;
             if (newValue < 0) newValue = 0;
-            if (type === 'tent' && newValue > 20) newValue = 20;
-            if (type === 'chairs' && newValue > 100) newValue = 100;
+            
+            // Set maximum limits for specific items
+            const maxValues = {
+                'tent': 20,
+                'chairs': 100,
+                'basketball': 10,
+                'basketball_net': 4,
+                'volleyball': 10,
+                'volleyball_net': 4,
+                'long_table': 20,
+                'wooden_table': 20
+            };
+            
+            if (maxValues[type] && newValue > maxValues[type]) {
+                newValue = maxValues[type];
+            }
+            
             input.value = newValue;
         }
 
-        // Optional: only validate required fields before submission
+        // Form validation
         document.getElementById('bookingForm').addEventListener('submit', function (e) {
-            const eventType = document.getElementById('eventType').value;
-            const eventDate = document.getElementById('eventDate').value;
-            const phone = document.getElementById('phone').value;
-            const email = document.getElementById('email').value;
-
-            if (!eventType || !eventDate || !phone || !email) {
-                alert('Please fill in all required fields.');
-                e.preventDefault(); // only prevents submission if fields are empty
+            const requiredFields = [
+                document.getElementById('eventType'),
+                document.getElementById('eventDate'),
+                document.getElementById('fullName'),
+                document.getElementById('phone'),
+                document.getElementById('email')
+            ];
+            
+            let isValid = true;
+            
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    isValid = false;
+                    field.style.borderColor = 'var(--accent-color)';
+                } else {
+                    field.style.borderColor = '#ddd';
+                }
+            });
+            
+            if (!isValid) {
+                e.preventDefault();
+                alert('Please fill in all required fields marked with *.');
             }
-            // DO NOT show a summary alert here
-            // Let Flask handle the success flash
+        });
+
+        // Functionality for adding more other equipment items
+        let itemCount = 0;
+        document.getElementById('addOtherItem').addEventListener('click', function() {
+            const itemName = document.getElementById('otherItem').value;
+            const itemQty = document.getElementById('otherQty').value;
+            
+            if (!itemName && !itemQty) {
+                alert('Please enter equipment name and quantity first.');
+                return;
+            }
+            
+            if (itemName && itemQty) {
+                itemCount++;
+                
+                const newItem = document.createElement('div');
+                newItem.className = 'other-input-grid';
+                newItem.style.marginTop = '15px';
+                newItem.style.padding = '10px';
+                newItem.style.backgroundColor = '#e9ecef';
+                newItem.style.borderRadius = '8px';
+                newItem.innerHTML = `
+                    <div class="other-input-group">
+                        <label>Equipment ${itemCount}</label>
+                        <input type="text" value="${itemName}" readonly>
+                    </div>
+                    
+                    <div class="other-input-group">
+                        <label>Quantity</label>
+                        <input type="number" value="${itemQty}" readonly>
+                    </div>
+                    
+                    <input type="hidden" name="other_items[]" value="${itemName} - ${itemQty}">
+                `;
+                
+                document.getElementById('additionalItems').appendChild(newItem);
+                
+                // Clear the input fields
+                document.getElementById('otherItem').value = '';
+                document.getElementById('otherQty').value = '';
+            }
         });
     </script>
-
-
 </body>
-
 </html>
-
-
-
-
-
-
-
-

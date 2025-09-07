@@ -309,6 +309,7 @@
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 25px;
+            margin-bottom: 20px;
         }
 
         .booking-option {
@@ -618,6 +619,156 @@
             gap: 15px;
         }
 
+        /* NEW: Filter and Search Controls */
+        .booking-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .search-box {
+            position: relative;
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 15px 12px 40px;
+            border: 1px solid #ddd;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            transition: var(--transition);
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #7f8c8d;
+        }
+
+        .filter-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filter-select {
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            background: white;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        /* NEW: Booking Details Modal */
+        .booking-details-modal .modal-content {
+            max-width: 600px;
+            text-align: left;
+        }
+
+        .booking-detail {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .booking-detail:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            color: var(--dark);
+            min-width: 120px;
+        }
+
+        .detail-value {
+            color: #7f8c8d;
+            text-align: right;
+            flex: 1;
+        }
+
+        .equipment-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .equipment-list li {
+            padding: 5px 0;
+            border-bottom: 1px solid #f8f9fa;
+        }
+
+        .equipment-list li:last-child {
+            border-bottom: none;
+        }
+
+        /* NEW: Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #bdc3c7;
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: #7f8c8d;
+        }
+
+        .empty-state p {
+            font-size: 1rem;
+            margin-bottom: 30px;
+        }
+
+        /* NEW: View Details Button */
+        .btn-view {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 15px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: var(--transition);
+            border: none;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-right: 5px;
+        }
+
+        .btn-view:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        }
+
         /* Responsive Design */
         @media (max-width: 992px) {
             .sidebar {
@@ -687,6 +838,15 @@
                 min-width: 200px;
                 font-size: 0.9rem;
             }
+
+            .booking-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-box {
+                min-width: unset;
+            }
         }
 
         @media (max-width: 600px) {
@@ -743,16 +903,12 @@
             /* Special handling for equipment cell */
             .booking-table td[data-label="Equipment"] {
                 flex-direction: row;
-                /* ✅ inline na */
                 align-items: center;
-                /* center vertically */
                 flex-wrap: wrap;
-                /* para kung mahaba, lilipat ng line pero nasa kanan pa rin */
             }
 
             .booking-table td[data-label="Equipment"]::before {
                 margin-bottom: 0;
-                /* tanggalin extra spacing */
             }
 
             .equipment-cell {
@@ -788,6 +944,14 @@
 
             .booking-table td[data-label="Action"]::before {
                 display: inline-block;
+            }
+
+            .filter-controls {
+                flex-direction: column;
+            }
+
+            .filter-select {
+                width: 100%;
             }
         }
 
@@ -827,7 +991,8 @@
             /* Improve touch targets for mobile */
             .sidebar-menu a,
             .btn,
-            .btn-cancel {
+            .btn-cancel,
+            .btn-view {
                 min-height: 44px;
                 display: flex;
                 align-items: center;
@@ -868,7 +1033,7 @@
     <div class="sidebar">
         <div class="sidebar-header">
             <h2>Booking System</h2>
-            <!-- <span class="sidebar-close"><i class="fas fa-times"></i></span> -->
+            <span class="sidebar-close"><i class="fas fa-times"></i></span>
         </div>
 
         <div class="user-info">
@@ -950,6 +1115,30 @@
         <div class="dashboard-content" id="bookings">
             <div class="booking-section">
                 <h2>My Bookings</h2>
+                
+                <!-- Search and Filter Controls -->
+                <div class="booking-controls">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="bookingSearch" placeholder="Search bookings...">
+                    </div>
+                    
+                    <div class="filter-controls">
+                        <select class="filter-select" id="statusFilter">
+                            <option value="">All Status</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Approved">Approved</option>
+                            <option value="Cancelled">Cancelled</option>
+                        </select>
+                        
+                        <select class="filter-select" id="typeFilter">
+                            <option value="">All Types</option>
+                            <option value="Court">Court Booking</option>
+                            <option value="Equipment">Equipment Only</option>
+                        </select>
+                    </div>
+                </div>
+                
                 <div class="booking-table-container">
                     <table class="booking-table">
                         <thead>
@@ -965,23 +1154,43 @@
                         <tbody>
                             {% if bookings %}
                             {% for booking in bookings %}
-                            <tr>
+                            <tr data-status="{{ booking.status }}" data-type="{{ booking.event_type }}">
                                 <td data-label="Ticket ID">{{ booking.ticket_number }}</td>
                                 <td data-label="Event Type">{{ booking.event_type }}</td>
                                 <td data-label="Event Date">{{ booking.event_date }}</td>
                                 <td data-label="Equipment" class="equipment-cell expandable"
                                     title="Click to view full details">
-                                    {% if booking.tent_qty > 0 %}
+                                    {% if booking.tent_qty and booking.tent_qty > 0 %}
                                     🏕️ Tent x{{ booking.tent_qty }}<br>
                                     {% endif %}
-                                    {% if booking.chairs_qty > 0 %}
+                                    {% if booking.chairs_qty and booking.chairs_qty > 0 %}
                                     🪑 Chairs x{{ booking.chairs_qty }}<br>
+                                    {% endif %}
+                                    {% if booking.basketball_qty and booking.basketball_qty > 0 %}
+                                    🏀 Basketball x{{ booking.basketball_qty }}<br>
+                                    {% endif %}
+                                    {% if booking.basketball_net_qty and booking.basketball_net_qty > 0 %}
+                                    🏐 Basketball Net x{{ booking.basketball_net_qty }}<br>
+                                    {% endif %}
+                                    {% if booking.volleyball_qty and booking.volleyball_qty > 0 %}
+                                    ⚽ Volleyball x{{ booking.volleyball_qty }}<br>
+                                    {% endif %}
+                                    {% if booking.volleyball_net_qty and booking.volleyball_net_qty > 0 %}
+                                    🥅 Volleyball Net x{{ booking.volleyball_net_qty }}<br>
+                                    {% endif %}
+                                    {% if booking.long_table_qty and booking.long_table_qty > 0 %}
+                                    📋 Long Table x{{ booking.long_table_qty }}<br>
+                                    {% endif %}
+                                    {% if booking.wooden_table_qty and booking.wooden_table_qty > 0 %}
+                                    🪵 Wooden Table x{{ booking.wooden_table_qty }}<br>
                                     {% endif %}
                                     {% if booking.other_items %}
                                     📝 {{ booking.other_items }}
                                     {% endif %}
-                                    {% if booking.tent_qty == 0 and booking.chairs_qty == 0 and not booking.other_items
-                                    %}
+                                    {% if not booking.tent_qty and not booking.chairs_qty and not booking.basketball_qty 
+                                        and not booking.basketball_net_qty and not booking.volleyball_qty 
+                                        and not booking.volleyball_net_qty and not booking.long_table_qty 
+                                        and not booking.wooden_table_qty and not booking.other_items %}
                                     -
                                     {% endif %}
                                 </td>
@@ -996,6 +1205,9 @@
                                 </td>
                                 <td data-label="Action">
                                     {% if booking.status != 'Cancelled' %}
+                                    <button class="btn-view view-details" data-booking-id="{{ booking.id }}">
+                                        <i class="fas fa-eye"></i> Details
+                                    </button>
                                     <button class="btn-cancel" data-booking-id="{{ booking.id }}">
                                         <i class="fas fa-times"></i> Cancel
                                     </button>
@@ -1008,9 +1220,12 @@
                             {% else %}
                             <tr>
                                 <td colspan="6" style="text-align:center; padding: 30px;">
-                                    <i class="fas fa-calendar-times"
-                                        style="font-size: 2rem; color: #bdc3c7; margin-bottom: 10px;"></i>
-                                    <br>No bookings found
+                                    <div class="empty-state">
+                                        <i class="fas fa-calendar-times"></i>
+                                        <h3>No Active Bookings</h3>
+                                        <p>You don't have any active bookings at the moment.</p>
+                                        <a href="{{ url_for('booking') }}" class="btn">Make a Booking</a>
+                                    </div>
                                 </td>
                             </tr>
                             {% endif %}
@@ -1024,39 +1239,83 @@
         <div class="dashboard-content" id="booking-history">
             <div class="booking-section">
                 <h2>Booking History</h2>
+                
+                <!-- Search and Filter Controls -->
+                <div class="booking-controls">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="historySearch" placeholder="Search history...">
+                    </div>
+                    
+                    <div class="filter-controls">
+                        <select class="filter-select" id="historyStatusFilter">
+                            <option value="">All Status</option>
+                            <option value="Completed">Completed</option>
+                            <option value="Cancelled">Cancelled</option>
+                        </select>
+                        
+                        <select class="filter-select" id="historyTypeFilter">
+                            <option value="">All Types</option>
+                            <option value="Court">Court Booking</option>
+                            <option value="Equipment">Equipment Only</option>
+                        </select>
+                    </div>
+                </div>
+                
                 <div class="booking-table-container">
                     <table class="booking-table">
                         <thead>
                             <tr>
-                                <th>Ticket ID</极速4th>
+                                <th>Ticket ID</th>
                                 <th>Event Type</th>
                                 <th>Event Date</th>
                                 <th>Booking Date</th>
                                 <th>Equipment</th>
                                 <th>Status</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% if booking_history %}
                             {% for booking in booking_history %}
-                            <tr>
+                            <tr data-status="{{ booking.status }}" data-type="{{ booking.event_type }}">
                                 <td data-label="Ticket ID">{{ booking.ticket_number }}</td>
                                 <td data-label="Event Type">{{ booking.event_type }}</td>
                                 <td data-label="Event Date">{{ booking.event_date }}</td>
                                 <td data-label="Booking Date">{{ booking.booking_date }}</td>
                                 <td data-label="Equipment" class="equipment-cell expandable"
                                     title="Click to view full details">
-                                    {% if booking.tent_qty > 0 %}
+                                    {% if booking.tent_qty and booking.tent_qty > 0 %}
                                     🏕️ Tent x{{ booking.tent_qty }}<br>
                                     {% endif %}
-                                    {% if booking.chairs_qty > 0 %}
+                                    {% if booking.chairs_qty and booking.chairs_qty > 0 %}
                                     🪑 Chairs x{{ booking.chairs_qty }}<br>
+                                    {% endif %}
+                                    {% if booking.basketball_qty and booking.basketball_qty > 0 %}
+                                    🏀 Basketball x{{ booking.basketball_qty }}<br>
+                                    {% endif %}
+                                    {% if booking.basketball_net_qty and booking.basketball_net_qty > 0 %}
+                                    🏐 Basketball Net x{{ booking.basketball_net_qty }}<br>
+                                    {% endif %}
+                                    {% if booking.volleyball_qty and booking.volleyball_qty > 0 %}
+                                    ⚽ Volleyball x{{ booking.volleyball_qty }}<br>
+                                    {% endif %}
+                                    {% if booking.volleyball_net_qty and booking.volleyball_net_qty > 0 %}
+                                    🥅 Volleyball Net x{{ booking.volleyball_net_qty }}<br>
+                                    {% endif %}
+                                    {% if booking.long_table_qty and booking.long_table_qty > 0 %}
+                                    📋 Long Table x{{ booking.long_table_qty }}<br>
+                                    {% endif %}
+                                    {% if booking.wooden_table_qty and booking.wooden_table_qty > 0 %}
+                                    🪵 Wooden Table x{{ booking.wooden_table_qty }}<br>
                                     {% endif %}
                                     {% if booking.other_items %}
                                     📝 {{ booking.other_items }}
                                     {% endif %}
-                                    {% if booking.tent_qty == 0 and booking.chairs_qty == 0 and not booking.other_items
-                                    %}
+                                    {% if not booking.tent_qty and not booking.chairs_qty and not booking.basketball_qty 
+                                        and not booking.basketball_net_qty and not booking.volleyball_qty 
+                                        and not booking.volleyball_net_qty and not booking.long_table_qty 
+                                        and not booking.wooden_table_qty and not booking.other_items %}
                                     -
                                     {% endif %}
                                 </td>
@@ -1069,14 +1328,22 @@
                                         {{ booking.status }}
                                     </span>
                                 </td>
+                                <td data-label="Action">
+                                    <button class="btn-view view-details" data-booking-id="{{ booking.id }}">
+                                        <i class="fas fa-eye"></i> Details
+                                    </button>
+                                </td>
                             </tr>
                             {% endfor %}
                             {% else %}
                             <tr>
-                                <td colspan="6" style="text-align:center; padding: 30px;">
-                                    <i class="fas fa-history"
-                                        style="font-size: 2rem; color: #bdc3c7; margin-bottom: 10px;"></i>
-                                    <br>No booking history found
+                                <td colspan="7" style="text-align:center; padding: 30px;">
+                                    <div class="empty-state">
+                                        <i class="fas fa-history"></i>
+                                        <h3>No Booking History</h3>
+                                        <p>Your booking history will appear here once you make bookings.</p>
+                                        <a href="{{ url_for('booking') }}" class="btn">Make a Booking</a>
+                                    </div>
                                 </td>
                             </tr>
                             {% endif %}
@@ -1107,6 +1374,19 @@
         </div>
     </div>
 
+    <!-- Booking Details Modal -->
+    <div class="modal booking-details-modal" id="detailsModal">
+        <div class="modal-content">
+            <h3>Booking Details</h3>
+            <div id="bookingDetailsContent">
+                <!-- Details will be loaded here via JavaScript -->
+            </div>
+            <div class="modal-buttons" style="margin-top: 20px;">
+                <button class="btn" id="closeDetailsModal">Close</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         class BookingSystemUI {
             constructor() {
@@ -1114,6 +1394,7 @@
                 this.menuToggle = document.querySelector('.menu-toggle');
                 this.sidebarClose = document.querySelector('.sidebar-close');
                 this.cancelModal = document.getElementById('cancelModal');
+                this.detailsModal = document.getElementById('detailsModal');
                 this.currentBookingId = null;
                 this.init();
             }
@@ -1122,6 +1403,7 @@
                 this.bindEvents();
                 this.autoHideFlashMessages();
                 this.setupEquipmentCellExpansion();
+                this.setupSearchAndFilter();
             }
 
             bindEvents() {
@@ -1156,16 +1438,87 @@
                     button.addEventListener('click', (e) => this.showCancelModal(e));
                 });
 
+                // View details buttons
+                document.querySelectorAll('.view-details').forEach(button => {
+                    button.addEventListener('click', (e) => this.showDetailsModal(e));
+                });
+
                 // Modal buttons
                 document.getElementById('confirmCancel')?.addEventListener('click', () => this.cancelBooking());
                 document.getElementById('closeModal')?.addEventListener('click', () => this.hideModal());
+                document.getElementById('closeDetailsModal')?.addEventListener('click', () => this.hideDetailsModal());
 
-                // Close modal when clicking outside
-                this.cancelModal?.addEventListener('click', (e) => {
-                    if (e.target === this.cancelModal) {
-                        this.hideModal();
-                    }
+                // Close modals when clicking outside
+                [this.cancelModal, this.detailsModal].forEach(modal => {
+                    modal?.addEventListener('click', (e) => {
+                        if (e.target === modal) {
+                            if (modal === this.cancelModal) this.hideModal();
+                            if (modal === this.detailsModal) this.hideDetailsModal();
+                        }
+                    });
                 });
+            }
+
+            setupSearchAndFilter() {
+                // Setup search functionality for bookings
+                const bookingSearch = document.getElementById('bookingSearch');
+                const statusFilter = document.getElementById('statusFilter');
+                const typeFilter = document.getElementById('typeFilter');
+                
+                if (bookingSearch && statusFilter && typeFilter) {
+                    const filterBookings = () => {
+                        const searchTerm = bookingSearch.value.toLowerCase();
+                        const statusValue = statusFilter.value;
+                        const typeValue = typeFilter.value;
+                        
+                        document.querySelectorAll('#bookings .booking-table tbody tr').forEach(row => {
+                            const ticketId = row.querySelector('td[data-label="Ticket ID"]').textContent.toLowerCase();
+                            const eventType = row.querySelector('td[data-label="Event Type"]').textContent;
+                            const status = row.getAttribute('data-status');
+                            const type = row.getAttribute('data-type');
+                            
+                            const matchesSearch = ticketId.includes(searchTerm);
+                            const matchesStatus = !statusValue || status === statusValue;
+                            const matchesType = !typeValue || type === typeValue;
+                            
+                            row.style.display = (matchesSearch && matchesStatus && matchesType) ? '' : 'none';
+                        });
+                    };
+                    
+                    bookingSearch.addEventListener('input', filterBookings);
+                    statusFilter.addEventListener('change', filterBookings);
+                    typeFilter.addEventListener('change', filterBookings);
+                }
+                
+                // Setup search functionality for history
+                const historySearch = document.getElementById('historySearch');
+                const historyStatusFilter = document.getElementById('historyStatusFilter');
+                const historyTypeFilter = document.getElementById('historyTypeFilter');
+                
+                if (historySearch && historyStatusFilter && historyTypeFilter) {
+                    const filterHistory = () => {
+                        const searchTerm = historySearch.value.toLowerCase();
+                        const statusValue = historyStatusFilter.value;
+                        const typeValue = historyTypeFilter.value;
+                        
+                        document.querySelectorAll('#booking-history .booking-table tbody tr').forEach(row => {
+                            const ticketId = row.querySelector('td[data-label="Ticket ID"]').textContent.toLowerCase();
+                            const eventType = row.querySelector('td[data-label="Event Type"]').textContent;
+                            const status = row.getAttribute('data-status');
+                            const type = row.getAttribute('data-type');
+                            
+                            const matchesSearch = ticketId.includes(searchTerm);
+                            const matchesStatus = !statusValue || status === statusValue;
+                            const matchesType = !typeValue || type === typeValue;
+                            
+                            row.style.display = (matchesSearch && matchesStatus && matchesType) ? '' : 'none';
+                        });
+                    };
+                    
+                    historySearch.addEventListener('input', filterHistory);
+                    historyStatusFilter.addEventListener('change', filterHistory);
+                    historyTypeFilter.addEventListener('change', filterHistory);
+                }
             }
 
             setupEquipmentCellExpansion() {
@@ -1252,6 +1605,105 @@
             hideModal() {
                 this.cancelModal.style.display = 'none';
                 this.currentBookingId = null;
+            }
+
+            async showDetailsModal(e) {
+                e.preventDefault();
+                const button = e.currentTarget;
+                const bookingId = button.getAttribute('data-booking-id');
+                
+                try {
+                    // Show loading state
+                    const detailsContent = document.getElementById('bookingDetailsContent');
+                    detailsContent.innerHTML = '<div style="text-align:center;padding:20px;"><span class="loading"></span> Loading details...</div>';
+                    
+                    this.detailsModal.style.display = 'flex';
+                    
+                    // Fetch booking details
+                    const response = await fetch(`/booking_details/${bookingId}`);
+                    const booking = await response.json();
+                    
+                    if (booking.success) {
+                        this.displayBookingDetails(booking.data);
+                    } else {
+                        detailsContent.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Error loading booking details</p></div>';
+                    }
+                } catch (error) {
+                    const detailsContent = document.getElementById('bookingDetailsContent');
+                    detailsContent.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Error loading booking details</p></div>';
+                }
+            }
+            
+            displayBookingDetails(booking) {
+                const detailsContent = document.getElementById('bookingDetailsContent');
+                
+                let equipmentHTML = '';
+                if (booking.tent_qty > 0) equipmentHTML += `<li>🏕️ Tent: ${booking.tent_qty} pcs</li>`;
+                if (booking.chairs_qty > 0) equipmentHTML += `<li>🪑 Chairs: ${booking.chairs_qty} pcs</li>`;
+                if (booking.basketball_qty > 0) equipmentHTML += `<li>🏀 Basketball: ${booking.basketball_qty} pcs</li>`;
+                if (booking.basketball_net_qty > 0) equipmentHTML += `<li>🏐 Basketball Net: ${booking.basketball_net_qty} pcs</li>`;
+                if (booking.volleyball_qty > 0) equipmentHTML += `<li>⚽ Volleyball: ${booking.volleyball_qty} pcs</li>`;
+                if (booking.volleyball_net_qty > 0) equipmentHTML += `<li>🥅 Volleyball Net: ${booking.volleyball_net_qty} pcs</li>`;
+                if (booking.long_table_qty > 0) equipmentHTML += `<li>📋 Long Table: ${booking.long_table_qty} pcs</li>`;
+                if (booking.wooden_table_qty > 0) equipmentHTML += `<li>🪵 Wooden Table: ${booking.wooden_table_qty} pcs</li>`;
+                if (booking.other_items) equipmentHTML += `<li>📝 Other: ${booking.other_items}</li>`;
+                
+                if (!equipmentHTML) equipmentHTML = '<li>No equipment specified</li>';
+                
+                detailsContent.innerHTML = `
+                    <div class="booking-detail">
+                        <span class="detail-label">Ticket ID:</span>
+                        <span class="detail-value">${booking.ticket_number}</span>
+                    </div>
+                    <div class="booking-detail">
+                        <span class="detail-label">Event Type:</span>
+                        <span class="detail-value">${booking.event_type}</span>
+                    </div>
+                    <div class="booking-detail">
+                        <span class="detail-label">Event Date:</span>
+                        <span class="detail-value">${booking.event_date}</span>
+                    </div>
+                    <div class="booking-detail">
+                        <span class="detail-label">Booking Date:</span>
+                        <span class="detail-value">${booking.booking_date}</span>
+                    </div>
+                    <div class="booking-detail">
+                        <span class="detail-label">Status:</span>
+                        <span class="detail-value">
+                            <span class="status-badge ${this.getStatusClass(booking.status)}">
+                                ${booking.status}
+                            </span>
+                        </span>
+                    </div>
+                    <div class="booking-detail">
+                        <span class="detail-label">Equipment:</span>
+                        <span class="detail-value">
+                            <ul class="equipment-list">
+                                ${equipmentHTML}
+                            </ul>
+                        </span>
+                    </div>
+                    ${booking.additional_notes ? `
+                    <div class="booking-detail">
+                        <span class="detail-label">Additional Notes:</span>
+                        <span class="detail-value">${booking.additional_notes}</span>
+                    </div>
+                    ` : ''}
+                `;
+            }
+            
+            getStatusClass(status) {
+                switch(status) {
+                    case 'Pending': return 'status-pending';
+                    case 'Approved': return 'status-approved';
+                    case 'Completed': return 'status-approved';
+                    case 'Cancelled': return 'status-cancelled';
+                    default: return '';
+                }
+            }
+
+            hideDetailsModal() {
+                this.detailsModal.style.display = 'none';
             }
 
             async cancelBooking() {

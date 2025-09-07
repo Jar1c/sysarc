@@ -747,13 +747,28 @@ def booking3():
         flash("You already booked! You can't book multiple.", "error")
         return redirect(url_for("booking3"))
 
-    # Collect form data - EVENT_TYPE REMOVED
+    # Collect form data
     event_date = request.form.get("event_date", "").strip()
     contact_number = request.form.get("phone", "").strip()
     email = request.form.get("email", "").strip()
     tent_qty = int(request.form.get("tent_qty", 0) or 0)
     chairs_qty = int(request.form.get("chairs_qty", 0) or 0)
-    other_items = request.form.get("other_items", "").strip()
+    basketball_qty = int(request.form.get("basketball_qty", 0) or 0)
+    volleyball_qty = int(request.form.get("volleyball_qty", 0) or 0)
+    basketball_net_qty = int(request.form.get("basketball_net_qty", 0) or 0)
+    volleyball_net_qty = int(request.form.get("volleyball_net_qty", 0) or 0)
+    long_table_qty = int(request.form.get("long_table_qty", 0) or 0)
+    wooden_table_qty = int(request.form.get("wooden_table_qty", 0) or 0)
+    
+    # Kunin ang other items - ITO ANG BAGO!
+    other_item_name = request.form.get("other_items", "").strip()  # ← equipment name
+    other_qty = int(request.form.get("others_qty", 0) or 0)       # ← quantity
+    
+    # Gawing format na "Item xQuantity"
+    if other_item_name and other_qty > 0:
+        other_items = f"{other_item_name} x{other_qty}"
+    else:
+        other_items = ""
 
     # Generate IDs
     booking_id = str(uuid.uuid4())
@@ -768,7 +783,14 @@ def booking3():
         "email": email,
         "tent_qty": tent_qty,
         "chairs_qty": chairs_qty,
-        "other_items": other_items,
+        "basketball_qty": basketball_qty,
+        "volleyball_qty": volleyball_qty,
+        "basketball_net_qty": basketball_net_qty,
+        "volleyball_net_qty": volleyball_net_qty,
+        "long_table_qty": long_table_qty,
+        "wooden_table_qty": wooden_table_qty,
+        "others_qty": other_qty,      # ← ITO ANG QUANTITY
+        "other_items": other_items,   # ← ITO ANG DESCRIPTION
         "status": "Pending",
         "created_at": datetime.now().isoformat()
     }
@@ -780,6 +802,9 @@ def booking3():
     except Exception as e:
         flash(f"Unexpected error: {str(e)}", "error")
         return redirect(url_for("booking3"))
+    
+
+
 
 @app.route("/book_event", methods=["POST"])
 def book_event():
@@ -808,7 +833,34 @@ def book_event():
         email = request.form.get("email", "").strip()
         tent_qty = int(request.form.get("tent_qty", 0) or 0)
         chairs_qty = int(request.form.get("chairs_qty", 0) or 0)
-        other_items = request.form.get("other_items", "").strip()
+        basketball_qty = int(request.form.get("basketball_qty", 0) or 0)
+        volleyball_qty = int(request.form.get("volleyball_qty", 0) or 0)
+        basketball_net_qty = int(request.form.get("basketball_net_qty", 0) or 0)
+        volleyball_net_qty = int(request.form.get("volleyball_net_qty", 0) or 0)
+        long_table_qty = int(request.form.get("long_table_qty", 0) or 0)
+        wooden_table_qty = int(request.form.get("wooden_table_qty", 0) or 0)
+        
+        # KUNIN ANG LAHAT NG OTHER ITEMS - ITO ANG BAGO!
+        other_items_list = []
+        
+        # Kunin ang main other item
+        main_other_item = request.form.get("other_items", "").strip()
+        main_other_qty = request.form.get("other_qty", "0").strip()
+        
+        if main_other_item and int(main_other_qty) > 0:
+            other_items_list.append(f"{main_other_item} x{main_other_qty}")
+        
+        # Kunin ang mga dynamically added other items
+        additional_items = request.form.getlist("other_items[]")
+        for item in additional_items:
+            if item.strip():  # Kung may laman
+                other_items_list.append(item.strip())
+        
+        # I-combine ang lahat ng other items sa isang string
+        all_other_items = ", ".join(other_items_list) if other_items_list else ""
+        
+        # Calculate total others quantity
+        others_qty = sum(int(qty) for item in other_items_list for qty in item.split('x')[1:] if 'x' in item)
 
         # Generate IDs
         booking_id = str(uuid.uuid4())
@@ -824,7 +876,14 @@ def book_event():
             "email": email,
             "tent_qty": tent_qty,
             "chairs_qty": chairs_qty,
-            "other_items": other_items,
+            "basketball_qty": basketball_qty,
+            "volleyball_qty": volleyball_qty,
+            "basketball_net_qty": basketball_net_qty,
+            "volleyball_net_qty": volleyball_net_qty,
+            "long_table_qty": long_table_qty,
+            "wooden_table_qty": wooden_table_qty,
+            "others_qty": others_qty,  # ← TOTAL QUANTITY
+            "other_items": all_other_items,  # ← LAHAT NG ITEM DESCRIPTIONS
             "status": "Pending",
             "created_at": datetime.now().isoformat()
         }
@@ -838,6 +897,8 @@ def book_event():
     except Exception as e:
         flash(f"Unexpected error: {str(e)}", "error")
         return redirect(url_for("booking2_page"))
+    
+
 
 @app.route("/admin_login", methods=["GET", "POST"])
 def admin_login():
