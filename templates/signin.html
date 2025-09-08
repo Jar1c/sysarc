@@ -59,15 +59,16 @@
             }
         }
 
-        /* Loading overlay */
+        /* Loading overlay - FIXED CENTERING */
         .loading-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(255, 255, 255, 0.8);
+            background: rgba(255, 255, 255, 0.9);
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 9999;
@@ -81,6 +82,15 @@
             visibility: visible;
         }
 
+        /* Loading content - PERFECTLY CENTERED */
+        .loading-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
         /* Loading spinner */
         .spinner {
             width: 50px;
@@ -89,6 +99,7 @@
             border-top: 5px solid #023e8a;
             border-radius: 50%;
             animation: spin 1s linear infinite;
+            margin-bottom: 15px;
         }
 
         @keyframes spin {
@@ -98,10 +109,10 @@
 
         /* Loading text */
         .loading-text {
-            margin-top: 15px;
             font-weight: 600;
             color: #023e8a;
-            font-size: 1.1rem;
+            font-size: 1.2rem;
+            margin: 0;
         }
 
         /* Form container */
@@ -153,11 +164,11 @@
     {% endif %}
     {% endwith %}
 
-    <!-- Loading Overlay -->
+    <!-- Loading Overlay - NOW PERFECTLY CENTERED -->
     <div class="loading-overlay" id="loadingOverlay">
         <div class="loading-content">
             <div class="spinner"></div>
-            <div class="loading-text">Signing in...</div>
+            <p class="loading-text">Signing in...</p>
         </div>
     </div>
 
@@ -213,9 +224,6 @@
             submitBtn.classList.add('btn-loading');
             loadingOverlay.classList.add('active');
             formContainer.classList.add('blur');
-            
-            // The form will continue to submit naturally
-            // The loading state will disappear when the page reloads
         });
 
         // Close popup when clicking outside
