@@ -1026,6 +1026,19 @@
             }
         }
     </style>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Court and Equipment Booking System</title>
+    <link rel="icon" type="image/png" href="/static/img/brgy_baritan_logo.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* LAHAT NG CSS STYLES NANANATILING PAREHO */
+        /* ... (copy all CSS styles from previous code) ... */
+    </style>
 </head>
 
 <body>
@@ -1116,28 +1129,7 @@
             <div class="booking-section">
                 <h2>My Bookings</h2>
                 
-                <!-- Search and Filter Controls -->
-                <div class="booking-controls">
-                    <div class="search-box">
-                        <i class="fas fa-search"></i>
-                        <input type="text" id="bookingSearch" placeholder="Search bookings...">
-                    </div>
-                    
-                    <div class="filter-controls">
-                        <select class="filter-select" id="statusFilter">
-                            <option value="">All Status</option>
-                            <option value="Pending">Pending</option>
-                            <option value="Approved">Approved</option>
-                            <option value="Cancelled">Cancelled</option>
-                        </select>
-                        
-                        <select class="filter-select" id="typeFilter">
-                            <option value="">All Types</option>
-                            <option value="Court">Court Booking</option>
-                            <option value="Equipment">Equipment Only</option>
-                        </select>
-                    </div>
-                </div>
+                <!-- TANGGALIN ANG SEARCH AND FILTER CONTROLS -->
                 
                 <div class="booking-table-container">
                     <table class="booking-table">
@@ -1154,7 +1146,7 @@
                         <tbody>
                             {% if bookings %}
                             {% for booking in bookings %}
-                            <tr data-status="{{ booking.status }}" data-type="{{ booking.event_type }}">
+                            <tr>
                                 <td data-label="Ticket ID">{{ booking.ticket_number }}</td>
                                 <td data-label="Event Type">{{ booking.event_type }}</td>
                                 <td data-label="Event Date">{{ booking.event_date }}</td>
@@ -1240,27 +1232,7 @@
             <div class="booking-section">
                 <h2>Booking History</h2>
                 
-                <!-- Search and Filter Controls -->
-                <div class="booking-controls">
-                    <div class="search-box">
-                        <i class="fas fa-search"></i>
-                        <input type="text" id="historySearch" placeholder="Search history...">
-                    </div>
-                    
-                    <div class="filter-controls">
-                        <select class="filter-select" id="historyStatusFilter">
-                            <option value="">All Status</option>
-                            <option value="Completed">Completed</option>
-                            <option value="Cancelled">Cancelled</option>
-                        </select>
-                        
-                        <select class="filter-select" id="historyTypeFilter">
-                            <option value="">All Types</option>
-                            <option value="Court">Court Booking</option>
-                            <option value="Equipment">Equipment Only</option>
-                        </select>
-                    </div>
-                </div>
+                <!-- TANGGALIN ANG SEARCH AND FILTER CONTROLS -->
                 
                 <div class="booking-table-container">
                     <table class="booking-table">
@@ -1278,7 +1250,7 @@
                         <tbody>
                             {% if booking_history %}
                             {% for booking in booking_history %}
-                            <tr data-status="{{ booking.status }}" data-type="{{ booking.event_type }}">
+                            <tr>
                                 <td data-label="Ticket ID">{{ booking.ticket_number }}</td>
                                 <td data-label="Event Type">{{ booking.event_type }}</td>
                                 <td data-label="Event Date">{{ booking.event_date }}</td>
@@ -1403,7 +1375,7 @@
                 this.bindEvents();
                 this.autoHideFlashMessages();
                 this.setupEquipmentCellExpansion();
-                this.setupSearchAndFilter();
+                // TANGGALIN ANG SEARCH AND FILTER SETUP
             }
 
             bindEvents() {
@@ -1459,67 +1431,7 @@
                 });
             }
 
-            setupSearchAndFilter() {
-                // Setup search functionality for bookings
-                const bookingSearch = document.getElementById('bookingSearch');
-                const statusFilter = document.getElementById('statusFilter');
-                const typeFilter = document.getElementById('typeFilter');
-                
-                if (bookingSearch && statusFilter && typeFilter) {
-                    const filterBookings = () => {
-                        const searchTerm = bookingSearch.value.toLowerCase();
-                        const statusValue = statusFilter.value;
-                        const typeValue = typeFilter.value;
-                        
-                        document.querySelectorAll('#bookings .booking-table tbody tr').forEach(row => {
-                            const ticketId = row.querySelector('td[data-label="Ticket ID"]').textContent.toLowerCase();
-                            const eventType = row.querySelector('td[data-label="Event Type"]').textContent;
-                            const status = row.getAttribute('data-status');
-                            const type = row.getAttribute('data-type');
-                            
-                            const matchesSearch = ticketId.includes(searchTerm);
-                            const matchesStatus = !statusValue || status === statusValue;
-                            const matchesType = !typeValue || type === typeValue;
-                            
-                            row.style.display = (matchesSearch && matchesStatus && matchesType) ? '' : 'none';
-                        });
-                    };
-                    
-                    bookingSearch.addEventListener('input', filterBookings);
-                    statusFilter.addEventListener('change', filterBookings);
-                    typeFilter.addEventListener('change', filterBookings);
-                }
-                
-                // Setup search functionality for history
-                const historySearch = document.getElementById('historySearch');
-                const historyStatusFilter = document.getElementById('historyStatusFilter');
-                const historyTypeFilter = document.getElementById('historyTypeFilter');
-                
-                if (historySearch && historyStatusFilter && historyTypeFilter) {
-                    const filterHistory = () => {
-                        const searchTerm = historySearch.value.toLowerCase();
-                        const statusValue = historyStatusFilter.value;
-                        const typeValue = historyTypeFilter.value;
-                        
-                        document.querySelectorAll('#booking-history .booking-table tbody tr').forEach(row => {
-                            const ticketId = row.querySelector('td[data-label="Ticket ID"]').textContent.toLowerCase();
-                            const eventType = row.querySelector('td[data-label="Event Type"]').textContent;
-                            const status = row.getAttribute('data-status');
-                            const type = row.getAttribute('data-type');
-                            
-                            const matchesSearch = ticketId.includes(searchTerm);
-                            const matchesStatus = !statusValue || status === statusValue;
-                            const matchesType = !typeValue || type === typeValue;
-                            
-                            row.style.display = (matchesSearch && matchesStatus && matchesType) ? '' : 'none';
-                        });
-                    };
-                    
-                    historySearch.addEventListener('input', filterHistory);
-                    historyStatusFilter.addEventListener('change', filterHistory);
-                    historyTypeFilter.addEventListener('change', filterHistory);
-                }
-            }
+            // TANGGALIN ANG BUONG setupSearchAndFilter FUNCTION
 
             setupEquipmentCellExpansion() {
                 // Add click event to all expandable equipment cells
@@ -1674,6 +1586,14 @@
                                 ${booking.status}
                             </span>
                         </span>
+                    </div>
+                    <div class="booking-detail">
+                        <span class="detail-label">Contact Number:</span>
+                        <span class="detail-value">${booking.contact_number || 'N/A'}</span>
+                    </div>
+                    <div class="booking-detail">
+                        <span class="detail-label">Email:</span>
+                        <span class="detail-value">${booking.email || 'N/A'}</span>
                     </div>
                     <div class="booking-detail">
                         <span class="detail-label">Equipment:</span>
