@@ -9,36 +9,34 @@
     <link rel="stylesheet" href="/static/style.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-            .popup {
-                padding: 10px 15px;
-                border-radius: 8px;
-                margin-bottom: 15px;
-                text-align: center;
-                position: fixed;
-                /* fixed para laging visible */
-                top: 20px;
-                /* distance from top */
-                left: 50%;
-                /* center horizontally */
-                transform: translateX(-50%);
-                /* truly center */
-                font-weight: bold;
-                z-index: 9999;
-                /* laging nasa ibabaw */
-                min-width: 300px;
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            }
+        .popup {
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            text-align: center;
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-weight: bold;
+            z-index: 9999;
+            min-width: 300px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            animation: slideDown 0.5s ease-out;
+        }
 
         /* Success */
         .popup.success {
             background-color: #d4edda;
             color: #155724;
+            border: 1px solid #c3e6cb;
         }
 
         /* Error */
         .popup.error {
             background-color: #f8d7da;
             color: #721c24;
+            border: 1px solid #f5c6cb;
         }
 
         /* Close button */
@@ -50,18 +48,94 @@
             font-weight: bold;
         }
 
-
-
         @keyframes slideDown {
             from {
                 top: -50px;
                 opacity: 0;
             }
-
             to {
                 top: 20px;
                 opacity: 1;
             }
+        }
+
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Loading spinner */
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #023e8a;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Loading text */
+        .loading-text {
+            margin-top: 15px;
+            font-weight: 600;
+            color: #023e8a;
+            font-size: 1.1rem;
+        }
+
+        /* Form container */
+        .container {
+            position: relative;
+            transition: filter 0.3s ease;
+        }
+
+        .container.blur {
+            filter: blur(2px);
+        }
+
+        /* Submit button */
+        .submit-btn {
+            position: relative;
+        }
+
+        .btn-loading {
+            position: relative;
+            color: transparent;
+        }
+
+        .btn-loading::after {
+            content: "";
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            top: 50%;
+            left: 50%;
+            margin: -10px 0 0 -10px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
         }
     </style>
 </head>
@@ -79,9 +153,17 @@
     {% endif %}
     {% endwith %}
 
-    <div class="container">
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <div class="loading-text">Signing in...</div>
+        </div>
+    </div>
+
+    <div class="container" id="formContainer">
         <h2>Sign In</h2>
-        <form action="{{ url_for('signin') }}" method="POST">
+        <form action="{{ url_for('signin') }}" method="POST" id="signinForm">
             <!-- Email -->
             <div class="input-group">
                 <i class="fas fa-envelope icon"></i>
@@ -95,7 +177,7 @@
                 <i class="fa-solid fa-eye toggle-password" id="togglePassword"></i>
             </div>
 
-            <button type="submit">Sign In</button>
+            <button type="submit" class="submit-btn" id="submitBtn">Sign In</button>
             <p>Don't have an account? <a href="{{ url_for('signup') }}">Sign Up</a></p>
             <p>Are you an admin? <a href="{{ url_for('admin_login') }}">Admin Login</a></p>
         </form>
@@ -114,11 +196,34 @@
         });
 
         // Auto-hide error messages after 5 seconds
-        document.querySelectorAll('.error-popup').forEach(popup => {
+        document.querySelectorAll('.popup').forEach(popup => {
             setTimeout(() => {
                 popup.style.opacity = '0';
                 setTimeout(() => popup.remove(), 300);
             }, 5000);
+        });
+
+        // Loading effect for form submission
+        document.getElementById('signinForm').addEventListener('submit', function(e) {
+            const submitBtn = document.getElementById('submitBtn');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const formContainer = document.getElementById('formContainer');
+            
+            // Show loading state
+            submitBtn.classList.add('btn-loading');
+            loadingOverlay.classList.add('active');
+            formContainer.classList.add('blur');
+            
+            // The form will continue to submit naturally
+            // The loading state will disappear when the page reloads
+        });
+
+        // Close popup when clicking outside
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('popup')) {
+                e.target.style.opacity = '0';
+                setTimeout(() => e.target.remove(), 300);
+            }
         });
     </script>
 </body>
