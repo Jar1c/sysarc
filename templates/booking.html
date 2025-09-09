@@ -1026,20 +1026,20 @@
             }
         }
     </style>
-<!DOCTYPE html>
-<html lang="en">
+    <!DOCTYPE html>
+    <html lang="en">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Court and Equipment Booking System</title>
-    <link rel="icon" type="image/png" href="/static/img/brgy_baritan_logo.png">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        /* LAHAT NG CSS STYLES NANANATILING PAREHO */
-        /* ... (copy all CSS styles from previous code) ... */
-    </style>
-</head>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Court and Equipment Booking System</title>
+        <link rel="icon" type="image/png" href="/static/img/brgy_baritan_logo.png">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <style>
+            /* LAHAT NG CSS STYLES NANANATILING PAREHO */
+            /* ... (copy all CSS styles from previous code) ... */
+        </style>
+    </head>
 
 <body>
     <!-- Sidebar Dashboard -->
@@ -1128,9 +1128,9 @@
         <div class="dashboard-content" id="bookings">
             <div class="booking-section">
                 <h2>My Bookings</h2>
-                
+
                 <!-- TANGGALIN ANG SEARCH AND FILTER CONTROLS -->
-                
+
                 <div class="booking-table-container">
                     <table class="booking-table">
                         <thead>
@@ -1152,38 +1152,27 @@
                                 <td data-label="Event Date">{{ booking.event_date }}</td>
                                 <td data-label="Equipment" class="equipment-cell expandable"
                                     title="Click to view full details">
-                                    {% if booking.tent_qty and booking.tent_qty > 0 %}
-                                    🏕️ Tent x{{ booking.tent_qty }}<br>
+                                    {% if booking.parsed_items %}
+                                    {% for item in booking.parsed_items %}
+                                    {% if 'Tent' in item.name or 'Shelter' in item.name %}
+                                    🏕️ {{ item.name }} x{{ item.quantity }}
+                                    {% elif 'Chair' in item.name or 'Table' in item.name or 'Furniture' in item.name %}
+                                    🪑 {{ item.name }} x{{ item.quantity }}
+                                    {% elif 'Basketball' in item.name or 'Volleyball' in item.name or 'Sports' in
+                                    item.name %}
+                                    🏀 {{ item.name }} x{{ item.quantity }}
+                                    {% elif 'Microphone' in item.name or 'Speaker' in item.name or 'Sound' in item.name
+                                    %}
+                                    🎤 {{ item.name }} x{{ item.quantity }}
+                                    {% elif 'Stove' in item.name or 'Cooking' in item.name or 'Pot' in item.name %}
+                                    🍳 {{ item.name }} x{{ item.quantity }}
+                                    {% else %}
+                                    📦 {{ item.name }} x{{ item.quantity }}
                                     {% endif %}
-                                    {% if booking.chairs_qty and booking.chairs_qty > 0 %}
-                                    🪑 Chairs x{{ booking.chairs_qty }}<br>
-                                    {% endif %}
-                                    {% if booking.basketball_qty and booking.basketball_qty > 0 %}
-                                    🏀 Basketball x{{ booking.basketball_qty }}<br>
-                                    {% endif %}
-                                    {% if booking.basketball_net_qty and booking.basketball_net_qty > 0 %}
-                                    🏐 Basketball Net x{{ booking.basketball_net_qty }}<br>
-                                    {% endif %}
-                                    {% if booking.volleyball_qty and booking.volleyball_qty > 0 %}
-                                    ⚽ Volleyball x{{ booking.volleyball_qty }}<br>
-                                    {% endif %}
-                                    {% if booking.volleyball_net_qty and booking.volleyball_net_qty > 0 %}
-                                    🥅 Volleyball Net x{{ booking.volleyball_net_qty }}<br>
-                                    {% endif %}
-                                    {% if booking.long_table_qty and booking.long_table_qty > 0 %}
-                                    📋 Long Table x{{ booking.long_table_qty }}<br>
-                                    {% endif %}
-                                    {% if booking.wooden_table_qty and booking.wooden_table_qty > 0 %}
-                                    🪵 Wooden Table x{{ booking.wooden_table_qty }}<br>
-                                    {% endif %}
-                                    {% if booking.other_items %}
-                                    📝 {{ booking.other_items }}
-                                    {% endif %}
-                                    {% if not booking.tent_qty and not booking.chairs_qty and not booking.basketball_qty 
-                                        and not booking.basketball_net_qty and not booking.volleyball_qty 
-                                        and not booking.volleyball_net_qty and not booking.long_table_qty 
-                                        and not booking.wooden_table_qty and not booking.other_items %}
-                                    -
+                                    {% if not loop.last %}<br>{% endif %}
+                                    {% endfor %}
+                                    {% else %}
+                                    ❌ Walang ibang kagamitan
                                     {% endif %}
                                 </td>
                                 <td data-label="Status">
@@ -1231,9 +1220,9 @@
         <div class="dashboard-content" id="booking-history">
             <div class="booking-section">
                 <h2>Booking History</h2>
-                
+
                 <!-- TANGGALIN ANG SEARCH AND FILTER CONTROLS -->
-                
+
                 <div class="booking-table-container">
                     <table class="booking-table">
                         <thead>
@@ -1257,39 +1246,29 @@
                                 <td data-label="Booking Date">{{ booking.booking_date }}</td>
                                 <td data-label="Equipment" class="equipment-cell expandable"
                                     title="Click to view full details">
-                                    {% if booking.tent_qty and booking.tent_qty > 0 %}
-                                    🏕️ Tent x{{ booking.tent_qty }}<br>
+                                    {% if booking.parsed_items %}
+                                    {% for item in booking.parsed_items %}
+                                    {% if 'Tent' in item.name or 'Shelter' in item.name %}
+                                    🏕️ {{ item.name }} x{{ item.quantity }}
+                                    {% elif 'Chair' in item.name or 'Table' in item.name or 'Furniture' in item.name %}
+                                    🪑 {{ item.name }} x{{ item.quantity }}
+                                    {% elif 'Basketball' in item.name or 'Volleyball' in item.name or 'Sports' in
+                                    item.name %}
+                                    🏀 {{ item.name }} x{{ item.quantity }}
+                                    {% elif 'Microphone' in item.name or 'Speaker' in item.name or 'Sound' in item.name
+                                    %}
+                                    🎤 {{ item.name }} x{{ item.quantity }}
+                                    {% elif 'Stove' in item.name or 'Cooking' in item.name or 'Pot' in item.name %}
+                                    🍳 {{ item.name }} x{{ item.quantity }}
+                                    {% else %}
+                                    📦 {{ item.name }} x{{ item.quantity }}
                                     {% endif %}
-                                    {% if booking.chairs_qty and booking.chairs_qty > 0 %}
-                                    🪑 Chairs x{{ booking.chairs_qty }}<br>
+                                    {% if not loop.last %}<br>{% endif %}
+                                    {% endfor %}
+                                    {% else %}
+                                    ❌ Walang ibang kagamitan
                                     {% endif %}
-                                    {% if booking.basketball_qty and booking.basketball_qty > 0 %}
-                                    🏀 Basketball x{{ booking.basketball_qty }}<br>
-                                    {% endif %}
-                                    {% if booking.basketball_net_qty and booking.basketball_net_qty > 0 %}
-                                    🏐 Basketball Net x{{ booking.basketball_net_qty }}<br>
-                                    {% endif %}
-                                    {% if booking.volleyball_qty and booking.volleyball_qty > 0 %}
-                                    ⚽ Volleyball x{{ booking.volleyball_qty }}<br>
-                                    {% endif %}
-                                    {% if booking.volleyball_net_qty and booking.volleyball_net_qty > 0 %}
-                                    🥅 Volleyball Net x{{ booking.volleyball_net_qty }}<br>
-                                    {% endif %}
-                                    {% if booking.long_table_qty and booking.long_table_qty > 0 %}
-                                    📋 Long Table x{{ booking.long_table_qty }}<br>
-                                    {% endif %}
-                                    {% if booking.wooden_table_qty and booking.wooden_table_qty > 0 %}
-                                    🪵 Wooden Table x{{ booking.wooden_table_qty }}<br>
-                                    {% endif %}
-                                    {% if booking.other_items %}
-                                    📝 {{ booking.other_items }}
-                                    {% endif %}
-                                    {% if not booking.tent_qty and not booking.chairs_qty and not booking.basketball_qty 
-                                        and not booking.basketball_net_qty and not booking.volleyball_qty 
-                                        and not booking.volleyball_net_qty and not booking.long_table_qty 
-                                        and not booking.wooden_table_qty and not booking.other_items %}
-                                    -
-                                    {% endif %}
+                                </td>
                                 </td>
                                 <td data-label="Status">
                                     <span class="status-badge 
@@ -1523,18 +1502,18 @@
                 e.preventDefault();
                 const button = e.currentTarget;
                 const bookingId = button.getAttribute('data-booking-id');
-                
+
                 try {
                     // Show loading state
                     const detailsContent = document.getElementById('bookingDetailsContent');
                     detailsContent.innerHTML = '<div style="text-align:center;padding:20px;"><span class="loading"></span> Loading details...</div>';
-                    
+
                     this.detailsModal.style.display = 'flex';
-                    
+
                     // Fetch booking details
                     const response = await fetch(`/booking_details/${bookingId}`);
                     const booking = await response.json();
-                    
+
                     if (booking.success) {
                         this.displayBookingDetails(booking.data);
                     } else {
@@ -1545,75 +1524,89 @@
                     detailsContent.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Error loading booking details</p></div>';
                 }
             }
-            
+
             displayBookingDetails(booking) {
-                const detailsContent = document.getElementById('bookingDetailsContent');
-                
-                let equipmentHTML = '';
-                if (booking.tent_qty > 0) equipmentHTML += `<li>🏕️ Tent: ${booking.tent_qty} pcs</li>`;
-                if (booking.chairs_qty > 0) equipmentHTML += `<li>🪑 Chairs: ${booking.chairs_qty} pcs</li>`;
-                if (booking.basketball_qty > 0) equipmentHTML += `<li>🏀 Basketball: ${booking.basketball_qty} pcs</li>`;
-                if (booking.basketball_net_qty > 0) equipmentHTML += `<li>🏐 Basketball Net: ${booking.basketball_net_qty} pcs</li>`;
-                if (booking.volleyball_qty > 0) equipmentHTML += `<li>⚽ Volleyball: ${booking.volleyball_qty} pcs</li>`;
-                if (booking.volleyball_net_qty > 0) equipmentHTML += `<li>🥅 Volleyball Net: ${booking.volleyball_net_qty} pcs</li>`;
-                if (booking.long_table_qty > 0) equipmentHTML += `<li>📋 Long Table: ${booking.long_table_qty} pcs</li>`;
-                if (booking.wooden_table_qty > 0) equipmentHTML += `<li>🪵 Wooden Table: ${booking.wooden_table_qty} pcs</li>`;
-                if (booking.other_items) equipmentHTML += `<li>📝 Other: ${booking.other_items}</li>`;
-                
-                if (!equipmentHTML) equipmentHTML = '<li>No equipment specified</li>';
-                
-                detailsContent.innerHTML = `
-                    <div class="booking-detail">
-                        <span class="detail-label">Ticket ID:</span>
-                        <span class="detail-value">${booking.ticket_number}</span>
-                    </div>
-                    <div class="booking-detail">
-                        <span class="detail-label">Event Type:</span>
-                        <span class="detail-value">${booking.event_type}</span>
-                    </div>
-                    <div class="booking-detail">
-                        <span class="detail-label">Event Date:</span>
-                        <span class="detail-value">${booking.event_date}</span>
-                    </div>
-                    <div class="booking-detail">
-                        <span class="detail-label">Booking Date:</span>
-                        <span class="detail-value">${booking.booking_date}</span>
-                    </div>
-                    <div class="booking-detail">
-                        <span class="detail-label">Status:</span>
-                        <span class="detail-value">
-                            <span class="status-badge ${this.getStatusClass(booking.status)}">
-                                ${booking.status}
-                            </span>
-                        </span>
-                    </div>
-                    <div class="booking-detail">
-                        <span class="detail-label">Contact Number:</span>
-                        <span class="detail-value">${booking.contact_number || 'N/A'}</span>
-                    </div>
-                    <div class="booking-detail">
-                        <span class="detail-label">Email:</span>
-                        <span class="detail-value">${booking.email || 'N/A'}</span>
-                    </div>
-                    <div class="booking-detail">
-                        <span class="detail-label">Equipment:</span>
-                        <span class="detail-value">
-                            <ul class="equipment-list">
-                                ${equipmentHTML}
-                            </ul>
-                        </span>
-                    </div>
-                    ${booking.additional_notes ? `
-                    <div class="booking-detail">
-                        <span class="detail-label">Additional Notes:</span>
-                        <span class="detail-value">${booking.additional_notes}</span>
-                    </div>
-                    ` : ''}
-                `;
-            }
-            
+    const detailsContent = document.getElementById('bookingDetailsContent');
+
+    let equipmentHTML = '';
+    if (booking.equipment_list && booking.equipment_list.length > 0) {
+        booking.equipment_list.forEach(item => {
+            let emoji = '📦'; // default
+            if (item.category_id === 'cat1') emoji = '🏕️';
+            else if (item.category_id === 'cat2') emoji = '🪑';
+            else if (item.category_id === 'cat3') emoji = '⚽';
+            else if (item.category_id === 'cat4') emoji = '🎤';
+            else if (item.category_id === 'cat5') emoji = '🍳';
+            equipmentHTML += `<li>${emoji} ${item.name}: ${item.quantity} pcs</li>`;
+        });
+    } else {
+        equipmentHTML = '<li>No equipment specified</li>';
+    }
+
+    // Get user name from user data or users relation
+    let userName = 'User #' + booking.user_id;
+    if (booking.users) {
+        userName = `${booking.users.first_name} ${booking.users.last_name}`;
+    } else if (booking.first_name && booking.last_name) {
+        userName = `${booking.first_name} ${booking.last_name}`;
+    }
+
+    detailsContent.innerHTML = `
+        <div class="booking-detail">
+            <span class="detail-label">Ticket ID:</span>
+            <span class="detail-value">${booking.ticket_number}</span>
+        </div>
+        <div class="booking-detail">
+            <span class="detail-label">User:</span>
+            <span class="detail-value">${userName}</span>
+        </div>
+        <div class="booking-detail">
+            <span class="detail-label">Event Type:</span>
+            <span class="detail-value">${booking.event_type || 'N/A'}</span>
+        </div>
+        <div class="booking-detail">
+            <span class="detail-label">Event Date:</span>
+            <span class="detail-value">${booking.event_date}</span>
+        </div>
+        <div class="booking-detail">
+            <span class="detail-label">Booking Date:</span>
+            <span class="detail-value">${booking.created_at ? booking.created_at.slice(0, 10) : 'N/A'}</span>
+        </div>
+        <div class="booking-detail">
+            <span class="detail-label">Status:</span>
+            <span class="detail-value">
+                <span class="status-badge ${this.getStatusClass(booking.status)}">
+                    ${booking.status}
+                </span>
+            </span>
+        </div>
+        <div class="booking-detail">
+            <span class="detail-label">Contact Number:</span>
+            <span class="detail-value">${booking.contact_number || 'N/A'}</span>
+        </div>
+        <div class="booking-detail">
+            <span class="detail-label">Email:</span>
+            <span class="detail-value">${booking.email || 'N/A'}</span>
+        </div>
+        <div class="booking-detail">
+            <span class="detail-label">Equipment:</span>
+            <span class="detail-value">
+                <ul class="equipment-list">
+                    ${equipmentHTML}
+                </ul>
+            </span>
+        </div>
+        ${booking.additional_notes ? `
+        <div class="booking-detail">
+            <span class="detail-label">Additional Notes:</span>
+            <span class="detail-value">${booking.additional_notes}</span>
+        </div>
+        ` : ''}
+    `;
+}
+
             getStatusClass(status) {
-                switch(status) {
+                switch (status) {
                     case 'Pending': return 'status-pending';
                     case 'Approved': return 'status-approved';
                     case 'Completed': return 'status-approved';

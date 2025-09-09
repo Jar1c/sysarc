@@ -202,6 +202,25 @@ def booking():
     user_data = supabase.table("users").select("*").eq("id", user_id).execute()
     user = user_data.data[0] if user_data.data else None
 
+    # Helper function to parse other_items string
+    def parse_other_items(items_str):
+        if not items_str:
+            return []
+        items = []
+        for item_str in items_str.split(", "):
+            if " x" in item_str:
+                name, qty_str = item_str.rsplit(" x", 1)
+                try:
+                    quantity = int(qty_str)
+                    items.append({
+                        "name": name.strip(),
+                        "quantity": quantity
+                    })
+                except ValueError:
+                    # Skip if can't parse quantity
+                    continue
+        return items
+
     # My Bookings: Pending or Approved only
     bookings_data = supabase.table("bookings") \
         .select("*") \
@@ -211,6 +230,10 @@ def booking():
         .execute()
     bookings = bookings_data.data if bookings_data.data else []
 
+    # Parse other_items for each booking
+    for booking in bookings:
+        booking["parsed_items"] = parse_other_items(booking.get("other_items", ""))
+
     # Booking History: Completed, Cancelled
     history_data = supabase.table("bookings") \
         .select("*") \
@@ -219,6 +242,10 @@ def booking():
         .order("event_date", desc=True) \
         .execute()
     booking_history = history_data.data if history_data.data else []
+
+    # Also parse for booking history
+    for booking in booking_history:
+        booking["parsed_items"] = parse_other_items(booking.get("other_items", ""))
 
     return render_template(
         "booking.html", 
@@ -239,7 +266,40 @@ def booking_details(booking_id):
         if not booking_data.data:
             return jsonify({"success": False, "message": "Booking not found"})
         
-        return jsonify({"success": True, "data": booking_data.data[0]})
+        booking = booking_data.data[0]
+        
+        # Kunin ang listahan ng lahat ng active equipment para i-map (kasama na ang category_id)
+        try:
+            equipment_data = supabase.table("inventory").select("id, name, category_id").eq("is_active", True).execute()
+            # Gumawa ng map: name → category_id (para sa matching)
+            name_to_category = {item['name']: item['category_id'] for item in equipment_data.data} if equipment_data.data else {}
+        except Exception as e:
+            name_to_category = {}
+            print(f"Error fetching equipment map: {e}")
+
+        # I-decode ang other_items field at i-assign ang category_id
+        equipment_list = []
+        if booking.get("other_items"):
+            for item_str in booking["other_items"].split(", "):
+                if " x" in item_str:
+                    name_part, qty_str = item_str.rsplit(" x", 1)
+                    name = name_part.strip()  # Important: i-strip para walang space
+                    try:
+                        qty = int(qty_str)
+                        # Hanapin ang category_id base sa name
+                        category_id = name_to_category.get(name, "cat6")  # Default: cat6 (Other)
+                        equipment_list.append({
+                            "name": name,
+                            "quantity": qty,
+                            "category_id": category_id  # ✅ Ito ang idinagdag para sa JS emoji logic
+                        })
+                    except ValueError:
+                        continue
+
+        # I-override ang booking data para isama ang decoded equipment (kasama category_id)
+        booking["equipment_list"] = equipment_list
+
+        return jsonify({"success": True, "data": booking})
     
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
@@ -274,7 +334,36 @@ def booking2_page():
     if "user" not in session:
         flash("Please login first!", "error")
         return redirect(url_for("signin"))
-    return render_template("booking2.html")
+    
+    # ✅ ILALAGAY MO ANG CODE DITO ✅
+    try:
+        equipment_data = supabase.table("inventory").select("*").eq("is_active", True).execute()
+        equipment_list = equipment_data.data if equipment_data.data else []
+
+        # I-group ang equipment sa categories
+        categories = {
+            "cat1": {"name": "🏕️ Tents & Shelters", "items": []},
+            "cat2": {"name": "🪑 Furniture", "items": []},
+            "cat3": {"name": "🏀 Sports Equipment", "items": []},
+            "cat4": {"name": "🎤 Sound Equipment", "items": []},
+            "cat5": {"name": "🍳 Cooking Equipment", "items": []},
+            "cat6": {"name": "📦 Other Equipment", "items": []}
+        }
+
+        for item in equipment_list:
+            cat_id = item.get("category_id", "cat6")  # default to "Other"
+            if cat_id in categories:
+                categories[cat_id]["items"].append(item)
+            else:
+                categories["cat6"]["items"].append(item)
+
+        # I-filter ang categories na may laman
+        active_categories = {k: v for k, v in categories.items() if v["items"]}
+    except Exception as e:
+        active_categories = {}
+        print(f"Error fetching equipment: {e}")
+
+    return render_template("booking2.html", active_categories=active_categories)
 
 @app.route("/booking3", methods=["GET", "POST"])
 def booking3():
@@ -283,7 +372,34 @@ def booking3():
         return redirect(url_for("signin"))
 
     if request.method == "GET":
-        return render_template("booking3.html")
+        try:
+            equipment_data = supabase.table("inventory").select("*").eq("is_active", True).execute()
+            equipment_list = equipment_data.data if equipment_data.data else []
+
+            # I-group ang equipment sa categories
+            categories = {
+                "cat1": {"name": "🏕️ Tents & Shelters", "items": []},
+                "cat2": {"name": "🪑 Furniture", "items": []},
+                "cat3": {"name": "🏀 Sports Equipment", "items": []},
+                "cat4": {"name": "🎤 Sound Equipment", "items": []},
+                "cat5": {"name": "🍳 Cooking Equipment", "items": []},
+                "cat6": {"name": "📦 Other Equipment", "items": []}
+            }
+
+            for item in equipment_list:
+                cat_id = item.get("category_id", "cat6")  # default to "Other"
+                if cat_id in categories:
+                    categories[cat_id]["items"].append(item)
+                else:
+                    categories["cat6"]["items"].append(item)
+
+            # I-filter ang categories na may laman
+            active_categories = {k: v for k, v in categories.items() if v["items"]}
+        except Exception as e:
+            active_categories = {}
+            print(f"Error fetching equipment: {e}")
+
+        return render_template("booking3.html", active_categories=active_categories)
     
     # Process POST request
     user_id = session["user"]["id"]
@@ -299,33 +415,53 @@ def booking3():
         flash("You already booked! You can't book multiple.", "error")
         return redirect(url_for("booking3"))
 
+    # ✅ Kunin muna ang listahan ng lahat ng active equipment para i-map
+    try:
+        equipment_data = supabase.table("inventory").select("id, name").eq("is_active", True).execute()
+        equipment_map = {item['id']: item['name'] for item in equipment_data.data} if equipment_data.data else {}
+    except Exception as e:
+        equipment_map = {}
+        print(f"Error fetching equipment map: {e}")
+
+    # ✅ I-store ang quantities sa dictionary
+    equipment_quantities = {}
+
+    for item_id in equipment_map.keys():
+        qty_key = f"{item_id}_qty"  # Hal. "abc123_qty"
+        qty = int(request.form.get(qty_key, 0) or 0)
+        if qty > 0:
+            equipment_quantities[item_id] = {
+                "name": equipment_map[item_id],
+                "quantity": qty
+            }
+
+    # ✅ I-combine ang lahat ng selected equipment (both main list and "other" items)
+    all_equipment_list = []
+
+    # Add from main equipment list
+    for item_id, info in equipment_quantities.items():
+        all_equipment_list.append(f"{info['name']} x{info['quantity']}")
+
+    # Add from "Other Equipment" section
+    other_item_name = request.form.get("other_items", "").strip()
+    other_qty = int(request.form.get("others_qty", 0) or 0)
+    if other_item_name and other_qty > 0:
+        all_equipment_list.append(f"{other_item_name} x{other_qty}")
+
+    # ✅ I-combine lahat
+    all_other_items = ", ".join(all_equipment_list) if all_equipment_list else ""
+    total_others_qty = sum(info['quantity'] for info in equipment_quantities.values()) + (other_qty or 0)
+
     # Collect form data
     event_date = request.form.get("event_date", "").strip()
     contact_number = request.form.get("phone", "").strip()
     email = request.form.get("email", "").strip()
-    tent_qty = int(request.form.get("tent_qty", 0) or 0)
-    chairs_qty = int(request.form.get("chairs_qty", 0) or 0)
-    basketball_qty = int(request.form.get("basketball_qty", 0) or 0)
-    volleyball_qty = int(request.form.get("volleyball_qty", 0) or 0)
-    basketball_net_qty = int(request.form.get("basketball_net_qty", 0) or 0)
-    volleyball_net_qty = int(request.form.get("volleyball_net_qty", 0) or 0)
-    long_table_qty = int(request.form.get("long_table_qty", 0) or 0)
-    wooden_table_qty = int(request.form.get("wooden_table_qty", 0) or 0)
-    
-    # Kunin ang other items - ITO ANG BAGO!
-    other_item_name = request.form.get("other_items", "").strip()  # ← equipment name
-    other_qty = int(request.form.get("others_qty", 0) or 0)       # ← quantity
-    
-    # Gawing format na "Item xQuantity"
-    if other_item_name and other_qty > 0:
-        other_items = f"{other_item_name} x{other_qty}"
-    else:
-        other_items = ""
 
     # Generate IDs
     booking_id = str(uuid.uuid4())
     ticket_number = "TKT-" + str(uuid.uuid4())[:8].upper()
 
+    # ✅ Gumamit na ng bagong `all_other_items` at `total_others_qty`
     booking_data = {
         "id": booking_id,
         "user_id": user_id,
@@ -333,16 +469,8 @@ def booking3():
         "event_date": event_date,
         "contact_number": contact_number,
         "email": email,
-        "tent_qty": tent_qty,
-        "chairs_qty": chairs_qty,
-        "basketball_qty": basketball_qty,
-        "volleyball_qty": volleyball_qty,
-        "basketball_net_qty": basketball_net_qty,
-        "volleyball_net_qty": volleyball_net_qty,
-        "long_table_qty": long_table_qty,
-        "wooden_table_qty": wooden_table_qty,
-        "others_qty": other_qty,      # ← ITO ANG QUANTITY
-        "other_items": other_items,   # ← ITO ANG DESCRIPTION
+        "others_qty": total_others_qty,      # ← ITO ANG TOTAL QUANTITY
+        "other_items": all_other_items,      # ← ITO ANG LAHAT NG ITEM DESCRIPTIONS
         "status": "Pending",
         "created_at": datetime.now().isoformat()
     }
@@ -354,8 +482,6 @@ def booking3():
     except Exception as e:
         flash(f"Unexpected error: {str(e)}", "error")
         return redirect(url_for("booking3"))
-    
-
 
 
 @app.route("/book_event", methods=["POST"])
@@ -378,41 +504,57 @@ def book_event():
         return redirect(url_for("booking2_page"))
 
     try:
-        # Get form data
+        # Get form data (event info, contact info)
         event_type = request.form.get("event_type", "").strip()
         event_date = request.form.get("event_date", "").strip()
         contact_number = request.form.get("phone", "").strip()
         email = request.form.get("email", "").strip()
-        tent_qty = int(request.form.get("tent_qty", 0) or 0)
-        chairs_qty = int(request.form.get("chairs_qty", 0) or 0)
-        basketball_qty = int(request.form.get("basketball_qty", 0) or 0)
-        volleyball_qty = int(request.form.get("volleyball_qty", 0) or 0)
-        basketball_net_qty = int(request.form.get("basketball_net_qty", 0) or 0)
-        volleyball_net_qty = int(request.form.get("volleyball_net_qty", 0) or 0)
-        long_table_qty = int(request.form.get("long_table_qty", 0) or 0)
-        wooden_table_qty = int(request.form.get("wooden_table_qty", 0) or 0)
-        
-        # KUNIN ANG LAHAT NG OTHER ITEMS - ITO ANG BAGO!
-        other_items_list = []
-        
-        # Kunin ang main other item
+
+        # ✅ Kunin muna ang listahan ng lahat ng active equipment para i-map
+        try:
+            equipment_data = supabase.table("inventory").select("id, name").eq("is_active", True).execute()
+            equipment_map = {item['id']: item['name'] for item in equipment_data.data} if equipment_data.data else {}
+        except Exception as e:
+            equipment_map = {}
+            print(f"Error fetching equipment map: {e}")
+
+        # ✅ I-store ang quantities sa dictionary
+        equipment_quantities = {}
+
+        for item_id in equipment_map.keys():
+            qty_key = f"{item_id}_qty"  # Hal. "abc123_qty"
+            qty = int(request.form.get(qty_key, 0) or 0)
+            if qty > 0:
+                equipment_quantities[item_id] = {
+                    "name": equipment_map[item_id],
+                    "quantity": qty
+                }
+
+        # ✅ I-combine ang lahat ng selected equipment (both main list and "other" items)
+        all_equipment_list = []
+
+        # Add from main equipment list
+        for item_id, info in equipment_quantities.items():
+            all_equipment_list.append(f"{info['name']} x{info['quantity']}")
+
+        # Add from "Other Equipment" section
         main_other_item = request.form.get("other_items", "").strip()
         main_other_qty = request.form.get("other_qty", "0").strip()
         
         if main_other_item and int(main_other_qty) > 0:
-            other_items_list.append(f"{main_other_item} x{main_other_qty}")
+            all_equipment_list.append(f"{main_other_item} x{main_other_qty}")
         
         # Kunin ang mga dynamically added other items
         additional_items = request.form.getlist("other_items[]")
         for item in additional_items:
             if item.strip():  # Kung may laman
-                other_items_list.append(item.strip())
-        
-        # I-combine ang lahat ng other items sa isang string
-        all_other_items = ", ".join(other_items_list) if other_items_list else ""
+                all_equipment_list.append(item.strip())
+
+        # I-combine lahat
+        all_other_items = ", ".join(all_equipment_list) if all_equipment_list else ""
         
         # Calculate total others quantity
-        others_qty = sum(int(qty) for item in other_items_list for qty in item.split('x')[1:] if 'x' in item)
+        others_qty = sum(int(qty) for item in all_equipment_list for qty in item.split('x')[1:] if 'x' in item)
 
         # Generate IDs
         booking_id = str(uuid.uuid4())
@@ -426,16 +568,13 @@ def book_event():
             "event_date": event_date,
             "contact_number": contact_number,
             "email": email,
-            "tent_qty": tent_qty,
-            "chairs_qty": chairs_qty,
-            "basketball_qty": basketball_qty,
-            "volleyball_qty": volleyball_qty,
-            "basketball_net_qty": basketball_net_qty,
-            "volleyball_net_qty": volleyball_net_qty,
-            "long_table_qty": long_table_qty,
-            "wooden_table_qty": wooden_table_qty,
-            "others_qty": others_qty,  # ← TOTAL QUANTITY
-            "other_items": all_other_items,  # ← LAHAT NG ITEM DESCRIPTIONS
+            # ❌ Tanggalin mo na ang mga static na fields tulad ng:
+            # "tent_qty": tent_qty,
+            # "chairs_qty": chairs_qty,
+            # ... etc ...
+            # ✅ I-replace ng:
+            "others_qty": others_qty,      # ← ITO ANG TOTAL QUANTITY
+            "other_items": all_other_items,   # ← ITO ANG LAHAT NG ITEM DESCRIPTIONS
             "status": "Pending",
             "created_at": datetime.now().isoformat()
         }
@@ -463,24 +602,60 @@ def admin_portal():
         total_bookings = supabase.table("bookings").select("*").execute()
         total_users = supabase.table("users").select("*").execute()
         
-        # Kunin ang mga pending approvals
-        pending_approvals = supabase.table("bookings").select("*, users(first_name, last_name)").eq("status", "Pending").execute()
+        # Kunin ang mga pending approvals KASAMA ANG USER INFO
+        pending_approvals_data = supabase.table("bookings").select("*, users(first_name, last_name)").eq("status", "Pending").execute()
         
+        # ✅ Helper function to parse other_items
+        def parse_other_items(items_str):
+            if not items_str:
+                return []
+            items = []
+            for item_str in items_str.split(", "):
+                if " x" in item_str:
+                    name, qty_str = item_str.rsplit(" x", 1)
+                    try:
+                        quantity = int(qty_str)
+                        items.append({
+                            "name": name.strip(),
+                            "quantity": quantity
+                        })
+                    except ValueError:
+                        continue
+            return items
+
+        # ✅ Parse other_items for each pending approval
+        pending_approvals = []
+        if pending_approvals_data.data:
+            for booking in pending_approvals_data.data:
+                booking["parsed_items"] = parse_other_items(booking.get("other_items", ""))
+                pending_approvals.append(booking)
+
         # Kunin ang lahat ng bookings
-        all_bookings = supabase.table("bookings").select("*, users(first_name, last_name)").execute()
+        all_bookings_data = supabase.table("bookings").select("*, users(first_name, last_name)").execute()
+        all_bookings = []
+        if all_bookings_data.data:
+            for booking in all_bookings_data.data:
+                booking["parsed_items"] = parse_other_items(booking.get("other_items", ""))
+                all_bookings.append(booking)
+
+        # Kunin ang lahat ng equipment
+        equipment_data = supabase.table("inventory").select("*").execute()
+        equipment_items = equipment_data.data if equipment_data.data else []
         
         # I-prepare ang data
         stats = {
             "total_bookings": len(total_bookings.data) if total_bookings.data else 0,
             "total_users": len(total_users.data) if total_users.data else 0,
-            "pending_approvals": len(pending_approvals.data) if pending_approvals.data else 0
+            "pending_approvals": len(pending_approvals),
+            "total_equipment": len(equipment_items)
         }
         
         return render_template(
             "admin_portal.html", 
             stats=stats,
-            pending_approvals=pending_approvals.data if pending_approvals.data else [],
-            all_bookings=all_bookings.data if all_bookings.data else []
+            pending_approvals=pending_approvals,
+            all_bookings=all_bookings,
+            equipment_items=equipment_items
         )
     
     except Exception as e:
@@ -499,7 +674,40 @@ def admin_booking_details(booking_id):
         if not booking_data.data:
             return jsonify({"success": False, "message": "Booking not found"})
         
-        return jsonify({"success": True, "data": booking_data.data[0]})
+        booking = booking_data.data[0]
+
+        # Kunin ang listahan ng lahat ng active equipment para i-map (kasama na ang category_id)
+        try:
+            equipment_data = supabase.table("inventory").select("id, name, category_id").eq("is_active", True).execute()
+            # Gumawa ng map: name → category_id (para sa matching)
+            name_to_category = {item['name']: item['category_id'] for item in equipment_data.data} if equipment_data.data else {}
+        except Exception as e:
+            name_to_category = {}
+            print(f"Error fetching equipment map: {e}")
+
+        # I-decode ang other_items field at i-assign ang category_id
+        equipment_list = []
+        if booking.get("other_items"):
+            for item_str in booking["other_items"].split(", "):
+                if " x" in item_str:
+                    name_part, qty_str = item_str.rsplit(" x", 1)
+                    name = name_part.strip()  # Important: i-strip para walang space
+                    try:
+                        qty = int(qty_str)
+                        # Hanapin ang category_id base sa name
+                        category_id = name_to_category.get(name, "cat6")  # Default: cat6 (Other)
+                        equipment_list.append({
+                            "name": name,
+                            "quantity": qty,
+                            "category_id": category_id  # ✅ Ito ang idinagdag para sa JS emoji logic
+                        })
+                    except ValueError:
+                        continue
+
+        # I-override ang booking data para isama ang decoded equipment (kasama category_id)
+        booking["equipment_list"] = equipment_list
+
+        return jsonify({"success": True, "data": booking})
     
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
@@ -549,6 +757,129 @@ def admin_reject_booking():
     
     except Exception as e:
         return jsonify({"success": False, "message": f"Error: {str(e)}"})
+
+# Equipment Management Routes
+@app.route("/admin/equipment")
+def admin_equipment_management():
+    if "user" not in session or session["user"]["role"] != "admin":
+        flash("Admins only!", "error")
+        return redirect(url_for("admin_login"))
+    
+    try:
+        # Kunin ang lahat ng equipment
+        equipment_data = supabase.table("inventory").select("*").execute()
+        equipment_items = equipment_data.data if equipment_data.data else []
+        
+        return render_template(
+            "admin_portal.html",  # Dapat naka-set na ito sa iyong admin portal
+            equipment_items=equipment_items,
+            active_tab="equipment-management"  # Para ma-highlight ang tamang tab
+        )
+    
+    except Exception as e:
+        flash(f"Error loading equipment: {str(e)}", "error")
+        return redirect(url_for("admin_portal"))
+
+@app.route("/admin/equipment/<item_id>")
+def get_equipment_item(item_id):
+    if "user" not in session or session["user"]["role"] != "admin":
+        return jsonify({"success": False, "message": "Unauthorized"})
+    
+    try:
+        equipment_data = supabase.table("inventory").select("*").eq("id", item_id).execute()
+        
+        if not equipment_data.data:
+            return jsonify({"success": False, "message": "Equipment not found"})
+        
+        return jsonify({"success": True, "item": equipment_data.data[0]})
+    
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
+
+@app.route("/admin/equipment/add", methods=["POST"])
+def add_equipment():
+    if "user" not in session or session["user"]["role"] != "admin":
+        return jsonify({"success": False, "message": "Unauthorized"})
+    
+    try:
+        data = request.get_json()
+        
+        # Validation
+        required_fields = ["name", "category_id", "quantity_total", "quantity_available"]
+        for field in required_fields:
+            if not data.get(field):
+                return jsonify({"success": False, "message": f"Missing required field: {field}"})
+        
+        # Create equipment data
+        equipment_data = {
+            "id": str(uuid.uuid4()),
+            "name": data["name"],
+            "category_id": data["category_id"],
+            "description": data.get("description", ""),
+            "quantity_total": int(data["quantity_total"]),
+            "quantity_available": int(data["quantity_available"]),
+            "is_active": data.get("is_active", True),
+            "created_at": datetime.now().isoformat()
+        }
+        
+        # Insert into database
+        supabase.table("inventory").insert(equipment_data).execute()
+        
+        return jsonify({"success": True, "message": "Equipment added successfully"})
+    
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Error: {str(e)}"})
+
+@app.route("/admin/equipment/update", methods=["POST"])
+def update_equipment():
+    if "user" not in session or session["user"]["role"] != "admin":
+        return jsonify({"success": False, "message": "Unauthorized"})
+    
+    try:
+        data = request.get_json()
+        item_id = data.get("id")
+        
+        if not item_id:
+            return jsonify({"success": False, "message": "No equipment ID provided"})
+        
+        # Prepare update data
+        update_data = {
+            "name": data["name"],
+            "category_id": data["category_id"],
+            "description": data.get("description", ""),
+            "quantity_total": int(data["quantity_total"]),
+            "quantity_available": int(data["quantity_available"]),
+            "is_active": data.get("is_active", True)
+        }
+        
+        # Update database
+        supabase.table("inventory").update(update_data).eq("id", item_id).execute()
+        
+        return jsonify({"success": True, "message": "Equipment updated successfully"})
+    
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Error: {str(e)}"})
+
+@app.route("/admin/equipment/delete", methods=["POST"])
+def delete_equipment():
+    if "user" not in session or session["user"]["role"] != "admin":
+        return jsonify({"success": False, "message": "Unauthorized"})
+    
+    try:
+        data = request.get_json()
+        item_id = data.get("id")
+        
+        if not item_id:
+            return jsonify({"success": False, "message": "No equipment ID provided"})
+        
+        # Delete from database
+        supabase.table("inventory").delete().eq("id", item_id).execute()
+        
+        return jsonify({"success": True, "message": "Equipment deleted successfully"})
+    
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Error: {str(e)}"})
+
 
 @app.route("/admin_login", methods=["GET", "POST"])
 def admin_login():
