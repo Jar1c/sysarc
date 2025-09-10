@@ -461,11 +461,26 @@ def booking3():
     booking_id = str(uuid.uuid4())
     ticket_number = "TKT-" + str(uuid.uuid4())[:8].upper()
 
+    # ✅ KUNIN ANG USER'S FIRST_NAME AT LAST_NAME MULA SA DATABASE
+    try:
+        user_response = supabase.table("users").select("first_name, last_name").eq("id", user_id).execute()
+        user_data = user_response.data[0] if user_response.data else {}
+        user_first_name = user_data.get("first_name", "")
+        user_last_name = user_data.get("last_name", "")
+    except Exception as e:
+        # Kung may error, gamitin ang empty string para hindi mabigong mag-insert
+        user_first_name = ""
+        user_last_name = ""
+        print(f"Error fetching user data: {e}")
+
     # ✅ Gumamit na ng bagong `all_other_items` at `total_others_qty`
+    # ✅ IDINAGDAG NA ANG first_name AT last_name
     booking_data = {
         "id": booking_id,
         "user_id": user_id,
         "ticket_number": ticket_number,
+        "first_name": user_first_name,  # ✅ ADDED
+        "last_name": user_last_name,   # ✅ ADDED
         "event_date": event_date,
         "contact_number": contact_number,
         "email": email,
@@ -560,19 +575,30 @@ def book_event():
         booking_id = str(uuid.uuid4())
         ticket_number = "TKT-" + str(uuid.uuid4())[:8].upper()
 
+        # ✅ KUNIN ANG USER'S FIRST_NAME AT LAST_NAME MULA SA DATABASE
+        try:
+            user_response = supabase.table("users").select("first_name, last_name").eq("id", user_id).execute()
+            user_data = user_response.data[0] if user_response.data else {}
+            user_first_name = user_data.get("first_name", "")
+            user_last_name = user_data.get("last_name", "")
+        except Exception as e:
+            # Kung may error, gamitin ang empty string para hindi mabigong mag-insert
+            user_first_name = ""
+            user_last_name = ""
+            print(f"Error fetching user  {e}")
+
+        # ✅ Gumamit na ng bagong `all_other_items` at `total_others_qty`
+        # ✅ IDINAGDAG NA ANG first_name AT last_name
         booking_data = {
             "id": booking_id,
             "user_id": user_id,
             "ticket_number": ticket_number,
+            "first_name": user_first_name,  # ✅ ADDED
+            "last_name": user_last_name,   # ✅ ADDED
             "event_type": event_type,
             "event_date": event_date,
             "contact_number": contact_number,
             "email": email,
-            # ❌ Tanggalin mo na ang mga static na fields tulad ng:
-            # "tent_qty": tent_qty,
-            # "chairs_qty": chairs_qty,
-            # ... etc ...
-            # ✅ I-replace ng:
             "others_qty": others_qty,      # ← ITO ANG TOTAL QUANTITY
             "other_items": all_other_items,   # ← ITO ANG LAHAT NG ITEM DESCRIPTIONS
             "status": "Pending",
