@@ -769,6 +769,69 @@
             box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
         }
 
+        .notification-dropdown {
+            display: none;
+            position: absolute;
+            top: 60px;
+            right: 30px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            width: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+            z-index: 1001;
+        }
+
+        .notification-header {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            font-weight: bold;
+            color: var(--dark);
+        }
+
+        .notification-list {
+            padding: 10px 0;
+        }
+
+        .notification-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f5f5f5;
+            cursor: pointer;
+        }
+
+        .notification-item.unread {
+            background-color: #f8f9fa;
+        }
+
+        .notification-item:hover {
+            background-color: #e9ecef !important;
+        }
+
+        .notification-bell {
+            position: relative;
+            margin-left: auto;
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        .notification-bell i {
+            font-size: 1.5rem;
+            color: var(--dark);
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background-color: var(--accent);
+            color: white;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 0.75rem;
+        }
+
         /* Responsive Design */
         @media (max-width: 992px) {
             .sidebar {
@@ -1075,6 +1138,33 @@
                 <i class="fas fa-bars"></i>
             </div>
             <img src="/static/img/brgy_baritan_logo.png" alt="brgy baritan" height="50">
+            <!-- Notification Bell -->
+            <div class="notification-bell">
+                <i class="fas fa-bell" style="color: #023e8a;"></i> <!-- ✅ DITO DIN -->
+                {% if unread_count > 0 %}
+                <span class="notification-badge">{{ unread_count }}</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Notification Dropdown -->
+        <div id="notificationDropdown" class="notification-dropdown">
+            <div class="notification-header">Notifications</div>
+            <div class="notification-list">
+                {% if notifications and notifications|length > 0 %}
+                {% for notif in notifications %}
+                <div class="notification-item {% if not notif.is_read %}unread{% endif %}"
+                    data-notification-id="{{ notif.id }}" data-link="{{ notif.link }}">
+                    <div style="font-size: 0.9rem; margin-bottom: 5px;">{{ notif.message }}</div>
+                    <div style="font-size: 0.75rem; color: #777;">{{ notif.created_at[:10] }}</div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="notification-item">
+                    <div style="padding: 20px 15px; text-align: center; color: #777;">No new notifications.</div>
+                </div>
+                {% endif %}
+            </div>
         </div>
 
         <!-- Flash Messages -->
@@ -1339,6 +1429,93 @@
     </div>
 
     <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Auto-refresh notification count every 30 seconds
+            setInterval(function () {
+                fetch('/get_unread_count')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const bellIcon = document.querySelector('.notification-bell');
+                            const existingBadge = bellIcon.querySelector('.notification-badge');
+
+                            if (data.unread_count > 0) {
+                                // If badge doesn't exist, create it
+                                if (!existingBadge) {
+                                    const badge = document.createElement('span');
+                                    badge.className = 'notification-badge';
+                                    badge.style.cssText = 'position: absolute; top: -5px; right: -5px; background-color: var(--accent); color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.75rem;';
+                                    badge.textContent = data.unread_count;
+                                    bellIcon.appendChild(badge);
+                                } else {
+                                    // Update existing badge
+                                    existingBadge.textContent = data.unread_count;
+                                }
+                            } else {
+                                // Remove badge if count is 0
+                                if (existingBadge) {
+                                    existingBadge.remove();
+                                }
+                            }
+                        }
+                    })
+                    .catch(error => console.error('Error fetching unread count:', error));
+            }, 30000); // 30 seconds
+            const bellIcon = document.querySelector('.notification-bell');
+            const dropdown = document.getElementById('notificationDropdown');
+
+            if (!bellIcon || !dropdown) return;
+
+            // Toggle dropdown on click
+            bellIcon.addEventListener('click', function (e) {
+                e.stopPropagation();
+                dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+
+                // Mark all as read when opening
+                if (dropdown.style.display === 'block') {
+                    fetch('/mark_notifications_as_read', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({})
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                // Remove badge
+                                const badge = bellIcon.querySelector('.notification-badge');
+                                if (badge) {
+                                    badge.remove();
+                                }
+                                // Remove unread background
+                                document.querySelectorAll('.notification-item.unread').forEach(item => {
+                                    item.classList.remove('unread');
+                                });
+                            }
+                        })
+                        .catch(error => console.error('Error:', error));
+                }
+            });
+
+            // Hide dropdown when clicking outside
+            document.addEventListener('click', function (e) {
+                if (!bellIcon.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.style.display = 'none';
+                }
+            });
+
+            // Handle click on notification item
+            document.querySelectorAll('.notification-item').forEach(item => {
+                item.addEventListener('click', function () {
+                    const link = this.getAttribute('data-link');
+                    if (link) {
+                        window.location.href = link;
+                    }
+                });
+            });
+        });
+
         class BookingSystemUI {
             constructor() {
                 this.sidebar = document.querySelector('.sidebar');
@@ -1526,32 +1703,32 @@
             }
 
             displayBookingDetails(booking) {
-    const detailsContent = document.getElementById('bookingDetailsContent');
+                const detailsContent = document.getElementById('bookingDetailsContent');
 
-    let equipmentHTML = '';
-    if (booking.equipment_list && booking.equipment_list.length > 0) {
-        booking.equipment_list.forEach(item => {
-            let emoji = '📦'; // default
-            if (item.category_id === 'cat1') emoji = '🏕️';
-            else if (item.category_id === 'cat2') emoji = '🪑';
-            else if (item.category_id === 'cat3') emoji = '⚽';
-            else if (item.category_id === 'cat4') emoji = '🎤';
-            else if (item.category_id === 'cat5') emoji = '🍳';
-            equipmentHTML += `<li>${emoji} ${item.name}: ${item.quantity} pcs</li>`;
-        });
-    } else {
-        equipmentHTML = '<li>No equipment specified</li>';
-    }
+                let equipmentHTML = '';
+                if (booking.equipment_list && booking.equipment_list.length > 0) {
+                    booking.equipment_list.forEach(item => {
+                        let emoji = '📦'; // default
+                        if (item.category_id === 'cat1') emoji = '🏕️';
+                        else if (item.category_id === 'cat2') emoji = '🪑';
+                        else if (item.category_id === 'cat3') emoji = '⚽';
+                        else if (item.category_id === 'cat4') emoji = '🎤';
+                        else if (item.category_id === 'cat5') emoji = '🍳';
+                        equipmentHTML += `<li>${emoji} ${item.name}: ${item.quantity} pcs</li>`;
+                    });
+                } else {
+                    equipmentHTML = '<li>No equipment specified</li>';
+                }
 
-    // Get user name from user data or users relation
-    let userName = 'User #' + booking.user_id;
-    if (booking.users) {
-        userName = `${booking.users.first_name} ${booking.users.last_name}`;
-    } else if (booking.first_name && booking.last_name) {
-        userName = `${booking.first_name} ${booking.last_name}`;
-    }
+                // Get user name from user data or users relation
+                let userName = 'User #' + booking.user_id;
+                if (booking.users) {
+                    userName = `${booking.users.first_name} ${booking.users.last_name}`;
+                } else if (booking.first_name && booking.last_name) {
+                    userName = `${booking.first_name} ${booking.last_name}`;
+                }
 
-    detailsContent.innerHTML = `
+                detailsContent.innerHTML = `
         <div class="booking-detail">
             <span class="detail-label">Ticket ID:</span>
             <span class="detail-value">${booking.ticket_number}</span>
@@ -1603,7 +1780,7 @@
         </div>
         ` : ''}
     `;
-}
+            }
 
             getStatusClass(status) {
                 switch (status) {

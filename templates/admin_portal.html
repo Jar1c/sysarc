@@ -558,7 +558,7 @@
 
         .btn-reject {
             background: linear-gradient(135deg, var(--accent), #c0392b);
-        }        
+        }
 
         .btn-cancel {
             background: linear-gradient(135deg, #df4a39, #c0392b);
@@ -861,6 +861,63 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 15px;
+        }
+
+        /* --- Notification Dropdown Styles --- */
+        .notification-dropdown {
+            display: none;
+            position: absolute;
+            top: 60px;
+            right: 30px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            width: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+            z-index: 1001;
+        }
+
+        .notification-header {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            font-weight: bold;
+            color: var(--dark);
+        }
+
+        .notification-list {
+            padding: 10px 0;
+        }
+
+        .notification-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f5f5f5;
+            cursor: pointer;
+        }
+
+        .notification-item.unread {
+            background-color: #f8f9fa;
+        }
+
+        .notification-item:hover {
+            background-color: #e9ecef !important;
+        }
+
+        .notification-item.empty-state {
+            padding: 20px 15px;
+            text-align: center;
+            color: #777;
+        }
+
+        .notif-message {
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+
+        .notif-date {
+            font-size: 0.75rem;
+            color: #777;
         }
 
         @media (max-width: 768px) {
@@ -1170,9 +1227,43 @@
             <div class="menu-toggle">
                 <i class="fas fa-bars"></i>
             </div>
-            <h1 class="page-title">Admin Dashboard</h1>
             <img src="/static/img/brgy_baritan_logo.png" alt="brgy baritan" height="50">
+            <!-- Notification Bell for Admin -->
+            <div class="notification-bell"
+                style="position: relative; margin-left: auto; cursor: pointer; padding: 8px;">
+                <i class="fas fa-bell" style="font-size: 1.5rem; color: #023e8a;"></i>
+                {% if unread_admin_count > 0 %}
+                <span class="notification-badge"
+                    style="position: absolute; top: -5px; right: -5px; background-color: var(--accent); color: rgb(255, 255, 255); border-radius: 50%; padding: 2px 6px; font-size: 0.75rem;">
+                    {{ unread_admin_count }}
+                </span>
+                {% endif %}
+            </div>
         </div>
+
+        <!-- Notification Dropdown for Admin -->
+        <div id="adminNotificationDropdown" class="notification-dropdown">
+            <div class="notification-header">
+                Admin Notifications
+            </div>
+            <div class="notification-list">
+                {% if admin_notifications and admin_notifications|length > 0 %}
+                {% for notif in admin_notifications %}
+                <div class="notification-item {% if not notif.is_read %}unread{% endif %}"
+                    data-notification-id="{{ notif.id }}" data-link="{{ notif.link }}">
+                    <div class="notif-message">{{ notif.message }}</div>
+                    <div class="notif-date">{{ notif.created_at[:10] }}</div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="notification-item empty-state">
+                    No new notifications.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+
         <!-- Flash Messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
@@ -1741,6 +1832,62 @@
         </div>
     </div>
     <script>
+        // Admin Notification Dropdown Logic
+        document.addEventListener('DOMContentLoaded', function () {
+            const bellIcon = document.querySelector('.notification-bell');
+            const dropdown = document.getElementById('adminNotificationDropdown');
+
+            if (!bellIcon || !dropdown) return;
+
+            // Toggle dropdown on click
+            bellIcon.addEventListener('click', function (e) {
+                e.stopPropagation();
+                dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+
+                // Mark all as read when opening
+                if (dropdown.style.display === 'block') {
+                    fetch('/mark_notifications_as_read', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({})
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                // Remove badge
+                                const badge = bellIcon.querySelector('.notification-badge');
+                                if (badge) {
+                                    badge.remove();
+                                }
+                                // Remove unread background
+                                document.querySelectorAll('.notification-item.unread').forEach(item => {
+                                    item.classList.remove('unread');
+                                });
+                            }
+                        })
+                        .catch(error => console.error('Error:', error));
+                }
+            });
+
+            // Hide dropdown when clicking outside
+            document.addEventListener('click', function (e) {
+                if (!bellIcon.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.style.display = 'none';
+                }
+            });
+
+            // Handle click on notification item
+            document.querySelectorAll('.notification-item').forEach(item => {
+                item.addEventListener('click', function () {
+                    const link = this.getAttribute('data-link');
+                    if (link) {
+                        window.location.href = link;
+                    }
+                });
+            });
+        });
         class AdminPortalUI {
             constructor() {
                 this.sidebar = document.querySelector('.sidebar');
@@ -2186,38 +2333,38 @@
                 }
             }
             async processRejection() {
-    if (!this.currentBookingId) return;
+                if (!this.currentBookingId) return;
 
-    const rejectBtn = document.getElementById("confirmReject");
-    const originalText = rejectBtn.textContent;
+                const rejectBtn = document.getElementById("confirmReject");
+                const originalText = rejectBtn.textContent;
 
-    try {
-        // Show loading state
-        rejectBtn.innerHTML = '<span class="loading"></span> Processing...';
-        rejectBtn.disabled = true;
+                try {
+                    // Show loading state
+                    rejectBtn.innerHTML = '<span class="loading"></span> Processing...';
+                    rejectBtn.disabled = true;
 
-        const response = await fetch("/admin/reject_booking", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ booking_id: this.currentBookingId })
-        });
+                    const response = await fetch("/admin/reject_booking", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ booking_id: this.currentBookingId })
+                    });
 
-        const result = await response.json();
+                    const result = await response.json();
 
-        if (result.success) {
-            this.showFlashMessage(result.message || "Booking rejected successfully", "success");
-            setTimeout(() => location.reload(), 1500);
-        } else {
-            this.showFlashMessage(result.message || "Failed to reject booking", "error");
-        }
-    } catch (error) {
-        this.showFlashMessage("Error: " + error.message, "error");
-    } finally {
-        rejectBtn.textContent = originalText;
-        rejectBtn.disabled = false;
-        this.hideRejectionModal();
-    }
-}
+                    if (result.success) {
+                        this.showFlashMessage(result.message || "Booking rejected successfully", "success");
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        this.showFlashMessage(result.message || "Failed to reject booking", "error");
+                    }
+                } catch (error) {
+                    this.showFlashMessage("Error: " + error.message, "error");
+                } finally {
+                    rejectBtn.textContent = originalText;
+                    rejectBtn.disabled = false;
+                    this.hideRejectionModal();
+                }
+            }
 
 
             // Equipment Management Functions

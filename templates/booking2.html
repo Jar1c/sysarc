@@ -361,10 +361,83 @@
         .add-item-btn:hover {
             background: #022e6a;
         }
+
+        /* Loading Overlay Styles */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(243, 243, 243, 0.274);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            backdrop-filter: blur(5px);
+        }
+
+        .loading-content {
+            text-align: center;
+            color: rgb(0, 0, 0);
+            padding: 40px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 20px;
+            border: 3px solid #e0e0e0;
+            border-top: 3px solid #666;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .loading-text {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .loading-subtext {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; }
+        }
+
+        /* Disable form when loading */
+        .form-disabled {
+            pointer-events: none;
+            opacity: 0.7;
+        }
     </style>
 </head>
 
 <body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Processing Your Booking</div>
+            <div class="loading-subtext">Please wait while we submit your request...</div>
+        </div>
+    </div>
+
     <div class="container">
         <header>
             <a href="{{ url_for('booking') }}" class="back-btn">
@@ -515,6 +588,17 @@
             input.value = newValue;
         }
 
+        // Loading functions
+        function showLoading() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+            document.body.classList.add('form-disabled');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+            document.body.classList.remove('form-disabled');
+        }
+
         // Form validation
         document.getElementById('bookingForm').addEventListener('submit', function (e) {
             const requiredFields = [
@@ -539,6 +623,23 @@
             if (!isValid) {
                 e.preventDefault();
                 alert('Please fill in all required fields marked with *.');
+                return;
+            }
+
+            // Show loading overlay when form is valid and submitting
+            showLoading();
+        });
+
+        // Hide flash messages after 5 seconds
+        document.addEventListener('DOMContentLoaded', function() {
+            const flashMessages = document.getElementById('flash-messages');
+            if (flashMessages) {
+                setTimeout(function() {
+                    flashMessages.style.opacity = '0';
+                    setTimeout(function() {
+                        flashMessages.style.display = 'none';
+                    }, 300);
+                }, 5000);
             }
         });
     </script>
