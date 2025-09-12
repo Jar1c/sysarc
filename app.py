@@ -14,6 +14,8 @@ SUPABASE_URL = "https://vehpeqlxmucsgasedcuh.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZlaHBlcWx4bXVjc2dhc2VkY3VoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjYxNjIyMiwiZXhwIjoyMDcyMTkyMjIyfQ.Xp5JiKtJVPMfZR1ethvOwguVBwjbIYKapi-1STLLfd8"
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+
+
 # Helper functions
 def validate_email_format(email):
     return re.match(r"[^@]+@[^@]+\.[^@]+", email)
@@ -190,6 +192,7 @@ def signin():
         flash("Login failed. Please check your email to verify your account.", "error")
         return redirect(url_for("signin"))
 
+
 @app.route("/booking")
 def booking():
     if "user" not in session:
@@ -217,7 +220,6 @@ def booking():
                         "quantity": quantity
                     })
                 except ValueError:
-                    # Skip if can't parse quantity
                     continue
         return items
 
@@ -230,11 +232,10 @@ def booking():
         .execute()
     bookings = bookings_data.data if bookings_data.data else []
 
-    # Parse other_items for each booking
     for booking in bookings:
         booking["parsed_items"] = parse_other_items(booking.get("other_items", ""))
 
-    # Booking History: Completed, Cancelled
+    # Booking History
     history_data = supabase.table("bookings") \
         .select("*") \
         .eq("user_id", user_id) \
@@ -243,16 +244,25 @@ def booking():
         .execute()
     booking_history = history_data.data if history_data.data else []
 
-    # Also parse for booking history
     for booking in booking_history:
         booking["parsed_items"] = parse_other_items(booking.get("other_items", ""))
+
+    # ✅ GET UNREAD NOTIFICATIONS COUNT
+    unread_notif_data = supabase.table("notifications") \
+        .select("id") \
+        .eq("user_id", user_id) \
+        .eq("is_read", False) \
+        .execute()
+    unread_count = len(unread_notif_data.data) if unread_notif_data.data else 0
 
     return render_template(
         "booking.html", 
         user=user, 
         bookings=bookings, 
-        booking_history=booking_history
+        booking_history=booking_history,
+        unread_count=unread_count  # ✅ I-PASS SA TEMPLATE
     )
+
 
 @app.route("/booking_details/<booking_id>")
 def booking_details(booking_id):
@@ -763,26 +773,28 @@ def admin_approve_booking():
 
 @app.route("/admin/reject_booking", methods=["POST"])
 def admin_reject_booking():
-    if "user" not in session or session["user"]["role"] != "admin":
-        return jsonify({"success": False, "message": "Unauthorized"})
-    
+    if "user" not in session or session["user"].get("role") != "admin":
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
+
     try:
         data = request.get_json()
-        booking_id = data.get('booking_id')
-        
+        booking_id = data.get("booking_id")
+
         if not booking_id:
-            return jsonify({"success": False, "message": "No booking ID provided"})
-        
-        # I-update ang status ng booking
-        supabase.table("bookings") \
+            return jsonify({"success": False, "message": "No booking ID provided"}), 400
+
+        response = supabase.table("bookings") \
             .update({"status": "Rejected"}) \
             .eq("id", booking_id) \
             .execute()
-        
+
+        if not response.data:
+            return jsonify({"success": False, "message": "Booking not found"}), 404
+
         return jsonify({"success": True, "message": "Booking rejected successfully"})
-    
+
     except Exception as e:
-        return jsonify({"success": False, "message": f"Error: {str(e)}"})
+        return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500
 
 # Equipment Management Routes
 @app.route("/admin/equipment")
@@ -966,4 +978,5 @@ def signout():
     return redirect(url_for("admin_login"))
 
 if __name__ == "__main__":
+
     app.run(host='127.0.0.1', port=5000, debug=True)

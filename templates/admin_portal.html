@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -18,11 +19,13 @@
             --sidebar-width: 250px;
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
+
         body {
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             background: var(--light);
@@ -31,22 +34,27 @@
             display: flex;
             min-height: 100vh;
         }
+
         /* Scrollbar styling */
         ::-webkit-scrollbar {
             width: 8px;
         }
+
         ::-webkit-scrollbar-track {
             background: #f3f4f6;
             border-radius: 10px;
         }
+
         ::-webkit-scrollbar-thumb {
             background: #023e8a;
             border-radius: 10px;
             transition: background 0.3s;
         }
+
         ::-webkit-scrollbar-thumb:hover {
             background: #2563eb;
         }
+
         /* Sidebar */
         .sidebar {
             width: var(--sidebar-width);
@@ -61,12 +69,14 @@
             transition: var(--transition);
             z-index: 1000;
         }
+
         .sidebar-header {
             text-align: center;
             padding: 20px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             position: relative;
         }
+
         .sidebar-close {
             display: none;
             position: absolute;
@@ -79,14 +89,17 @@
             border-radius: 50%;
             transition: var(--transition);
         }
+
         .sidebar-close:hover {
             background: rgba(255, 255, 255, 0.1);
         }
+
         .user-info {
             padding: 20px;
             text-align: center;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
+
         .user-avatar {
             width: 80px;
             height: 80px;
@@ -95,17 +108,21 @@
             border: 3px solid var(--primary);
             margin-bottom: 15px;
         }
+
         .user-name {
             font-size: 1.2rem;
             font-weight: 600;
         }
+
         .sidebar-menu {
             list-style: none;
             padding: 20px 0;
         }
+
         .sidebar-menu li {
             margin-bottom: 5px;
         }
+
         .sidebar-menu a {
             display: flex;
             align-items: center;
@@ -115,6 +132,7 @@
             transition: var(--transition);
             border-left: 4px solid transparent;
         }
+
         .sidebar-menu a:hover,
         .sidebar-menu a.active {
             background: rgba(255, 255, 255, 0.1);
@@ -122,12 +140,14 @@
             border-left-color: var(--primary);
             padding-left: 30px;
         }
+
         .sidebar-menu i {
             margin-right: 10px;
             font-size: 1.2rem;
             width: 20px;
             text-align: center;
         }
+
         .sidebar-logout {
             display: flex;
             align-items: center;
@@ -142,12 +162,14 @@
             transition: var(--transition);
             border-left: 4px solid transparent;
         }
+
         .sidebar-logout:hover {
             background: rgba(231, 76, 60, 0.2);
             color: #e74c3c;
             border-left-color: #e74c3c;
             padding-left: 30px;
         }
+
         /* Main Content */
         .main-content {
             flex: 1;
@@ -155,6 +177,7 @@
             padding: 20px;
             transition: var(--transition);
         }
+
         .header {
             background: white;
             padding: 15px 30px;
@@ -166,6 +189,7 @@
             margin-bottom: 30px;
             position: relative;
         }
+
         .menu-toggle {
             display: none;
             font-size: 1.5rem;
@@ -176,39 +200,47 @@
             color: var(--dark);
             transition: var(--transition);
         }
+
         .menu-toggle:hover {
             background: var(--primary);
             color: white;
         }
+
         .page-title {
             color: var(--dark);
             font-size: 1.8rem;
             font-weight: 600;
         }
+
         /* Dashboard Content */
         .dashboard-content {
             display: none;
             animation: fadeIn 0.5s ease-in-out;
         }
+
         .dashboard-content.active {
             display: block;
         }
+
         @keyframes fadeIn {
             from {
                 opacity: 0;
                 transform: translateY(20px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
+
         .info-cards {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 25px;
             margin-bottom: 40px;
         }
+
         .card {
             background: white;
             border-radius: 15px;
@@ -218,36 +250,44 @@
             transition: var(--transition);
             border: 1px solid rgba(52, 152, 219, 0.1);
         }
+
         .card:hover {
             transform: translateY(-8px);
             box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
         }
+
         .card i {
             font-size: 2.5rem;
             color: var(--primary);
             margin-bottom: 15px;
         }
+
         .card h2 {
             color: var(--dark);
             margin-bottom: 15px;
             font-weight: 600;
         }
+
         .card p {
             color: #7f8c8d;
             font-size: 1.1rem;
         }
+
         .opening-hours {
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             color: white;
             border: none;
         }
+
         .opening-hours i,
         .opening-hours h2 {
             color: white;
         }
+
         .opening-hours p {
             color: rgba(255, 255, 255, 0.9);
         }
+
         .booking-section {
             background: white;
             padding: 30px;
@@ -256,6 +296,7 @@
             margin-bottom: 30px;
             border: 1px solid rgba(52, 152, 219, 0.1);
         }
+
         .booking-section h2 {
             color: var(--dark);
             margin-bottom: 25px;
@@ -263,12 +304,14 @@
             font-size: 2rem;
             font-weight: 600;
         }
+
         .booking-options {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 25px;
             margin-bottom: 20px;
         }
+
         .booking-option {
             background: #f8f9fa;
             border-radius: 15px;
@@ -279,6 +322,7 @@
             position: relative;
             overflow: hidden;
         }
+
         .booking-option::before {
             content: '';
             position: absolute;
@@ -289,29 +333,35 @@
             background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
             transition: var(--transition);
         }
+
         .booking-option:hover::before {
             left: 100%;
         }
+
         .booking-option:hover {
             border-color: var(--primary);
             background: white;
             transform: translateY(-5px);
             box-shadow: 0 10px 30px rgba(52, 152, 219, 0.2);
         }
+
         .booking-option i {
             font-size: 3rem;
             color: var(--primary);
             margin-bottom: 20px;
         }
+
         .booking-option h3 {
             color: var(--dark);
             margin-bottom: 15px;
             font-weight: 600;
         }
+
         .booking-option p {
             color: #7f8c8d;
             margin-bottom: 20px;
         }
+
         .btn {
             display: inline-block;
             background: linear-gradient(135deg, var(--primary), #2980b9);
@@ -326,6 +376,7 @@
             position: relative;
             overflow: hidden;
         }
+
         .btn::before {
             content: '';
             position: absolute;
@@ -336,13 +387,16 @@
             background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
             transition: var(--transition);
         }
+
         .btn:hover::before {
             left: 100%;
         }
+
         .btn:hover {
             transform: translateY(-3px);
             box-shadow: 0 8px 25px rgba(52, 152, 219, 0.3);
         }
+
         /* Flash Messages */
         #flash-messages {
             position: fixed;
@@ -355,6 +409,7 @@
             width: 100%;
             pointer-events: none;
         }
+
         .flash {
             padding: 15px 25px;
             border-radius: 10px;
@@ -366,38 +421,46 @@
             animation: slideDown 0.5s forwards, fadeOut 0.5s 2.5s forwards;
             pointer-events: auto;
         }
+
         .flash.success {
             background: linear-gradient(135deg, var(--success), #2ecc71);
             color: white;
         }
+
         .flash.error {
             background: linear-gradient(135deg, var(--accent), #c0392b);
             color: white;
         }
+
         @keyframes slideDown {
             from {
                 opacity: 0;
                 transform: translateY(-30px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
+
         @keyframes fadeOut {
             from {
                 opacity: 1;
             }
+
             to {
                 opacity: 0;
             }
         }
+
         /* Table Styles */
         .booking-table-container {
             overflow-x: auto;
             margin: 0 -10px;
             padding: 0 10px;
         }
+
         .booking-table {
             width: 100%;
             border-collapse: collapse;
@@ -407,12 +470,14 @@
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
             min-width: 600px;
         }
+
         .booking-table th,
         .booking-table td {
             padding: 15px;
             text-align: left;
             border-bottom: 1px solid #f0f0f0;
         }
+
         .booking-table th {
             background: var(--primary);
             color: white;
@@ -421,12 +486,15 @@
             font-size: 0.9rem;
             letter-spacing: 0.5px;
         }
+
         .booking-table tr:hover {
             background: rgba(52, 152, 219, 0.05);
         }
+
         .booking-table tr:last-child td {
             border-bottom: none;
         }
+
         /* Equipment cell styling */
         .equipment-cell {
             max-width: 200px;
@@ -434,13 +502,16 @@
             text-overflow: ellipsis;
             white-space: nowrap;
         }
+
         .equipment-cell.expandable {
             cursor: pointer;
             position: relative;
         }
+
         .equipment-cell.expandable:hover {
             background-color: #f8f9fa;
         }
+
         .equipment-cell.expandable::after {
             content: '⋯';
             position: absolute;
@@ -449,6 +520,7 @@
             transform: translateY(-50%);
             color: #6c757d;
         }
+
         .equipment-cell.expanded {
             white-space: normal;
             overflow: visible;
@@ -457,9 +529,11 @@
             background-color: white;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
+
         .equipment-cell.expanded::after {
             content: '▲';
         }
+
         /* Action Button Styles */
         .btn-action {
             color: white;
@@ -473,27 +547,38 @@
             font-size: 0.85rem;
             margin-right: 5px;
         }
+
         .btn-approve {
             background: linear-gradient(135deg, var(--success), #2ecc71);
         }
-        .btn-reject {
+
+        .btn-confirm-reject {
             background: linear-gradient(135deg, var(--accent), #c0392b);
         }
+
+        .btn-reject {
+            background: linear-gradient(135deg, var(--accent), #c0392b);
+        }        
+
         .btn-cancel {
             background: linear-gradient(135deg, #df4a39, #c0392b);
         }
+
         /* >>>> IDINAGDAG NA CSS PARA SA DELETE BUTTON <<<< */
         .btn-delete {
             background: linear-gradient(135deg, #db402e, #c0392b);
         }
+
         /* >>>> END OF ADDITION <<<< */
         .btn-view {
             background: linear-gradient(135deg, #3498db, #2980b9);
         }
+
         .btn-action:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         }
+
         /* Status Badges */
         .status-badge {
             padding: 6px 12px;
@@ -503,18 +588,22 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
+
         .status-pending {
             background-color: #ffeaa7;
             color: #d35400;
         }
+
         .status-approved {
             background-color: #d1f7c4;
             color: #27ae60;
         }
+
         .status-cancelled {
             background-color: #ffcdd2;
             color: #c0392b;
         }
+
         /* Modal Styles */
         .modal {
             display: none;
@@ -528,6 +617,7 @@
             align-items: center;
             justify-content: center;
         }
+
         .modal-content {
             background-color: white;
             padding: 30px;
@@ -537,20 +627,24 @@
             width: 90%;
             text-align: center;
         }
+
         .modal h3 {
             color: var(--dark);
             margin-bottom: 20px;
             font-size: 1.5rem;
         }
+
         .modal p {
             margin-bottom: 25px;
             color: #7f8c8d;
         }
+
         .modal-buttons {
             display: flex;
             justify-content: center;
             gap: 15px;
         }
+
         /* Filter and Search Controls */
         .booking-controls {
             display: flex;
@@ -560,11 +654,13 @@
             flex-wrap: wrap;
             gap: 15px;
         }
+
         .search-box {
             position: relative;
             flex: 1;
             min-width: 250px;
         }
+
         .search-box input {
             width: 100%;
             padding: 12px 15px 12px 40px;
@@ -573,11 +669,13 @@
             font-size: 0.9rem;
             transition: var(--transition);
         }
+
         .search-box input:focus {
             outline: none;
             border-color: var(--primary);
             box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
         }
+
         .search-box i {
             position: absolute;
             left: 15px;
@@ -585,11 +683,13 @@
             transform: translateY(-50%);
             color: #7f8c8d;
         }
+
         .filter-controls {
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
         }
+
         .filter-select {
             padding: 10px 15px;
             border: 1px solid #ddd;
@@ -599,15 +699,18 @@
             cursor: pointer;
             transition: var(--transition);
         }
+
         .filter-select:focus {
             outline: none;
             border-color: var(--primary);
         }
+
         /* Booking Details Modal */
         .booking-details-modal .modal-content {
             max-width: 600px;
             text-align: left;
         }
+
         .booking-detail {
             display: flex;
             justify-content: space-between;
@@ -615,52 +718,63 @@
             padding-bottom: 15px;
             border-bottom: 1px solid #f0f0f0;
         }
+
         .booking-detail:last-child {
             border-bottom: none;
             margin-bottom: 0;
             padding-bottom: 0;
         }
+
         .detail-label {
             font-weight: 600;
             color: var(--dark);
             min-width: 120px;
         }
+
         .detail-value {
             color: #7f8c8d;
             text-align: right;
             flex: 1;
         }
+
         .equipment-list {
             list-style: none;
             padding: 0;
         }
+
         .equipment-list li {
             padding: 5px 0;
             border-bottom: 1px solid #f8f9fa;
         }
+
         .equipment-list li:last-child {
             border-bottom: none;
         }
+
         /* Empty State */
         .empty-state {
             text-align: center;
             padding: 60px 20px;
             color: #bdc3c7;
         }
+
         .empty-state i {
             font-size: 4rem;
             margin-bottom: 20px;
             display: block;
         }
+
         .empty-state h3 {
             font-size: 1.5rem;
             margin-bottom: 10px;
             color: #7f8c8d;
         }
+
         .empty-state p {
             font-size: 1rem;
             margin-bottom: 30px;
         }
+
         /* Admin-specific styles */
         .admin-stats {
             display: grid;
@@ -668,6 +782,7 @@
             gap: 20px;
             margin-bottom: 30px;
         }
+
         .stat-card {
             background: white;
             border-radius: 15px;
@@ -676,24 +791,29 @@
             text-align: center;
             transition: var(--transition);
         }
+
         .stat-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
         }
+
         .stat-number {
             font-size: 2.5rem;
             font-weight: 700;
             color: var(--primary);
             margin-bottom: 10px;
         }
+
         .stat-label {
             color: #7f8c8d;
             font-size: 1rem;
         }
+
         /* Additional styles for equipment management */
         .equipment-categories {
             margin-bottom: 20px;
         }
+
         .category-btn {
             padding: 10px 15px;
             border: 2px solid var(--primary);
@@ -704,24 +824,29 @@
             transition: var(--transition);
             font-weight: 600;
         }
+
         .category-btn:hover,
         .category-btn.active {
             background: var(--primary);
             color: white;
         }
+
         .equipment-grid-admin {
             margin-top: 20px;
         }
+
         /* Form styles for modal */
         #equipmentForm .form-group {
             margin-bottom: 15px;
         }
+
         #equipmentForm label {
             display: block;
             margin-bottom: 5px;
             font-weight: 600;
             color: var(--dark);
         }
+
         #equipmentForm input,
         #equipmentForm select,
         #equipmentForm textarea {
@@ -731,100 +856,127 @@
             border-radius: 5px;
             font-size: 1rem;
         }
+
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 15px;
         }
+
         @media (max-width: 768px) {
             .form-row {
                 grid-template-columns: 1fr;
             }
+
             .category-filter {
                 flex-direction: column;
             }
+
             .category-btn {
                 width: 100%;
                 text-align: center;
             }
         }
+
         /* Responsive Design */
         @media (max-width: 992px) {
             .sidebar {
                 transform: translateX(-100%);
                 width: 0;
             }
+
             .sidebar.active {
                 transform: translateX(0);
                 width: var(--sidebar-width);
             }
+
             .main-content {
                 margin-left: 0;
             }
+
             .menu-toggle {
                 display: block;
             }
+
             .sidebar-close {
                 display: block;
             }
+
             .header {
                 padding: 15px 20px;
             }
+
             .main-content {
                 padding: 15px;
             }
         }
+
         @media (max-width: 768px) {
+
             .info-cards,
             .booking-options,
             .admin-stats {
                 grid-template-columns: 1fr;
             }
+
             .page-title {
                 font-size: 1.5rem;
             }
+
             .card {
                 padding: 20px;
             }
+
             .booking-section {
                 padding: 20px;
             }
+
             .booking-table {
                 font-size: 0.9rem;
             }
+
             .booking-table th,
             .booking-table td {
                 padding: 10px 8px;
             }
+
             .equipment-cell {
                 max-width: 150px;
             }
+
             .flash {
                 min-width: 200px;
                 font-size: 0.9rem;
             }
+
             .booking-controls {
                 flex-direction: column;
                 align-items: stretch;
             }
+
             .search-box {
                 min-width: unset;
             }
         }
+
         @media (max-width: 600px) {
+
             /* Transform table to card layout on small screens */
             .booking-table {
                 min-width: unset;
                 display: block;
                 width: 100%;
             }
+
             .booking-table thead {
                 display: none;
             }
+
             .booking-table tbody {
                 display: block;
                 width: 100%;
             }
+
             .booking-table tr {
                 display: block;
                 margin-bottom: 15px;
@@ -834,6 +986,7 @@
                 background: white;
                 box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             }
+
             .booking-table td {
                 display: flex;
                 justify-content: space-between;
@@ -843,9 +996,11 @@
                 text-align: right;
                 border: none;
             }
+
             .booking-table td:last-child {
                 border-bottom: none;
             }
+
             .booking-table td::before {
                 content: attr(data-label);
                 font-weight: 600;
@@ -854,77 +1009,95 @@
                 padding-right: 15px;
                 flex: 1;
             }
+
             /* Special handling for equipment cell */
             .booking-table td[data-label="Equipment"] {
                 flex-direction: row;
                 align-items: center;
                 flex-wrap: wrap;
             }
+
             .booking-table td[data-label="Equipment"]::before {
                 margin-bottom: 0;
             }
+
             .equipment-cell {
                 max-width: 100%;
                 white-space: normal;
                 text-overflow: unset;
             }
+
             /* Center the no bookings message */
             .booking-table tr td[colspan] {
                 display: table-cell;
                 text-align: center;
                 padding: 30px 15px;
             }
+
             .booking-table tr td[colspan] i {
                 display: block;
                 margin: 0 auto 10px;
             }
+
             /* Adjust status badges for mobile */
             .status-badge {
                 padding: 5px 10px;
                 font-size: 0.75rem;
             }
+
             /* Ensure action buttons are visible on mobile */
             .booking-table td[data-label="Action"] {
                 justify-content: flex-end;
                 padding-top: 15px;
                 border-top: 1px dashed #e0e0e0;
             }
+
             .booking-table td[data-label="Action"]::before {
                 display: inline-block;
             }
+
             .filter-controls {
                 flex-direction: column;
             }
+
             .filter-select {
                 width: 100%;
             }
         }
+
         @media (max-width: 480px) {
             .sidebar {
                 width: 100%;
                 left: -100%;
             }
+
             .sidebar.active {
                 left: 0;
                 width: 100%;
             }
+
             .header {
                 flex-direction: column;
                 gap: 15px;
             }
+
             .booking-table {
                 font-size: 0.8rem;
             }
+
             .booking-table th,
             .booking-table td {
                 padding: 8px 6px;
             }
+
             .modal-content {
                 padding: 20px;
             }
+
             .modal-buttons {
                 flex-direction: column;
             }
+
             /* Improve touch targets for mobile */
             .sidebar-menu a,
             .btn,
@@ -934,6 +1107,7 @@
                 align-items: center;
                 justify-content: center;
             }
+
             /* Adjust flash messages for mobile */
             .flash {
                 min-width: unset;
@@ -943,6 +1117,7 @@
                 padding: 12px 20px;
             }
         }
+
         /* Loading Animation */
         .loading {
             display: inline-block;
@@ -953,6 +1128,7 @@
             border-top-color: white;
             animation: spin 1s ease-in-out infinite;
         }
+
         @keyframes spin {
             to {
                 transform: rotate(360deg);
@@ -960,6 +1136,7 @@
         }
     </style>
 </head>
+
 <body>
     <!-- Sidebar Dashboard -->
     <div class="sidebar">
@@ -1326,7 +1503,6 @@
             </div>
         </div>
         <!-- Equipment Management Content -->
-        <!-- Equipment Management Content -->
         <div class="dashboard-content" id="equipment-management">
             <div class="booking-section">
                 <h2>Equipment Management</h2>
@@ -1546,7 +1722,8 @@
             <h3>Reject Booking</h3>
             <p>Are you sure you want to reject this booking?</p>
             <div class="modal-buttons">
-                <button class="btn-action btn-reject" id="confirmRejection">Yes, Reject</button>
+                <!-- FIXED: Button ID changed to 'confirmReject' to match JavaScript -->
+                <button class="btn-action btn-confirm-reject" id="confirmReject">Yes, Reject</button>
                 <button class="btn" id="closeRejectionModal">Cancel</button>
             </div>
         </div>
@@ -1624,9 +1801,13 @@
                 // Modal buttons
                 document.getElementById('confirmApproval')?.addEventListener('click', () => this.processApproval());
                 document.getElementById('closeApprovalModal')?.addEventListener('click', () => this.hideApprovalModal());
-                document.getElementById('confirmRejection')?.addEventListener('click', () => this.processRejection());
+                document.getElementById('confirmReject')?.addEventListener('click', () => {
+                    this.processRejection();
+                });
                 document.getElementById('closeRejectionModal')?.addEventListener('click', () => this.hideRejectionModal());
                 document.getElementById('closeDetailsModal')?.addEventListener('click', () => this.hideDetailsModal());
+
+
                 // Close modals when clicking outside
                 [this.approvalModal, this.rejectionModal, this.detailsModal, this.equipmentModal, this.deleteModal].forEach(modal => {
                     modal?.addEventListener('click', (e) => {
@@ -1868,12 +2049,12 @@
                 // Process other_items with category_id logic
                 if (booking.equipment_list && booking.equipment_list.length > 0) {
                     equipmentHTML = booking.equipment_list.map(item => {
-                        const emoji = 
+                        const emoji =
                             item.category_id === 'cat1' ? '🏕️' :
-                            item.category_id === 'cat2' ? '🪑' :
-                            item.category_id === 'cat3' ? '🏀' :
-                            item.category_id === 'cat4' ? '🎤' :
-                            item.category_id === 'cat5' ? '🍳' : '📦';
+                                item.category_id === 'cat2' ? '🪑' :
+                                    item.category_id === 'cat3' ? '🏀' :
+                                        item.category_id === 'cat4' ? '🎤' :
+                                            item.category_id === 'cat5' ? '🍳' : '📦';
                         return `<li>${emoji} ${item.name}: ${item.quantity} pcs</li>`;
                     }).join('');
                 }
@@ -1906,57 +2087,57 @@
                     userName = `${booking.first_name} ${booking.last_name}`;
                 }
                 detailsContent.innerHTML = `
-                    <div class="booking-detail">
-                        <span class="detail-label">Ticket ID:</span>
-                        <span class="detail-value">${booking.ticket_number}</span>
-                    </div>
-                    <div class="booking-detail">
-                        <span class="detail-label">User:</span>
-                        <span class="detail-value">${userName}</span>
-                    </div>
-                    <div class="booking-detail">
-                        <span class="detail-label">Event Type:</span>
-                        <span class="detail-value">${booking.event_type || 'N/A'}</span>
-                    </div>
-                    <div class="booking-detail">
-                        <span class="detail-label">Event Date:</span>
-                        <span class="detail-value">${booking.event_date}</span>
-                    </div>
-                    <div class="booking-detail">
-                        <span class="detail-label">Booking Date:</span>
-                        <span class="detail-value">${booking.created_at ? booking.created_at.slice(0, 10) : 'N/A'}</span>
-                    </div>
-                    <div class="booking-detail">
-                        <span class="detail-label">Status:</span>
-                        <span class="detail-value">
-                            <span class="status-badge ${this.getStatusClass(booking.status)}">
-                                ${booking.status}
-                            </span>
+                <div class="booking-detail">
+                    <span class="detail-label">Ticket ID:</span>
+                    <span class="detail-value">${booking.ticket_number}</span>
+                </div>
+                <div class="booking-detail">
+                    <span class="detail-label">User:</span>
+                    <span class="detail-value">${userName}</span>
+                </div>
+                <div class="booking-detail">
+                    <span class="detail-label">Event Type:</span>
+                    <span class="detail-value">${booking.event_type || 'N/A'}</span>
+                </div>
+                <div class="booking-detail">
+                    <span class="detail-label">Event Date:</span>
+                    <span class="detail-value">${booking.event_date}</span>
+                </div>
+                <div class="booking-detail">
+                    <span class="detail-label">Booking Date:</span>
+                    <span class="detail-value">${booking.created_at ? booking.created_at.slice(0, 10) : 'N/A'}</span>
+                </div>
+                <div class="booking-detail">
+                    <span class="detail-label">Status:</span>
+                    <span class="detail-value">
+                        <span class="status-badge ${this.getStatusClass(booking.status)}">
+                            ${booking.status}
                         </span>
-                    </div>
-                    <div class="booking-detail">
-                        <span class="detail-label">Contact Number:</span>
-                        <span class="detail-value">${booking.contact_number || 'N/A'}</span>
-                    </div>
-                    <div class="booking-detail">
-                        <span class="detail-label">Email:</span>
-                        <span class="detail-value">${booking.email || 'N/A'}</span>
-                    </div>
-                    <div class="booking-detail">
-                        <span class="detail-label">Equipment:</span>
-                        <span class="detail-value">
-                            <ul class="equipment-list">
-                                ${equipmentHTML}
-                            </ul>
-                        </span>
-                    </div>
-                    ${booking.additional_notes ? `
-                    <div class="booking-detail">
-                        <span class="detail-label">Additional Notes:</span>
-                        <span class="detail-value">${booking.additional_notes}</span>
-                    </div>
-                    ` : ''}
-                `;
+                    </span>
+                </div>
+                <div class="booking-detail">
+                    <span class="detail-label">Contact Number:</span>
+                    <span class="detail-value">${booking.contact_number || 'N/A'}</span>
+                </div>
+                <div class="booking-detail">
+                    <span class="detail-label">Email:</span>
+                    <span class="detail-value">${booking.email || 'N/A'}</span>
+                </div>
+                <div class="booking-detail">
+                    <span class="detail-label">Equipment:</span>
+                    <span class="detail-value">
+                        <ul class="equipment-list">
+                            ${equipmentHTML}
+                        </ul>
+                    </span>
+                </div>
+                ${booking.additional_notes ? `
+                <div class="booking-detail">
+                    <span class="detail-label">Additional Notes:</span>
+                    <span class="detail-value">${booking.additional_notes}</span>
+                </div>
+                ` : ''}
+            `;
             }
             getStatusClass(status) {
                 switch (status) {
@@ -1991,7 +2172,6 @@
                     });
                     const result = await response.json();
                     if (result.success) {
-                        // Show success message and reload the page
                         this.showFlashMessage('Booking approved successfully!', 'success');
                         setTimeout(() => {
                             location.reload();
@@ -2006,39 +2186,40 @@
                 }
             }
             async processRejection() {
-                if (!this.currentBookingId) return;
-                try {
-                    // Show loading state
-                    const confirmButton = document.getElementById('confirmRejection');
-                    const originalText = confirmButton.textContent;
-                    confirmButton.innerHTML = '<span class="loading"></span> Processing...';
-                    confirmButton.disabled = true;
-                    // Send rejection request to server
-                    const response = await fetch('/admin/reject_booking', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            booking_id: this.currentBookingId
-                        })
-                    });
-                    const result = await response.json();
-                    if (result.success) {
-                        // Show success message and reload the page
-                        this.showFlashMessage('Booking rejected successfully!', 'success');
-                        setTimeout(() => {
-                            location.reload();
-                        }, 1500);
-                    } else {
-                        this.showFlashMessage(result.message || 'Error rejecting booking', 'error');
-                    }
-                } catch (error) {
-                    this.showFlashMessage('Network error. Please try again.', 'error');
-                } finally {
-                    this.hideRejectionModal();
-                }
-            }
+    if (!this.currentBookingId) return;
+
+    const rejectBtn = document.getElementById("confirmReject");
+    const originalText = rejectBtn.textContent;
+
+    try {
+        // Show loading state
+        rejectBtn.innerHTML = '<span class="loading"></span> Processing...';
+        rejectBtn.disabled = true;
+
+        const response = await fetch("/admin/reject_booking", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ booking_id: this.currentBookingId })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            this.showFlashMessage(result.message || "Booking rejected successfully", "success");
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            this.showFlashMessage(result.message || "Failed to reject booking", "error");
+        }
+    } catch (error) {
+        this.showFlashMessage("Error: " + error.message, "error");
+    } finally {
+        rejectBtn.textContent = originalText;
+        rejectBtn.disabled = false;
+        this.hideRejectionModal();
+    }
+}
+
+
             // Equipment Management Functions
             openEquipmentModal(itemId = null) {
                 const modalTitle = document.getElementById('equipmentModalTitle');
@@ -2219,4 +2400,5 @@
         });
     </script>
 </body>
+
 </html>

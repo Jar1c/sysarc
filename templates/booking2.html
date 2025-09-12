@@ -491,8 +491,12 @@
 
     <script>
         // Set minimum date to today
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('eventDate').setAttribute('min', today);
+        // Set minimum date to 7 days from today (skip the current week)
+        const today = new Date();
+        const nextWeek = new Date(today);
+        nextWeek.setDate(today.getDate() + 7); // Add 7 days
+        const minDate = nextWeek.toISOString().split('T')[0];
+        document.getElementById('eventDate').setAttribute('min', minDate);
 
         // Quantity adjustment function
         function adjustQty(itemId, change) {
