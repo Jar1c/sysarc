@@ -1308,10 +1308,86 @@ def create_notification(user_id, message, booking_id=None, borrowed_item_id=None
     
 def get_email_template(status, user_first_name, ticket_number, event_date=None, event_type=None, reason=None):
     """
-    Returns a beautiful, email-compatible HTML template using Bootstrap 5 (inline styles only).
+    Returns a beautiful, email-compatible HTML template using inline styles only.
     All variables preserved as-is: {user_first_name}, {ticket_number}, {event_date}, etc.
     Center-aligned for maximum visual harmony and professionalism.
     """
+    
+    # Define status-based configurations
+    status_config = {
+        'pending': {
+            'gradient': '#023e8a',
+            'emoji': '⏳',
+            'title': 'Booking Pending',
+            'badge_bg': '#e3f2fd',
+            'badge_color': '#1976d2',
+            'message': "Thank you for your booking request! We are currently reviewing your reservation.",
+            'footer': "You will receive another email once your booking is approved or rejected."
+        },
+        'approved': {
+            'gradient': '#023e8a',
+            'emoji': '✅',
+            'title': 'Booking Approved',
+            'badge_bg': '#d1f7c4',
+            'badge_color': '#27ae60',
+            'message': "Great news! Your booking request has been <strong>approved</strong>.",
+            'footer': "You may now proceed with your plans. Thank you for using our booking system!"
+        },
+        'rejected': {
+            'gradient': '#023e8a',
+            'emoji': '❌',
+            'title': 'Booking Rejected',
+            'badge_bg': '#ffcdd2',
+            'badge_color': '#c0392b',
+            'message': "We're sorry, but your booking request has been <strong>rejected</strong>.",
+            'footer': "Thank you for your understanding."
+        },
+        'cancelled': {
+            'gradient': '#023e8a',
+            'emoji': '⚠️',
+            'title': 'Booking Cancelled',
+            'badge_bg': '#ffeaa7',
+            'badge_color': '#d35400',
+            'message': "Your booking has been successfully <strong>cancelled</strong>.",
+            'footer': "If this was a mistake, please create a new booking."
+        }
+    }
+    
+    # Get config for current status or use default
+    config = status_config.get(status, {
+        'gradient': '#023e8a',
+        'emoji': 'ℹ️',
+        'title': 'Booking Update',
+        'badge_bg': '#f0f0f0',
+        'badge_color': '#555',
+        'message': "Your booking status has been updated.",
+        'footer': ""
+    })
+    
+    # Build optional rows
+    event_type_row = ""
+    if event_type is not None:
+        event_type_row = f'''
+        <tr>
+            <td style="padding: 10px 0; font-weight: 600; color: #555; width: 140px; text-align: left;">Event Type:</td>
+            <td style="padding: 10px 0; text-align: left; font-weight: 500;">{event_type or "N/A"}</td>
+        </tr>'''
+    
+    event_date_row = ""
+    if event_date is not None:
+        event_date_row = f'''
+        <tr>
+            <td style="padding: 10px 0; font-weight: 600; color: #555; width: 140px; text-align: left;">Event Date:</td>
+            <td style="padding: 10px 0; text-align: left; font-weight: 500;">{event_date or "N/A"}</td>
+        </tr>'''
+    
+    reason_row = ""
+    if status == "rejected":
+        reason_row = f'''
+        <tr>
+            <td style="padding: 10px 0; font-weight: 600; color: #555; width: 140px; text-align: left;">Reason:</td>
+            <td style="padding: 10px 0; text-align: left; font-weight: 500;">{reason or "Please contact the administrator for more information."}</td>
+        </tr>'''
 
     html = f"""
 <!DOCTYPE html>
@@ -1322,12 +1398,14 @@ def get_email_template(status, user_first_name, ticket_number, event_date=None, 
     <title>Booking Update</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa; color: #333;">
-    <!-- Container -->
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-        <!-- Header -->
+    <!-- Main Email Container -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+        <!-- Header (DYNAMIC BASED ON STATUS) -->
         <tr>
-            <td style="padding: 30px; text-align: center; background: linear-gradient(135deg, #023e8a, #2c3e50); color: white;">
-                <h1 style="margin: 0; font-size: 24px; font-weight: 600;">✅ Booking Approved</h1>
+            <td style="padding: 30px; text-align: center; background: {config['gradient']}; color: white;">
+                <h1 style="margin: 0; font-size: 24px; font-weight: 600;">
+                    {config['emoji']} {config['title']}
+                </h1>
                 <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">Court & Equipment Booking System</p>
             </td>
         </tr>
@@ -1337,73 +1415,54 @@ def get_email_template(status, user_first_name, ticket_number, event_date=None, 
             <td style="padding: 30px; color: #333; line-height: 1.7; text-align: center;">
                 <h2 style="color: #023e8a; margin-top: 0; font-size: 20px;">Hello {user_first_name}!</h2>
 
-                <!-- Status Badge (Centered) -->
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 20px auto; max-width: 250px;">
+                <!-- Status Badge -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 20px auto; max-width: 250px;">
                     <tr>
-                        <td style="background-color: {'#d1f7c4' if status == 'approved' else '#ffcdd2' if status == 'rejected' else '#ffeaa7' if status == 'cancelled' else '#e3f2fd' if status == 'pending' else '#f0f0f0'}; 
-                                 color: {'#27ae60' if status == 'approved' else '#c0392b' if status == 'rejected' else '#d35400' if status == 'cancelled' else '#1976d2' if status == 'pending' else '#555'}; 
-                                 padding: 10px 20px; 
-                                 border-radius: 20px; 
-                                 font-weight: 600; 
-                                 text-transform: uppercase; 
-                                 font-size: 14px; 
-                                 text-align: center;
-                                 margin: 0 auto;">
-                            {status.upper() if status in ['approved', 'rejected', 'cancelled', 'pending'] else 'UPDATED'}
+                        <td style="background-color: {config['badge_bg']}; color: {config['badge_color']}; padding: 10px 20px; border-radius: 20px; font-weight: 600; text-transform: uppercase; font-size: 14px; text-align: center;">
+                            {status.upper()}
                         </td>
                     </tr>
                 </table>
 
-                <!-- Message (Centered) -->
+                <!-- Message -->
                 <p style="margin: 20px 0; font-size: 16px; line-height: 1.6;">
-                    { 
-                        "Great news! Your booking request has been <strong>approved</strong>." if status == 'approved' else
-                        "We're sorry, but your booking request has been <strong>rejected</strong>." if status == 'rejected' else
-                        "Your booking has been successfully <strong>cancelled</strong>." if status == 'cancelled' else
-                        "Thank you for your booking request! We are currently reviewing your reservation." if status == 'pending' else
-                        "Your booking status has been updated." 
-                    }
+                    {config['message']}
                 </p>
 
-                <!-- Details Card (Centered) -->
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f9fa; border-radius: 8px; overflow: hidden; margin: 25px auto; border: 1px solid #e9ecef; max-width: 500px;">
+                <!-- Details Card -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f8f9fa; border-radius: 8px; overflow: hidden; margin: 25px auto; border: 1px solid #e9ecef; max-width: 500px;">
                     <tr>
                         <td style="padding: 20px; text-align: left;">
                             <h3 style="color: #023e8a; margin: 0 0 15px 0; font-size: 18px; text-align: center;">Booking Details</h3>
                             
-                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                                 <tr>
                                     <td style="padding: 10px 0; font-weight: 600; color: #555; width: 140px; text-align: left;">Ticket ID:</td>
                                     <td style="padding: 10px 0; text-align: left; font-weight: 500;">{ticket_number}</td>
                                 </tr>
-                                
-                                {f'<tr><td style="padding: 10px 0; font-weight: 600; color: #555; width: 140px; text-align: left;">Event Type:</td><td style="padding: 10px 0; text-align: left; font-weight: 500;">{event_type or "N/A"}</td></tr>' if event_type is not None else ''}
-                                
-                                {f'<tr><td style="padding: 10px 0; font-weight: 600; color: #555; width: 140px; text-align: left;">Event Date:</td><td style="padding: 10px 0; text-align: left; font-weight: 500;">{event_date or "N/A"}</td></tr>' if event_date is not None else ''}
-                                
-                                {f'<tr><td style="padding: 10px 0; font-weight: 600; color: #555; width: 140px; text-align: left;">Reason:</td><td style="padding: 10px 0; text-align: left; font-weight: 500;">{reason or "Please contact the administrator for more information."}</td></tr>' if status == "rejected" else ''}
+                                {event_type_row}
+                                {event_date_row}
+                                {reason_row}
                             </table>
                         </td>
                     </tr>
                 </table>
 
-                <!-- Action Button (Centered) -->
-                <div style="text-align: center; margin: 30px 0;">
-                    <a href="{url_for('booking_details', booking_id=ticket_number, _external=True)}" 
-                       style="display: inline-block; background-color: #023e8a; color: white; padding: 14px 30px; border-radius: 30px; text-decoration: none; font-weight: 600; font-size: 16px; min-width: 220px; text-align: center; letter-spacing: 0.5px;">
-                        View Booking Details
-                    </a>
-                </div>
+                <!-- Action Button (Bulletproof) -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 30px auto; max-width: 220px;">
+                    <tr>
+                        <td align="center" style="background-color: #023e8a; border-radius: 6px; text-align: center; border: 2px solid #023e8a;">
+                            <a href="https://brgybaritan.onrender.com/signin" 
+                               style="display: block; padding: 14px 20px; color: white; text-decoration: none; font-weight: 600; font-size: 16px; letter-spacing: 0.5px; border-radius: 50px;">
+                                View Booking Details
+                            </a>
+                        </td>
+                    </tr>
+                </table>
 
-                <!-- Footer Text (Centered) -->
-                <p style="margin: 30px 0 15px 0; font-size: 15px; color: #666;">
-                    { 
-                        "You may now proceed with your plans. Thank you for using our booking system!" if status == 'approved' else
-                        "Thank you for your understanding." if status == 'rejected' else
-                        "If this was a mistake, please create a new booking." if status == 'cancelled' else
-                        "You will receive another email once your booking is approved or rejected." if status == 'pending' else
-                        ""
-                    }
+                <!-- Footer Text -->
+                <p style="margin: 30px 0 15px 0; font-size: 15px; color: #666; line-height: 1.6;">
+                    {config['footer']}
                 </p>
             </td>
         </tr>
@@ -1412,7 +1471,7 @@ def get_email_template(status, user_first_name, ticket_number, event_date=None, 
         <tr>
             <td style="padding: 20px; text-align: center; color: #7f8c8d; font-size: 14px; background-color: #f8f9fa;">
                 <p style="margin: 0;">&copy; 2025 Barangay Baritan Malabon | 
-                    <a href="mailto:Baritan.Malabonkmgs@gmail.com" style="color: #023e8a; text-decoration: none; font-weight: 500;">Contact Us</a>
+                    <a href="mailto:Baritan.Malabonkmgs@gmail.com" style="color: #022e6a; text-decoration: none; font-weight: 500;">Contact Us</a>
                 </p>
             </td>
         </tr>
