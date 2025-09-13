@@ -2,6 +2,7 @@ Flask==2.3.3
 supabase==2.4.0
 Werkzeug==2.3.7
 python-dotenv==1.0.0
-
 gunicorn
+httpx==0.24.1
+gotrue==2.1.0
 
