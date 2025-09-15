@@ -484,10 +484,9 @@
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="eventDescription">Event Description</label>
-                        <textarea id="eventDescription" name="event_description" rows="2"
-                            placeholder="Brief description of your event"></textarea>
+                    <div class="form-group" id="customEventTypeContainer" style="display: none;">
+                        <label for="customEventType">Specify Event Type <span class="required">*</span></label>
+                        <input type="text" id="customEventType" name="custom_event_type" placeholder="Please specify your event type">
                     </div>
                 </div>
 
@@ -599,6 +598,11 @@
             document.body.classList.remove('form-disabled');
         }
 
+        // Initialize variables for event type selection
+        const eventTypeSelect = document.getElementById('eventType');
+        const customEventTypeContainer = document.getElementById('customEventTypeContainer');
+        const customEventTypeInput = document.getElementById('customEventType');
+        
         // Form validation
         document.getElementById('bookingForm').addEventListener('submit', function (e) {
             const requiredFields = [
@@ -626,6 +630,14 @@
                 return;
             }
 
+            // Check if custom event type is filled when 'Other' is selected
+            if (eventTypeSelect.value === 'other' && customEventTypeInput.value.trim() === '') {
+                e.preventDefault();
+                alert('Please specify your event type');
+                customEventTypeInput.focus();
+                return;
+            }
+
             // Show loading overlay when form is valid and submitting
             showLoading();
         });
@@ -641,6 +653,18 @@
                     }, 300);
                 }, 5000);
             }
+            
+            // Show/hide custom event type field based on selection
+            eventTypeSelect.addEventListener('change', function() {
+                if (this.value === 'other') {
+                    customEventTypeContainer.style.display = 'block';
+                    customEventTypeInput.setAttribute('required', 'required');
+                } else {
+                    customEventTypeContainer.style.display = 'none';
+                    customEventTypeInput.removeAttribute('required');
+                    customEventTypeInput.value = '';
+                }
+            });
         });
     </script>
 </body>
