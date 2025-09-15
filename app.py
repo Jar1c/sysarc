@@ -987,6 +987,12 @@ def book_event():
     try:
         # Get form data (event info, contact info)
         event_type = request.form.get("event_type", "").strip()
+        custom_event_type = request.form.get("custom_event_type", "").strip()
+        
+        # Use custom event type if "Other" is selected
+        if event_type == "other" and custom_event_type:
+            event_type = custom_event_type
+            
         event_date = request.form.get("event_date", "").strip()
         contact_number = request.form.get("phone", "").strip()
         email = request.form.get("email", "").strip()

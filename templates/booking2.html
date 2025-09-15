@@ -603,7 +603,7 @@
         const customEventTypeContainer = document.getElementById('customEventTypeContainer');
         const customEventTypeInput = document.getElementById('customEventType');
         
-        // Form validation
+        // Form validation and submission
         document.getElementById('bookingForm').addEventListener('submit', function (e) {
             const requiredFields = [
                 document.getElementById('eventType'),
@@ -630,12 +630,20 @@
                 return;
             }
 
-            // Check if custom event type is filled when 'Other' is selected
-            if (eventTypeSelect.value === 'other' && customEventTypeInput.value.trim() === '') {
-                e.preventDefault();
-                alert('Please specify your event type');
-                customEventTypeInput.focus();
-                return;
+            // Handle custom event type when 'Other' is selected
+            if (eventTypeSelect.value === 'other') {
+                if (customEventTypeInput.value.trim() === '') {
+                    e.preventDefault();
+                    alert('Please specify your event type');
+                    customEventTypeInput.focus();
+                    return;
+                }
+                // Create a hidden input to store the custom event type
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'custom_event_type';
+                hiddenInput.value = customEventTypeInput.value.trim();
+                this.appendChild(hiddenInput);
             }
 
             // Show loading overlay when form is valid and submitting

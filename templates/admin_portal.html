@@ -1325,7 +1325,7 @@
                 <div class="notification-item {% if not notif.is_read %}unread{% endif %}"
                     data-notification-id="{{ notif.id }}" data-link="{{ notif.link }}">
                     <div class="notif-message">{{ notif.message }}</div>
-                    <div class="notif-date">{{ notif.created_at[:10] }}</div>
+                    <div class="notif-time" data-timestamp="{{ notif.created_at }}">{{ notif.created_at }}</div>
                 </div>
                 {% endfor %}
                 {% else %}
@@ -1905,8 +1905,47 @@
         </div>
     </div>
     <script>
+        // Function to format relative time
+        function formatRelativeTime(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const seconds = Math.floor((now - date) / 1000);
+            
+            let interval = Math.floor(seconds / 31536000);
+            if (interval >= 1) return `${interval} year${interval === 1 ? '' : 's'} ago`;
+            
+            interval = Math.floor(seconds / 2592000);
+            if (interval >= 1) return `${interval} month${interval === 1 ? '' : 's'} ago`;
+            
+            interval = Math.floor(seconds / 86400);
+            if (interval >= 1) return `${interval} day${interval === 1 ? '' : 's'} ago`;
+            
+            interval = Math.floor(seconds / 3600);
+            if (interval >= 1) return `${interval} hour${interval === 1 ? '' : 's'} ago`;
+            
+            interval = Math.floor(seconds / 60);
+            if (interval >= 1) return `${interval} minute${interval === 1 ? '' : 's'} ago`;
+            
+            return 'just now';
+        }
+
+        // Update all notification timestamps
+        function updateNotificationTimes() {
+            document.querySelectorAll('.notif-time').forEach(element => {
+                const timestamp = element.getAttribute('data-timestamp');
+                if (timestamp) {
+                    element.textContent = formatRelativeTime(timestamp);
+                }
+            });
+        }
+
         // Admin Notification Dropdown Logic
         document.addEventListener('DOMContentLoaded', function () {
+            // Initialize notification timestamps
+            updateNotificationTimes();
+            
+            // Update timestamps every minute
+            setInterval(updateNotificationTimes, 60000);
             const bellIcon = document.querySelector('.notification-bell');
             const dropdown = document.getElementById('adminNotificationDropdown');
 

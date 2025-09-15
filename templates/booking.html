@@ -1258,7 +1258,14 @@
                 <div class="notification-item {% if not notif.is_read %}unread{% endif %}"
                     data-notification-id="{{ notif.id }}" data-link="{{ notif.link }}">
                     <div style="font-size: 0.9rem; margin-bottom: 5px;">{{ notif.message }}</div>
-                    <div style="font-size: 0.75rem; color: #777;">{{ notif.created_at[:10] }}</div>
+                    <div class="notification-time" style="font-size: 0.75rem; color: #777;" data-timestamp="{{ notif.created_at }}">
+                        {{ notif.created_at }}
+                    </div>
+                    <script>
+                        var timestamp = document.querySelector('.notification-time').getAttribute('data-timestamp');
+                        var timeAgo = getTimeAgo(timestamp);
+                        document.querySelector('.notification-time').innerHTML = timeAgo;
+                    </script>
                 </div>
                 {% endfor %}
                 {% else %}
@@ -1766,7 +1773,46 @@
     </div>
 
     <script>
+        // Function to format relative time
+        function formatRelativeTime(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const seconds = Math.floor((now - date) / 1000);
+            
+            let interval = Math.floor(seconds / 31536000);
+            if (interval >= 1) return `${interval} year${interval === 1 ? '' : 's'} ago`;
+            
+            interval = Math.floor(seconds / 2592000);
+            if (interval >= 1) return `${interval} month${interval === 1 ? '' : 's'} ago`;
+            
+            interval = Math.floor(seconds / 86400);
+            if (interval >= 1) return `${interval} day${interval === 1 ? '' : 's'} ago`;
+            
+            interval = Math.floor(seconds / 3600);
+            if (interval >= 1) return `${interval} hour${interval === 1 ? '' : 's'} ago`;
+            
+            interval = Math.floor(seconds / 60);
+            if (interval >= 1) return `${interval} minute${interval === 1 ? '' : 's'} ago`;
+            
+            return 'just now';
+        }
+
+        // Function to update all notification timestamps
+        function updateNotificationTimes() {
+            document.querySelectorAll('.notification-time').forEach(element => {
+                const timestamp = element.getAttribute('data-timestamp');
+                if (timestamp) {
+                    element.textContent = formatRelativeTime(timestamp);
+                }
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
+            // Update timestamps on page load
+            updateNotificationTimes();
+            
+            // Update timestamps every minute
+            setInterval(updateNotificationTimes, 60000);
             // Password form functionality
             const passwordForm = document.getElementById('changePasswordForm');
             if (passwordForm) {
@@ -2565,6 +2611,9 @@
         // Initialize the application
         document.addEventListener('DOMContentLoaded', () => {
             new BookingSystemUI();
+            updateNotificationTimes();
+            // Update timestamps every minute
+            setInterval(updateNotificationTimes, 60000);
         });
 
         // Add smooth scrolling for better UX
