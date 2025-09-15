@@ -1731,7 +1731,6 @@ def test_email_config():
 @app.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
     if request.method == 'GET':
-        # Check if there's a previous email in the form data (for error cases)
         email = request.args.get('email', '')
         return render_template("forgot_password.html", email=email)
 
@@ -1742,49 +1741,39 @@ def forgot_password():
         flash("Invalid email format!", "error")
         return redirect(f"{url_for('forgot_password')}?email={email}")
 
-    # Rate limiting temporarily disabled for testing
-
-    # Ensure email is registered in our system (mirrors Supabase Auth)
     try:
+        # Check if email exists in our database
         user_query = get_user_by_email(email)
         if not user_query.data:
-            # Rate limiting temporarily disabled
-            flash("This email is not registered. Please check and try again.", "error")
-            return redirect(f"{url_for('forgot_password')}?email={email}")
-    except Exception as e:
-        print(f"Error checking email existence: {e}")
-        # Fall back to generic message to avoid blocking legitimate users due to a transient error
-        flash("Unable to verify email right now. Please try again shortly.", "error")
-        return redirect(url_for("forgot_password"))
+            # Show success message for security (don't reveal if email exists)
+            flash("If this email is registered, you will receive a password reset link.", "success")
+            return redirect(url_for("forgot_password"))
 
-    try:
-        # Use Supabase's password reset with redirect URL
-        # Use production URL in production, otherwise use request.url_root for local development
-        if os.environ.get('RENDER'):  # Running on Render
-            reset_link = "https://brgybaritan.onrender.com/reset_password"
-        else:
-            reset_link = f"{request.url_root}reset_password"
-            
-        print(f"Attempting to send password reset for {email} with redirect to {reset_link}")
-        
-        response = supabase.auth.reset_password_for_email(email, {
-            "redirect_to": reset_link,
-            "email_redirect_to": reset_link
+        # Use Supabase Auth to send password reset email
+        reset_response = supabase.auth.reset_password_for_email(email, {
+            "redirect_to": "https://brgybaritan.onrender.com/reset_password"
         })
         
-        # Log the full response from Supabase for debugging
-        print(f"Supabase response for password reset: {response}")
+        print(f"Supabase password reset initiated for: {email}")
+        
+        # Log the full response for debugging (without exposing sensitive data)
+        if hasattr(reset_response, 'error'):
+            print(f"Supabase error: {reset_response.error}")
+        else:
+            print("Supabase password reset email sent successfully")
 
         # Always show success message for security (don't reveal if email exists)
         flash("If this email is registered, you will receive a password reset link.", "success")
         return redirect(url_for("forgot_password"))
 
     except Exception as e:
-        error_msg = str(e).lower()
-        print(f"[CRITICAL] Supabase Auth Error in forgot_password: {e}")
+        print(f"Error in forgot_password: {str(e)}")
+        # Log the full error for debugging
+        import traceback
+        traceback.print_exc()
         
-        # Show success message for security (don't reveal if email exists)
-        flash("If this email is registered, you will receive a password reset link.", "success")
+        # Show generic error message
+        flash("An error occurred while processing your request. Please try again later.", "error")
         return redirect(url_for("forgot_password"))
 
 @app.route('/reset_password', methods=['GET', 'POST'])
