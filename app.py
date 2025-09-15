@@ -1759,10 +1759,18 @@ def forgot_password():
 
     try:
         # Use Supabase's password reset with redirect URL
-        reset_link = f"{request.url_root}reset_password"
+        # Use production URL in production, otherwise use request.url_root for local development
+        if os.environ.get('RENDER'):  # Running on Render
+            reset_link = "https://brgybaritan.onrender.com/reset_password"
+        else:
+            reset_link = f"{request.url_root}reset_password"
+            
         print(f"Attempting to send password reset for {email} with redirect to {reset_link}")
         
-        response = supabase.auth.reset_password_for_email(email, {"redirect_to": reset_link})
+        response = supabase.auth.reset_password_for_email(email, {
+            "redirect_to": reset_link,
+            "email_redirect_to": reset_link
+        })
         
         # Log the full response from Supabase for debugging
         print(f"Supabase response for password reset: {response}")
