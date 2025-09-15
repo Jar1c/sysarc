@@ -1735,45 +1735,87 @@ def forgot_password():
         return render_template("forgot_password.html", email=email)
 
     email = request.form['email'].strip().lower()
+    print(f"Password reset requested for: {email}")
 
     # Validate email format
     if not validate_email_format(email):
+        print("Invalid email format")
         flash("Invalid email format!", "error")
         return redirect(f"{url_for('forgot_password')}?email={email}")
 
     try:
+        print("Checking if email exists in database...")
         # Check if email exists in our database
         user_query = get_user_by_email(email)
         if not user_query.data:
+            print("Email not found in database")
             # Show success message for security (don't reveal if email exists)
             flash("If this email is registered, you will receive a password reset link.", "success")
             return redirect(url_for("forgot_password"))
 
-        # Use Supabase Auth to send password reset email
-        reset_response = supabase.auth.reset_password_for_email(email, {
-            "redirect_to": "https://brgybaritan.onrender.com/reset_password"
-        })
-        
-        print(f"Supabase password reset initiated for: {email}")
-        
-        # Log the full response for debugging (without exposing sensitive data)
-        if hasattr(reset_response, 'error'):
-            print(f"Supabase error: {reset_response.error}")
-        else:
-            print("Supabase password reset email sent successfully")
-
-        # Always show success message for security (don't reveal if email exists)
-        flash("If this email is registered, you will receive a password reset link.", "success")
-        return redirect(url_for("forgot_password"))
+        print("Email found, initiating Supabase password reset...")
+        try:
+            # First, try to get the user's first name for the email
+            user_data = supabase.table("users").select("first_name").eq("email", email).execute()
+            first_name = user_data.data[0].get('first_name', 'User') if user_data.data else 'User'
+            
+            # Call Supabase to send the password reset email
+            reset_response = supabase.auth.reset_password_for_email(email, {
+                "redirect_to": "https://brgybaritan.onrender.com/reset_password"
+            })
+            
+            print(f"Supabase response: {reset_response}")
+            
+            # If we get here, the request was successful
+            print("Password reset email sent successfully via Supabase")
+            
+            # Send a notification email as well (optional)
+            try:
+                reset_link = f"https://brgybaritan.onrender.com/reset_password"
+                email_subject = "Password Reset Requested"
+                email_body = get_password_reset_email_template(first_name, reset_link)
+                send_email_notification(email, email_subject, email_body)
+                print("Notification email sent successfully")
+            except Exception as email_error:
+                print(f"Error sending notification email: {email_error}")
+                # Don't fail the whole request if notification email fails
+            
+            flash("If this email is registered, you will receive a password reset link.", "success")
+            return redirect(url_for("forgot_password"))
+            
+        except Exception as supabase_error:
+            error_msg = str(supabase_error)
+            print(f"Error in Supabase password reset: {error_msg}")
+            
+            # Log additional error details if available
+            if hasattr(supabase_error, 'message'):
+                print(f"Error message: {supabase_error.message}")
+            if hasattr(supabase_error, 'details'):
+                print(f"Error details: {supabase_error.details}")
+                
+            # Check for specific error conditions
+            if "email not confirmed" in error_msg.lower():
+                flash("Please confirm your email address before resetting your password.", "error")
+            elif "email rate limit exceeded" in error_msg.lower():
+                flash("Too many reset attempts. Please try again later.", "error")
+            else:
+                flash("Error connecting to the authentication service. Please try again later.", "error")
+                
+            return redirect(url_for("forgot_password"))
 
     except Exception as e:
-        print(f"Error in forgot_password: {str(e)}")
+        error_msg = str(e)
+        print(f"Error in forgot_password: {error_msg}")
         # Log the full error for debugging
         import traceback
         traceback.print_exc()
         
-        # Show generic error message
-        flash("An error occurred while processing your request. Please try again later.", "error")
+        # More specific error messages based on the error type
+        if 'reset_password_for_email' in error_msg or 'Supabase' in error_msg:
+            flash("Error connecting to the authentication service. Please try again later.", "error")
+        else:
+            flash("An error occurred while processing your request. Please try again later.", "error")
+            
         return redirect(url_for("forgot_password"))
 
 @app.route('/reset_password', methods=['GET', 'POST'])
