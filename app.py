@@ -1787,7 +1787,7 @@ def forgot_password():
         
         try:
             # Use the correct Supabase method for password reset
-            response = supabase.auth.reset_password_email(
+            response = supabase.auth.reset_password_for_email(
                 email=email,
                 options={
                     "redirect_to": reset_url,
@@ -1798,12 +1798,21 @@ def forgot_password():
             )
             
             print(f"Password reset email sent to {email}")
+            print(f"Supabase response: {response}")
             
-            # Return success response
-            return jsonify({
-                'success': True,
-                'message': 'A password reset link has been sent to your email.'
-            })
+            # Check if the response indicates success
+            if hasattr(response, 'data') and response.data:
+                print(f"Reset email sent successfully: {response.data}")
+                return jsonify({
+                    'success': True,
+                    'message': 'A password reset link has been sent to your email.'
+                })
+            else:
+                print(f"Unexpected response format from Supabase: {response}")
+                return jsonify({
+                    'success': False,
+                    'error': 'Failed to send reset email. Please try again.'
+                }), 500
             
         except Exception as reset_error:
             error_msg = str(reset_error)
@@ -1934,14 +1943,16 @@ def reset_password():
             # First, verify the token by getting the user
             try:
                 # Set the session with the access token
-                supabase.auth.set_auth(access_token)
+                supabase.auth.set_session(access_token, refresh_token)
                 
-                # Get the current user using the token
-                user_response = supabase.auth.get_user()
+                # Update the user's password
+                response = supabase.auth.update_user({
+                    'password': new_password
+                })
                 
-                if not user_response or not hasattr(user_response, 'user') or not user_response.user:
-                    error_msg = 'Invalid or expired reset token. Please request a new password reset.'
-                    print("Error: No user in response")
+                if not response or not hasattr(response, 'user') or not response.user:
+                    error_msg = 'Failed to update password. The reset link may have expired.'
+                    print("Error: Failed to update user password")
                     
                     if is_ajax:
                         return jsonify({
