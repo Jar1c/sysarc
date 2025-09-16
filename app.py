@@ -20,7 +20,7 @@ app.secret_key = os.urandom(24)
 
 # Constants
 SUPABASE_URL = "https://vehpeqlxmucsgasedcuh.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZlaHBlcWx4bXVjc2dhc2VkY3VoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjYxNjIyMiwiZXhwIjoyMDcyMTkyMjIyfQ.Xp5JiKtJVPMfZR1ethvOwguVBwjbIYKapi-1STLLfd8"
+SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZlaHBlcWx4bXVjc2dhc2VkY3VoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjYxNjIyMiwiZXhwIjoyMDcyMTkyMjIyfQ.Xp5JiKtJVPMfZR1ethvOwguVBwjbIYKapi-1STLLfd8"
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
@@ -2046,6 +2046,23 @@ def reset_password():
         return jsonify({
             'success': False,
             'error': 'An unexpected error occurred. Please try again.'
+        }), 500
+
+@app.route('/test_supabase', methods=['GET'])
+def test_supabase():
+    try:
+        # Test Supabase connection
+        user = supabase.auth.get_user()
+        return jsonify({
+            "success": True,
+            "message": "Supabase client is working",
+            "user": user.user.email if user and user.user else "No user logged in"
+        })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "error_type": type(e).__name__
         }), 500
 
 if __name__ == "__main__":
