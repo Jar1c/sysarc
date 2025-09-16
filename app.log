@@ -1,0 +1,70 @@
+2025-09-16 15:47:31,517 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.0.13:5000
+2025-09-16 15:47:31,518 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-09-16 15:48:16,080 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.0.13:5000
+2025-09-16 15:48:16,080 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-09-16 15:48:30,020 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:48:30] "GET / HTTP/1.1" 200 -
+2025-09-16 15:48:30,128 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:48:30] "[36mGET /static/img/brgy_baritan_logo.png HTTP/1.1[0m" 304 -
+2025-09-16 15:48:30,139 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:48:30] "[36mGET /static/img/Ph_seal_Malabon.png HTTP/1.1[0m" 304 -
+2025-09-16 15:48:30,153 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:48:30] "[36mGET /static/img/background.jpg HTTP/1.1[0m" 304 -
+2025-09-16 15:48:31,151 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:48:31] "GET /signin HTTP/1.1" 200 -
+2025-09-16 15:48:31,180 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:48:31] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-09-16 15:48:31,190 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:48:31] "[36mGET /static/img/background.jpg HTTP/1.1[0m" 304 -
+2025-09-16 15:48:50,849 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:48:50] "GET /signin HTTP/1.1" 200 -
+2025-09-16 15:48:50,873 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:48:50] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-09-16 15:48:50,884 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:48:50] "[36mGET /static/img/brgy_baritan_logo.png HTTP/1.1[0m" 304 -
+2025-09-16 15:48:51,636 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:48:51] "GET /signin HTTP/1.1" 200 -
+2025-09-16 15:48:51,657 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:48:51] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-09-16 15:48:51,665 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:48:51] "[36mGET /static/img/brgy_baritan_logo.png HTTP/1.1[0m" 304 -
+2025-09-16 15:48:51,818 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:48:51] "GET /signin HTTP/1.1" 200 -
+2025-09-16 15:48:51,836 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:48:51] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-09-16 15:48:51,846 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:48:51] "[36mGET /static/img/brgy_baritan_logo.png HTTP/1.1[0m" 304 -
+2025-09-16 15:48:51,972 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:48:51] "GET /signin HTTP/1.1" 200 -
+2025-09-16 15:48:51,993 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:48:51] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-09-16 15:48:52,004 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:48:52] "[36mGET /static/img/brgy_baritan_logo.png HTTP/1.1[0m" 304 -
+2025-09-16 15:49:07,154 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:49:07] "GET /signin HTTP/1.1" 200 -
+2025-09-16 15:49:07,173 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:49:07] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-09-16 15:49:07,185 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:49:07] "[36mGET /static/img/brgy_baritan_logo.png HTTP/1.1[0m" 304 -
+2025-09-16 15:49:07,799 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:49:07] "GET /signin HTTP/1.1" 200 -
+2025-09-16 15:49:07,820 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:49:07] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-09-16 15:49:07,831 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:49:07] "[36mGET /static/img/brgy_baritan_logo.png HTTP/1.1[0m" 304 -
+2025-09-16 15:49:07,945 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:49:07] "GET /signin HTTP/1.1" 200 -
+2025-09-16 15:49:07,966 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:49:07] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-09-16 15:49:07,978 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:49:07] "[36mGET /static/img/brgy_baritan_logo.png HTTP/1.1[0m" 304 -
+2025-09-16 15:49:44,558 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:49:44] "GET /reset_password HTTP/1.1" 200 -
+2025-09-16 15:49:44,582 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:49:44] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-09-16 15:49:56,936 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:49:56] "GET /signin HTTP/1.1" 200 -
+2025-09-16 15:49:56,969 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:49:56] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-09-16 15:51:32,251 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.0.13:5000
+2025-09-16 15:51:32,251 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-09-16 15:51:41,739 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:51:41] "GET /signin HTTP/1.1" 200 -
+2025-09-16 15:51:41,761 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:51:41] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-09-16 15:51:41,769 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:51:41] "[36mGET /static/img/background.jpg HTTP/1.1[0m" 304 -
+2025-09-16 15:51:41,775 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:51:41] "[36mGET /static/img/brgy_baritan_logo.png HTTP/1.1[0m" 304 -
+2025-09-16 15:51:45,015 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:51:45] "GET /signin HTTP/1.1" 200 -
+2025-09-16 15:51:45,037 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:51:45] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-09-16 15:51:45,046 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:51:45] "[36mGET /static/img/brgy_baritan_logo.png HTTP/1.1[0m" 304 -
+2025-09-16 15:51:45,681 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:51:45] "GET /signin HTTP/1.1" 200 -
+2025-09-16 15:51:45,700 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:51:45] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-09-16 15:51:45,709 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:51:45] "[36mGET /static/img/brgy_baritan_logo.png HTTP/1.1[0m" 304 -
+2025-09-16 15:51:46,273 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:51:46] "GET /signin HTTP/1.1" 200 -
+2025-09-16 15:51:46,292 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:51:46] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-09-16 15:51:46,301 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:51:46] "[36mGET /static/img/brgy_baritan_logo.png HTTP/1.1[0m" 304 -
+2025-09-16 15:51:46,585 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:51:46] "GET /signin HTTP/1.1" 200 -
+2025-09-16 15:51:46,604 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:51:46] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-09-16 15:51:46,614 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:51:46] "[36mGET /static/img/brgy_baritan_logo.png HTTP/1.1[0m" 304 -
+2025-09-16 15:51:46,771 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:51:46] "GET /signin HTTP/1.1" 200 -
+2025-09-16 15:51:46,789 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:51:46] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-09-16 15:51:46,798 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:51:46] "[36mGET /static/img/brgy_baritan_logo.png HTTP/1.1[0m" 304 -
+2025-09-16 15:51:51,689 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:51:51] "GET / HTTP/1.1" 200 -
+2025-09-16 15:51:51,720 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:51:51] "[36mGET /static/img/brgy_baritan_logo.png HTTP/1.1[0m" 304 -
+2025-09-16 15:51:51,722 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:51:51] "[36mGET /static/img/background.jpg HTTP/1.1[0m" 304 -
+2025-09-16 15:51:51,728 - werkzeug - INFO - 127.0.0.1 - - [16/Sep/2025 15:51:51] "[36mGET /static/img/Ph_seal_Malabon.png HTTP/1.1[0m" 304 -
