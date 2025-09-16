@@ -1786,34 +1786,25 @@ def forgot_password():
         print(f"Sending password reset to {email} with redirect to: {reset_url}")
         
         try:
-            # Use the correct Supabase method for password reset in v2.4.0
-            # First, we'll use the sign_in method to get a session
-            response = supabase.auth.sign_in_with_otp({
-                'email': email,
-                'options': {
-                    'email_redirect_to': reset_url,
-                    'data': {
-                        'email': email
-                    }
-                }
-            })
+            print(f"Attempting to send password reset email to: {email}")
+            print(f"Using reset URL: {reset_url}")
             
-            print(f"Password reset email sent to {email}")
+            # Use resetPasswordForEmail to send the password reset email
+            response = supabase.auth.api.reset_password_for_email(
+                email=email,
+                options={
+                    'redirect_to': reset_url
+                }
+            )
+            
             print(f"Supabase response: {response}")
             
-            # Check if the response indicates success
-            if hasattr(response, 'data') and response.data:
-                print(f"Reset email sent successfully: {response.data}")
-                return jsonify({
-                    'success': True,
-                    'message': 'A password reset link has been sent to your email.'
-                })
-            else:
-                print(f"Unexpected response format from Supabase: {response}")
-                return jsonify({
-                    'success': False,
-                    'error': 'Failed to send reset email. Please try again.'
-                }), 500
+            # If we get here, the request was successful
+            print("Password reset email sent successfully")
+            return jsonify({
+                'success': True,
+                'message': 'A password reset link has been sent to your email.'
+            })
             
         except Exception as reset_error:
             error_msg = str(reset_error)
@@ -1941,12 +1932,18 @@ def reset_password():
             print(f"Access token present: {'Yes' if access_token else 'No'}")
             print(f"Access token length: {len(access_token) if access_token else 0}")
             
-            # First, verify the token by getting the user
+            # First, verify the token and update the password
             try:
-                # Verify the OTP token and update the password
-                response = supabase.auth.verify_otp({
-                    'token_hash': access_token,
-                    'type': 'recovery',
+                # Set the session with the tokens
+                supabase.auth.set_session(access_token, refresh_token)
+                
+                # Get the current user to verify the session
+                user_response = supabase.auth.get_user()
+                if not user_response or not hasattr(user_response, 'user') or not user_response.user:
+                    raise Exception("Invalid or expired session")
+                
+                # Update the user's password
+                response = supabase.auth.update_user({
                     'password': new_password
                 })
                 
