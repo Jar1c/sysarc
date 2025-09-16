@@ -1822,14 +1822,23 @@ def reset_password():
 
     try:
         print("\n=== Reset Password Request ===")
-
+        
+        # Check if request is JSON
+        is_json = request.is_json or 'application/json' in request.headers.get('Accept', '')
+        
         # Get form data
-        email = request.form.get('email', '').strip().lower()
-        new_password = request.form.get('new_password', '').strip()
-        confirm_password = request.form.get('confirm_password', '').strip()
+        if is_json and request.get_json():
+            data = request.get_json()
+            email = data.get('email', '').strip().lower()
+            new_password = data.get('new_password', '').strip()
+            confirm_password = data.get('confirm_password', '').strip()
+        else:
+            email = request.form.get('email', '').strip().lower()
+            new_password = request.form.get('new_password', '').strip()
+            confirm_password = request.form.get('confirm_password', '').strip()
 
         print(f"Email: {email}")
-        print(f"New password provided: {'Yes' if new_password else 'No'}")
+        print(f"Request is JSON: {is_json}")
 
         # Validate required fields
         if not all([email, new_password, confirm_password]):
@@ -1839,19 +1848,44 @@ def reset_password():
             if not confirm_password: missing.append('confirm_password')
             error_msg = f'Missing required fields: {", ".join(missing)}'
             print(f"Validation Error: {error_msg}")
+            
+            if is_json:
+                return jsonify({
+                    'success': False,
+                    'error': error_msg,
+                    'missing_fields': missing
+                }), 400
+                
             flash(error_msg, 'error')
             return redirect(url_for('reset_password', email=email))
 
         # Check if passwords match
         if new_password != confirm_password:
-            print("Error: Passwords do not match")
-            flash('Passwords do not match.', 'error')
+            error_msg = 'Passwords do not match.'
+            print(f"Error: {error_msg}")
+            
+            if is_json:
+                return jsonify({
+                    'success': False,
+                    'error': error_msg,
+                    'field': 'confirm_password'
+                }), 400
+                
+            flash(error_msg, 'error')
             return redirect(url_for('reset_password', email=email))
 
         # Validate password strength
         password_error = validate_password_strength(new_password)
         if password_error:
             print(f"Password Error: {password_error}")
+            
+            if is_json:
+                return jsonify({
+                    'success': False,
+                    'error': password_error,
+                    'field': 'new_password'
+                }), 400
+                
             flash(password_error, 'error')
             return redirect(url_for('reset_password', email=email))
 
@@ -1863,7 +1897,7 @@ def reset_password():
                 'password': new_password
             })
 
-            print(f"Password updated successfully: {update_response}")
+            print(f"Password updated successfully")
 
             # Send confirmation email
             try:
@@ -1878,34 +1912,55 @@ def reset_password():
                 print(f"Confirmation email sent to {email}")
             except Exception as email_error:
                 print(f"Error sending confirmation email: {str(email_error)}")
+                # Don't fail the request if email fails
 
-            if wants_json():
+            success_msg = 'Your password has been updated successfully. Please sign in with your new password.'
+            
+            if is_json:
                 return jsonify({
                     'success': True,
-                    'message': 'Your password has been updated successfully. Please sign in with your new password.',
-                    'redirect': url_for('signin')
+                    'message': success_msg,
+                    'redirect': url_for('signin', _external=True)
                 })
-            flash('Your password has been updated successfully. Please sign in with your new password.', 'success')
+                
+            flash(success_msg, 'success')
             return redirect(url_for('signin'))
 
         except Exception as e:
-            error_msg = str(e).lower()
+            error_msg = str(e)
             print(f"Error in password reset: {error_msg}")
             import traceback
             traceback.print_exc()
-            if wants_json():
+            
+            # More specific error handling
+            if 'password' in error_msg.lower():
+                error_msg = 'The password does not meet the requirements.'
+            elif 'email' in error_msg.lower():
+                error_msg = 'No account found with this email address.'
+            else:
+                error_msg = 'An error occurred while updating your password. Please try again.'
+            
+            if is_json:
                 return jsonify({
                     'success': False,
-                    'error': 'An error occurred while updating your password. Please try again.'
+                    'error': error_msg
                 }), 400
-            flash('An error occurred while updating your password. Please try again.', 'error')
+                
+            flash(error_msg, 'error')
             return redirect(url_for('reset_password', email=email))
 
     except Exception as e:
-        error_msg = str(e).lower()
+        error_msg = str(e)
         print(f"Unexpected error: {error_msg}")
         import traceback
         traceback.print_exc()
+        
+        if is_json:
+            return jsonify({
+                'success': False,
+                'error': 'An unexpected error occurred. Please try again later.'
+            }), 500
+            
         flash('An unexpected error occurred. Please try again later.', 'error')
         return redirect(url_for('forgot_password'))
 
