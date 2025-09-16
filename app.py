@@ -1839,51 +1839,86 @@ def reset_password():
             # Store tokens in session for the POST request
             session['reset_access_token'] = access_token
             session['reset_refresh_token'] = refresh_token
-            return render_template('reset_password.html')
+            
+            # Return the reset password page
+            return render_template('reset_password.html', 
+                                 access_token=access_token,
+                                 refresh_token=refresh_token)
         return render_template('reset_password.html')
     
     try:
         print("\n=== Reset Password Request ===")
         print(f"Form Data: {request.form}")
         
+        # Check if this is an AJAX request
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        
         # Get form data
         email = request.form.get('email')
         new_password = request.form.get('new_password')
         confirm_password = request.form.get('confirm_password')
         
-        # Get tokens from session
-        access_token = session.get('reset_access_token')
-        refresh_token = session.get('reset_refresh_token')
+        # Get tokens from form or session
+        access_token = request.form.get('access_token') or session.get('reset_access_token')
+        refresh_token = request.form.get('refresh_token') or session.get('reset_refresh_token')
         
-        if not access_token or not refresh_token:
-            flash('Invalid or expired reset link. Please request a new password reset.', 'error')
-            return redirect(url_for('forgot_password'))
-        
-        # Clear the tokens from session
-        session.pop('reset_access_token', None)
-        session.pop('reset_refresh_token', None)
+        # Clear the tokens from session if they exist
+        if 'reset_access_token' in session:
+            session.pop('reset_access_token')
+        if 'reset_refresh_token' in session:
+            session.pop('reset_refresh_token')
         
         # Validate required fields
-        if not all([email, new_password, confirm_password]):
+        if not all([email, new_password, confirm_password, access_token, refresh_token]):
             missing = [field for field in ['email', 'new_password', 'confirm_password'] 
                       if not request.form.get(field)]
+            if not access_token:
+                missing.append('access_token')
+            if not refresh_token:
+                missing.append('refresh_token')
+                
             error_msg = f'Missing required fields: {", ".join(missing)}'
             print(f"Validation Error: {error_msg}")
-            flash(error_msg, 'error')
-            return render_template('reset_password.html')
+            
+            if is_ajax:
+                return jsonify({
+                    'success': False,
+                    'error': error_msg,
+                    'missing_fields': missing
+                }), 400
+            else:
+                flash(error_msg, 'error')
+                return render_template('reset_password.html')
             
         # Check if passwords match
         if new_password != confirm_password:
-            print("Error: Passwords do not match")
-            flash('Passwords do not match. Please try again.', 'error')
-            return render_template('reset_password.html')
+            error_msg = 'Passwords do not match. Please try again.'
+            print(f"Error: {error_msg}")
+            
+            if is_ajax:
+                return jsonify({
+                    'success': False,
+                    'error': error_msg,
+                    'field': 'confirm_password'
+                }), 400
+            else:
+                flash(error_msg, 'error')
+                return render_template('reset_password.html')
             
         # Validate password strength
         password_error = validate_password_strength(new_password)
         if password_error:
             print(f"Password Error: {password_error}")
-            flash(password_error, 'error')
-            return render_template('reset_password.html')
+            
+            if is_ajax:
+                return jsonify({
+                    'success': False,
+                    'error': password_error,
+                    'field': 'new_password'
+                }), 400
+            else:
+                flash(password_error, 'error')
+                return render_template('reset_password.html')
             
         try:
             print("\n=== Starting Password Reset Process ===")
@@ -1891,62 +1926,132 @@ def reset_password():
             print(f"Access token present: {'Yes' if access_token else 'No'}")
             print(f"Access token length: {len(access_token) if access_token else 0}")
             
-            # Initialize the auth client
-            from gotrue import SyncGoTrueAPI
-            
-            auth_api = SyncGoTrueAPI(
-                url=f"{SUPABASE_URL}/auth/v1",
-                headers={
-                    "apikey": SUPABASE_KEY,
-                    "Authorization": f"Bearer {SUPABASE_KEY}"
-                }
-            )
-            
-            # First, update the user's password in Supabase Auth
-            auth_response = auth_api.update_user(
-                access_token=access_token,
-                attributes={"password": new_password}
-            )
-            
-            print("Password updated in Supabase Auth")
-            
-            # Also update the password in your users table
-            hashed_password = generate_password_hash(new_password)
-            supabase.table("users") \
-                .update({"password": hashed_password}) \
-                .eq("email", email) \
-                .execute()
+            # First, verify the token by getting the user
+            try:
+                # Verify the token by getting the user
+                user_response = supabase.auth.get_user(access_token)
                 
-            print("Password updated in users table")
-            
-            # Sign in the user
-            sign_in_response = supabase.auth.sign_in_with_password({
-                "email": email,
-                "password": new_password
-            })
-            
-            # Clear any existing session
-            session.clear()
-            
-            # Set new session
-            session['user'] = {
-                'id': sign_in_response.user.id,
-                'email': email,
-                'first_name': sign_in_response.user.user_metadata.get('first_name', 'User'),
-                'role': 'user'  # Default role
-            }
-            
-            # Get user data from your database
-            user_data = get_user_by_email(email)
-            if user_data.data:
-                session['user'].update({
-                    'first_name': user_data.data[0].get('first_name', 'User'),
-                    'role': user_data.data[0].get('role', 'user')
+                if not user_response or not hasattr(user_response, 'user') or not user_response.user:
+                    error_msg = 'Invalid or expired reset token. Please request a new password reset.'
+                    print("Error: No user in response")
+                    
+                    if is_ajax:
+                        return jsonify({
+                            'success': False,
+                            'error': error_msg,
+                            'invalid_token': True
+                        }), 400
+                    else:
+                        flash(error_msg, 'error')
+                        return redirect(url_for('forgot_password'))
+                
+                current_user = user_response.user
+                current_email = getattr(current_user, 'email', '').lower()
+                
+                # Verify the email matches
+                if current_email != email.lower():
+                    error_msg = 'Email does not match the reset token.'
+                    print(f"Error: {error_msg} {current_email} != {email}")
+                    
+                    if is_ajax:
+                        return jsonify({
+                            'success': False,
+                            'error': error_msg,
+                            'field': 'email'
+                        }), 400
+                    else:
+                        flash(error_msg, 'error')
+                        return render_template('reset_password.html')
+                
+                # Update the user's password using the Supabase client
+                update_response = supabase.auth.update_user({
+                    'password': new_password
                 })
-            
-            print("User signed in successfully")
-            flash('Your password has been reset successfully!', 'success')
-            return redirect(url_for('booking'))
+                
+                if hasattr(update_response, 'error') and update_response.error:
+                    raise Exception(update_response.error.message)
+                
+                print("Password updated in Supabase Auth")
+                
+                # Also update the password in your users table
+                try:
+                    hashed_password = generate_password_hash(new_password)
+                    update_result = supabase.table("users") \
+                        .update({"password": hashed_password}) \
+                        .eq("email", email) \
+                        .execute()
+                        
+                    if hasattr(update_result, 'error') and update_result.error:
+                        print(f"Warning: Failed to update users table: {update_result.error}")
+                    else:
+                        print("Password updated in users table")
+                except Exception as db_error:
+                    print(f"Error updating users table: {str(db_error)}")
+                
+                # Sign in the user
+                try:
+                    sign_in_response = supabase.auth.sign_in_with_password({
+                        "email": email,
+                        "password": new_password
+                    })
+                    
+                    # Clear any existing session
+                    session.clear()
+                    
+                    # Set new session
+                    session['user'] = {
+                        'id': sign_in_response.user.id,
+                        'email': email,
+                        'first_name': sign_in_response.user.user_metadata.get('first_name', 'User'),
+                        'role': 'user'  # Default role
+                    }
+                    
+                    # Get user data from your database
+                    user_data = get_user_by_email(email)
+                    if user_data.data:
+                        session['user'].update({
+                            'first_name': user_data.data[0].get('first_name', 'User'),
+                            'role': user_data.data[0].get('role', 'user')
+                        })
+                    
+                    print("User signed in successfully")
+                    
+                    if is_ajax:
+                        return jsonify({
+                            'success': True,
+                            'message': 'Your password has been reset successfully!',
+                            'redirect': url_for('booking')
+                        })
+                    else:
+                        flash('Your password has been reset successfully!', 'success')
+                        return redirect(url_for('booking'))
+                        
+                except Exception as signin_error:
+                    print(f"Error signing in user: {str(signin_error)}")
+                    # Even if sign in fails, the password was still reset
+                    if is_ajax:
+                        return jsonify({
+                            'success': True,
+                            'message': 'Your password has been reset successfully! Please sign in with your new password.',
+                            'redirect': url_for('signin')
+                        })
+                    else:
+                        flash('Your password has been reset successfully! Please sign in with your new password.', 'success')
+                        return redirect(url_for('signin'))
+                
+            except Exception as update_error:
+                error_msg = f'Failed to reset password: {str(update_error)}'
+                print(f"Error in password reset: {error_msg}")
+                
+                if is_ajax:
+                    return jsonify({
+                        'success': False,
+                        'error': 'Failed to reset password. The link may have expired. Please request a new password reset.',
+                        'invalid_token': True
+                    }), 400
+                else:
+                    flash('Failed to reset password. The link may have expired. Please request a new password reset.', 'error')
+                    return redirect(url_for('forgot_password'))
             
         except Exception as e:
             error_msg = str(e)
@@ -1955,22 +2060,43 @@ def reset_password():
             traceback.print_exc()
             
             # More specific error messages
-            if "Invalid login credentials" in error_msg:
-                flash('Invalid or expired reset link. Please request a new password reset.', 'error')
-            elif "Password should be at least" in error_msg:
-                flash('Password does not meet requirements. Please try again with a stronger password.', 'error')
+            if "Invalid login credentials" in error_msg or "invalid token" in error_msg.lower():
+                error_msg = 'Invalid or expired reset link. Please request a new password reset.'
+                invalid_token = True
+            elif "password" in error_msg.lower() and ("weak" in error_msg.lower() or "should be at least" in error_msg.lower()):
+                error_msg = 'Password does not meet requirements. Please try again with a stronger password.'
+                field = 'new_password'
             else:
-                flash('An error occurred while resetting your password. Please try again.', 'error')
-                
-            return render_template('reset_password.html')
+                error_msg = 'An error occurred while resetting your password. Please try again.'
+            
+            if is_ajax:
+                response = {
+                    'success': False,
+                    'error': error_msg
+                }
+                if 'invalid_token' in locals():
+                    response['invalid_token'] = True
+                if 'field' in locals():
+                    response['field'] = field
+                return jsonify(response), 400
+            else:
+                flash(error_msg, 'error')
+                return render_template('reset_password.html')
             
     except Exception as e:
         error_msg = str(e)
         print(f"Unexpected error in reset_password: {error_msg}")
         import traceback
         traceback.print_exc()
-        flash('An unexpected error occurred. Please try again later.', 'error')
-        return redirect(url_for('forgot_password'))
+        
+        if is_ajax:
+            return jsonify({
+                'success': False,
+                'error': 'An unexpected error occurred. Please try again later.'
+            }), 500
+        else:
+            flash('An unexpected error occurred. Please try again later.', 'error')
+            return redirect(url_for('forgot_password'))
 
 @app.route('/test_supabase', methods=['GET'])
 def test_supabase():
