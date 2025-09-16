@@ -21,7 +21,20 @@ app.secret_key = os.urandom(24)
 # Constants
 SUPABASE_URL = "https://vehpeqlxmucsgasedcuh.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZlaHBlcWx4bXVjc2dhc2VkY3VoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjYxNjIyMiwiZXhwIjoyMDcyMTkyMjIyfQ.Xp5JiKtJVPMfZR1ethvOwguVBwjbIYKapi-1STLLfd8"
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# Initialize Supabase client with auth configuration
+supabase: Client = create_client(
+    SUPABASE_URL, 
+    SUPABASE_KEY,
+    options={
+        'auto_refresh_token': True,
+        'persist_session': True,
+        'detect_session_in_url': True
+    }
+)
+
+# Set the auth cookie options
+supabase.auth.set_session = lambda *args, **kwargs: None  # Disable default session handling
 
 
 
@@ -1796,14 +1809,15 @@ def forgot_password():
         # Log the reset URL for debugging
         print(f"Sending password reset to {email} with redirect to: {reset_url}")
         
+        print(f"Attempting to send password reset to {email} with URL: {reset_url}")
+        
         try:
-            # Send password reset email through Supabase
             response = supabase.auth.reset_password_for_email(
                 email,
                 {"redirect_to": reset_url}
             )
             
-            print(f"Password reset email sent to {email}")
+            print(f"Password reset email sent successfully to {email}")
             print(f"Supabase response: {response}")
             
             # Return success response
@@ -1813,11 +1827,14 @@ def forgot_password():
             })
             
         except Exception as reset_error:
-            print(f"Error sending reset email: {str(reset_error)}")
-            # Return generic error message for security
+            error_msg = str(reset_error)
+            print(f"Detailed error sending reset email: {error_msg}")
+            print(f"Error type: {type(reset_error).__name__}")
+            
+            # Return more detailed error message for debugging
             return jsonify({
                 'success': False,
-                'error': 'Failed to send reset email. Please try again later.'
+                'error': f'Failed to send reset email. Error: {error_msg}'
             }), 500
         
     except Exception as e:
