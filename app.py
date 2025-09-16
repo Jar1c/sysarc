@@ -1769,74 +1769,74 @@ def forgot_password():
         }), 400
 
     try:
-        # Generate reset link with redirect
-        reset_url = request.url_root.rstrip('/') + url_for('reset_password')
+        # First, check if user exists in your users table
+        user_data = supabase.table('users').select('id, first_name, email').eq('email', email).execute()
+        if not user_data.data:
+            print(f"User not found in database: {email}")
+            return jsonify({
+                'success': False,
+                'error': 'No account found with this email address.'
+            }), 404
+        
+        # Generate a secure token for password reset
+        import secrets
+        reset_token = secrets.token_urlsafe(32)
+        
+        # Store the reset token in the database with an expiration time (1 hour from now)
+        reset_expires = (datetime.utcnow() + timedelta(hours=1)).isoformat()
+        
+        # Update user with reset token and expiration
+        supabase.table('users').update({
+            'reset_token': reset_token,
+            'reset_expires': reset_expires
+        }).eq('email', email).execute()
+        
+        # Generate reset link with token
+        reset_url = request.url_root.rstrip('/') + url_for('reset_password', token=reset_token)
         
         # Make sure to use HTTPS in production
         if 'localhost' not in reset_url and '127.0.0.1' not in reset_url:
             reset_url = reset_url.replace('http://', 'https://')
         
-        # Log the reset URL for debugging
-        print(f"Attempting to send password reset to {email} with redirect to: {reset_url}")
+        print(f"\n=== Password Reset Request ===")
+        print(f"Email: {email}")
+        print(f"Reset URL: {reset_url}")
         
-        try:
-            # Send password reset email through Supabase
-            response = supabase.auth.reset_password_for_email(
-                email=email,
-                options={
-                    "redirect_to": reset_url,
-                    "email_redirect_to": reset_url
-                }
-            )
-            
-            print(f"Password reset email sent to {email}")
-            print(f"Supabase response: {response}")
-            
-            # Return success response
-            return jsonify({
-                'success': True,
-                'message': 'A password reset link has been sent to your email.'
-            })
-            
-        except Exception as reset_error:
-            error_msg = str(reset_error).lower()
-            print(f"Error sending reset email: {error_msg}")
-            
-            # Check for specific error cases
-            if 'user not found' in error_msg:
-                return jsonify({
-                    'success': False,
-                    'error': 'No account found with this email address.'
-                }), 404
-                
-            if 'rate limit' in error_msg:
-                return jsonify({
-                    'success': False,
-                    'error': 'Too many reset attempts. Please try again later.'
-                }), 429
-                
-            # Log the full error for debugging
-            import traceback
-            traceback.print_exc()
-            
-            # Return generic error message for security
-            return jsonify({
-                'success': False,
-                'error': 'Failed to send reset email. Please try again later.'
-            }), 500
+        # Get user's first name for the email
+        user_first_name = user_data.data[0].get('first_name', 'User')
+        
+        # Send the password reset email
+        subject = "Password Reset Request"
+        message = get_password_reset_email_template(
+            user_first_name=user_first_name,
+            reset_link=reset_url
+        )
+        
+        # Send the email
+        send_email_notification(email, subject, message)
+        
+        print(f"Password reset email sent successfully to {email}")
+        
+        # Return success response
+        return jsonify({
+            'success': True,
+            'message': 'A password reset link has been sent to your email.'
+        })
         
     except Exception as e:
         error_msg = str(e).lower()
-        print(f"Unexpected error in forgot_password: {error_msg}")
-        
-        # Log the full error for debugging
+        print(f"\n=== Error in forgot_password ===")
+        print(f"Error Type: {type(e).__name__}")
+        print(f"Error Message: {error_msg}")
+        print("\n=== Full Traceback ===")
         import traceback
         traceback.print_exc()
+        print("\n")
         
-        # Return error message
+        # Return generic error message for security
         return jsonify({
             'success': False,
-            'error': 'An unexpected error occurred. Please try again later.'
+            'error': 'Failed to process your request. Please try again later.'
         }), 500
 
 
@@ -2052,6 +2052,43 @@ def reset_password():
         return jsonify({
             'success': False,
             'error': 'An unexpected error occurred. Please try again.'
+        }), 500
+
+@app.route('/test_supabase', methods=['GET'])
+def test_supabase():
+    """Test endpoint to verify Supabase connection and configuration"""
+    try:
+        # Test database connection
+        print("\n=== Testing Supabase Connection ===")
+        print(f"Supabase URL: {SUPABASE_URL}")
+        print(f"Supabase Key: {SUPABASE_KEY[:10]}...")
+        
+        # Test auth settings
+        print("\n=== Testing Auth Settings ===")
+        settings = supabase.auth.get_settings()
+        print(f"Site URL: {settings.get('site_url', 'Not set')}")
+        print(f"Redirect URLs: {settings.get('redirect_urls', [])}")
+        
+        # Test email templates
+        print("\n=== Testing Email Templates ===")
+        templates = supabase.auth.admin.list_email_templates()
+        print(f"Available templates: {[t['template_name'] for t in templates]}")
+        
+        return jsonify({
+            'success': True,
+            'site_url': settings.get('site_url'),
+            'redirect_urls': settings.get('redirect_urls', []),
+            'message': 'Supabase connection successful!'
+        })
+        
+    except Exception as e:
+        import traceback
+        error_msg = str(e)
+        print(f"\n=== Supabase Test Error ===")
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': f'Supabase connection failed: {error_msg}'
         }), 500
 
 if __name__ == "__main__":
