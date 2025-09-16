@@ -1812,25 +1812,56 @@ def forgot_password():
             })
             
         except Exception as reset_error:
-            print(f"Error sending reset email: {str(reset_error)}")
-            # Return generic error message for security
+            # Log detailed error information
+            error_details = {
+                'error_type': type(reset_error).__name__,
+                'error_message': str(reset_error),
+                'email': email,
+                'reset_url': reset_url
+            }
+            print(f"Error sending reset email: {error_details}")
+            # Log full traceback
+            import traceback
+            traceback.print_exc()
+            
+            # Check for specific error types to provide better error messages
+            error_msg = 'Failed to send reset email. Please try again later.'
+            if 'rate limit' in str(reset_error).lower():
+                error_msg = 'Too many password reset attempts. Please try again later.'
+            elif 'email' in str(reset_error).lower() and ('not found' in str(reset_error).lower() or 'invalid' in str(reset_error).lower()):
+                error_msg = 'No account found with this email address.'
+                
             return jsonify({
                 'success': False,
-                'error': 'Failed to send reset email. Please try again later.'
+                'error': error_msg,
+                'error_details': str(reset_error) if app.debug else None
             }), 500
         
     except Exception as e:
         error_msg = str(e).lower()
-        print(f"Error in forgot_password: {error_msg}")
+        error_details = {
+            'error_type': type(e).__name__,
+            'error_message': str(e),
+            'email': email
+        }
+        print(f"Error in forgot_password: {error_details}")
         
         # Log the full error for debugging
         import traceback
         traceback.print_exc()
         
+        # Check for specific error types to provide better error messages
+        error_msg = 'An error occurred. Please try again later.'
+        if 'rate limit' in error_msg:
+            error_msg = 'Too many password reset attempts. Please try again later.'
+        elif 'email' in error_msg and ('not found' in error_msg or 'invalid' in error_msg):
+            error_msg = 'No account found with this email address.'
+            
         # Return error message
         return jsonify({
             'success': False,
-            'error': 'An error occurred. Please try again later.'
+            'error': error_msg,
+            'error_details': str(e) if app.debug else None
         }), 500
 
 
