@@ -1794,12 +1794,21 @@ def forgot_password():
         
         # Log the reset URL for debugging
         print(f"Sending password reset to {email} with redirect to: {reset_url}")
+        print(f"Request URL: {request.url}")
+        print(f"Request headers: {dict(request.headers)}")
         
         try:
             # Send password reset email through Supabase
+            print(f"Calling Supabase reset_password_for_email with email: {email}")
+            print(f"Redirect URL being used: {reset_url}")
+            
+            # Try with a simpler redirect URL for testing
+            test_redirect_url = "https://brgybaritan.onrender.com/reset_password"
+            print(f"Trying with test redirect URL: {test_redirect_url}")
+            
             response = supabase.auth.reset_password_for_email(
                 email,
-                {"redirect_to": reset_url}
+                {"redirect_to": test_redirect_url}
             )
             
             print(f"Password reset email sent to {email}")
