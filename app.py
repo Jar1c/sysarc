@@ -1928,8 +1928,11 @@ def reset_password():
             
             # First, verify the token by getting the user
             try:
-                # Verify the token by getting the user
-                user_response = supabase.auth.get_user(access_token)
+                # Set the session with the access token
+                supabase.auth.set_auth(access_token)
+                
+                # Get the current user using the token
+                user_response = supabase.auth.get_user()
                 
                 if not user_response or not hasattr(user_response, 'user') or not user_response.user:
                     error_msg = 'Invalid or expired reset token. Please request a new password reset.'
@@ -2082,20 +2085,25 @@ def reset_password():
             else:
                 flash(error_msg, 'error')
                 return render_template('reset_password.html')
-            
+
     except Exception as e:
         error_msg = str(e)
         print(f"Unexpected error in reset_password: {error_msg}")
         import traceback
         traceback.print_exc()
         
+        # Check for common errors
+        if "Invalid login credentials" in error_msg or "Invalid refresh token" in error_msg:
+            error_msg = 'The password reset link has expired. Please request a new one.'
+
         if is_ajax:
             return jsonify({
                 'success': False,
-                'error': 'An unexpected error occurred. Please try again later.'
-            }), 500
+                'error': error_msg,
+                'invalid_token': 'expired' in error_msg.lower()
+            }), 400
         else:
-            flash('An unexpected error occurred. Please try again later.', 'error')
+            flash(error_msg, 'error')
             return redirect(url_for('forgot_password'))
 
 @app.route('/test_supabase', methods=['GET'])
