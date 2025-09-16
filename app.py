@@ -1807,6 +1807,12 @@ def forgot_password():
         }), 500
 
 
+def wants_json():
+    best = request.accept_mimetypes \
+        .best_match(['application/json', 'text/html'])
+    return best == 'application/json' and \
+        request.accept_mimetypes[best] > request.accept_mimetypes['text/html']
+
 @app.route('/reset_password', methods=['GET', 'POST'])
 def reset_password():
     if request.method == 'GET':
@@ -1873,6 +1879,12 @@ def reset_password():
             except Exception as email_error:
                 print(f"Error sending confirmation email: {str(email_error)}")
 
+            if wants_json():
+                return jsonify({
+                    'success': True,
+                    'message': 'Your password has been updated successfully. Please sign in with your new password.',
+                    'redirect': url_for('signin')
+                })
             flash('Your password has been updated successfully. Please sign in with your new password.', 'success')
             return redirect(url_for('signin'))
 
@@ -1881,6 +1893,11 @@ def reset_password():
             print(f"Error in password reset: {error_msg}")
             import traceback
             traceback.print_exc()
+            if wants_json():
+                return jsonify({
+                    'success': False,
+                    'error': 'An error occurred while updating your password. Please try again.'
+                }), 400
             flash('An error occurred while updating your password. Please try again.', 'error')
             return redirect(url_for('reset_password', email=email))
 
