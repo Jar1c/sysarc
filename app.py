@@ -1789,13 +1789,16 @@ def forgot_password():
             print(f"Attempting to send password reset email to: {email}")
             print(f"Using reset URL: {reset_url}")
             
-            # Use resetPasswordForEmail to send the password reset email
-            response = supabase.auth.api.reset_password_for_email(
+            # In v2.18.1, we use reset_password_for_email
+            response = supabase.auth.reset_password_for_email(
                 email=email,
                 options={
                     'redirect_to': reset_url
                 }
             )
+            
+            # If we get here, the email was sent successfully
+            print("Password reset email sent successfully")
             
             print(f"Supabase response: {response}")
             
@@ -1932,7 +1935,7 @@ def reset_password():
             print(f"Access token present: {'Yes' if access_token else 'No'}")
             print(f"Access token length: {len(access_token) if access_token else 0}")
             
-            # First, verify the token and update the password
+            # First, verify the session and update the password
             try:
                 # Set the session with the tokens
                 supabase.auth.set_session(access_token, refresh_token)
