@@ -1752,43 +1752,59 @@ def test_email_config():
 def forgot_password():
     if request.method == 'GET':
         email = request.args.get('email', '')
-        return render_template('forgot_password.html', email=email)
+        return render_template("forgot_password.html", email=email)
+
+    email = request.form.get('email', '').strip().lower()
     
-    # Handle POST request
+    if not email:
+        return jsonify({
+            'success': False,
+            'error': 'Please enter your email address'
+        }), 400
+
+    if not validate_email_format(email):
+        return jsonify({
+            'success': False,
+            'error': 'Please enter a valid email address'
+        }), 400
+
     try:
-        email = request.form.get('email', '').strip().lower()
-        
-        if not email:
-            flash('Please enter your email address.', 'error')
-            return redirect(url_for('forgot_password'))
-            
-        if not validate_email_format(email):
-            flash('Please enter a valid email address.', 'error')
-            return redirect(url_for('forgot_password'))
+        # Optional: Check if user exists (you can remove this if you want to avoid leaking user info)
+        user_data = supabase.table('users').select('id').eq('email', email).execute()
+        if not user_data.data:
+            return jsonify({
+                'success': False,
+                'error': 'No account found with this email address.'
+            }), 404
         
         # Get the site URL for the reset password link
         site_url = request.url_root.rstrip('/')
-        redirect_to = f"{site_url}reset_password"
+        redirect_to = f"{site_url}/reset_password"
         
-        # Use Supabase's built-in password reset
-        print(f"\n=== Sending Password Reset Email via Supabase ===")
-        print(f"Email: {email}")
-        print(f"Redirect URL: {redirect_to}")
-        
+        # Use Supabase's built-in password reset — it will send the email automatically
         response = supabase.auth.reset_password_email(email, {
             'redirect_to': redirect_to
         })
         
-        print(f"Password reset email sent to {email}")
-        flash('If an account with that email exists, a password reset link has been sent.', 'success')
-        return redirect(url_for('forgot_password'))
+        print(f"Password reset email sent via Supabase to: {email}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'A password reset link has been sent to your email.'
+        })
         
     except Exception as e:
-        print(f"Error in forgot_password: {str(e)}")
+        error_msg = str(e).lower()
+        print(f"\n=== Error in forgot_password ===")
+        print(f"Error Type: {type(e).__name__}")
+        print(f"Error Message: {error_msg}")
         import traceback
         traceback.print_exc()
-        flash('An error occurred. Please try again.', 'error')
-        return redirect(url_for('forgot_password'))
+        
+        return jsonify({
+            'success': False,
+            'error': 'Failed to process your request. Please try again later.'
+        }), 500
 
 
 @app.route('/reset_password', methods=['GET', 'POST'])
