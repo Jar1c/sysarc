@@ -1859,16 +1859,11 @@ def reset_password():
         
         print(f"Email: {email}")
         print(f"Token present: {'Yes' if token else 'No'}")
-        print(f"Request content type: {request.content_type}")
-        print(f"Request is JSON: {request.is_json}")
-        
-        print(f"Email: {email}")
-        print(f"Token present: {'Yes' if token else 'No'}")
         
         # Validate required fields
         if not all([email, new_password, confirm_password, token]):
             missing = [field for field in ['email', 'new_password', 'confirm_password', 'token'] 
-                      if not request.form.get(field)]
+                      if not locals().get(field)]
             error_msg = f'Missing required fields: {", ".join(missing)}'
             print(f"Validation Error: {error_msg}")
             flash(error_msg, 'error')
@@ -1905,11 +1900,20 @@ def reset_password():
                 if not supabase:
                     raise Exception('Supabase client not initialized')
                 
-                # Update the user's password using the token
+                # First verify the OTP token
+                print("Verifying OTP token...")
+                verify_response = supabase.auth.verify_otp({
+                    'email': email,
+                    'token': token,
+                    'type': 'recovery'
+                })
+                
+                print(f"OTP verification response: {verify_response}")
+                
+                # If OTP verification is successful, update the password
                 print("Updating password...")
                 update_response = supabase.auth.update_user({
-                    'password': new_password,
-                    'token': token
+                    'password': new_password
                 })
                 
                 print(f"Password update response: {update_response}")
@@ -1949,7 +1953,7 @@ def reset_password():
                 import traceback
                 traceback.print_exc()
                 
-                if 'invalid token' in error_msg or 'expired' in error_msg:
+                if 'invalid token' in error_msg or 'expired' in error_msg or 'otp' in error_msg:
                     error_msg = 'Invalid or expired reset link. Please request a new password reset.'
                     if request.is_json:
                         return jsonify({'success': False, 'error': error_msg}), 400
@@ -1991,6 +1995,7 @@ def reset_password():
         flash(error_msg, 'error')
         return redirect(url_for('forgot_password'))
 
+        
 @app.route('/test_supabase', methods=['GET'])
 def test_supabase():
     """Test endpoint to verify Supabase connection and configuration"""
