@@ -22,19 +22,23 @@ app.secret_key = os.urandom(24)
 SUPABASE_URL = "https://vehpeqlxmucsgasedcuh.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZlaHBlcWx4bXVjc2dhc2VkY3VoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjYxNjIyMiwiZXhwIjoyMDcyMTkyMjIyfQ.Xp5JiKtJVPMfZR1ethvOwguVBwjbIYKapi-1STLLfd8"
 
-# Initialize Supabase client with auth configuration
-supabase: Client = create_client(
-    SUPABASE_URL, 
-    SUPABASE_KEY,
-    options={
+# Initialize Supabase client
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# Configure auth options
+try:
+    # For newer versions of supabase-py
+    from gotrue.types import AuthOptions
+    auth_options = AuthOptions({
         'auto_refresh_token': True,
         'persist_session': True,
         'detect_session_in_url': True
-    }
-)
-
-# Set the auth cookie options
-supabase.auth.set_session = lambda *args, **kwargs: None  # Disable default session handling
+    })
+    supabase.auth.set_auth(auth_options)
+except ImportError:
+    # Fallback for older versions
+    supabase.auth.on_auth_state_change(lambda event, session: None)
+    supabase.auth.set_session = lambda *args, **kwargs: None  # Disable default session handling
 
 
 
@@ -1812,9 +1816,10 @@ def forgot_password():
         print(f"Attempting to send password reset to {email} with URL: {reset_url}")
         
         try:
-            response = supabase.auth.reset_password_for_email(
+            # Updated to use the correct method for password reset
+            response = supabase.auth.api.reset_password_for_email(
                 email,
-                {"redirect_to": reset_url}
+                {"redirectTo": reset_url}  # Note: 'redirectTo' is the correct parameter name
             )
             
             print(f"Password reset email sent successfully to {email}")
