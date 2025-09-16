@@ -1787,7 +1787,7 @@ def forgot_password():
         
         try:
             # Use the correct Supabase method for password reset
-            response = supabase.auth.reset_password_for_email(
+            response = supabase.auth.reset_password_email(
                 email=email,
                 options={
                     "redirect_to": reset_url,
@@ -1835,32 +1835,21 @@ def forgot_password():
 @app.route('/reset_password', methods=['GET', 'POST'])
 def reset_password():
     if request.method == 'GET':
-        # Check for Supabase reset token in URL parameters
-        token = request.args.get('token')
-        type_param = request.args.get('type')
-        
-        # Also check for access_token and refresh_token for backward compatibility
+        # Check for access token in URL parameters (Supabase will add this)
         access_token = request.args.get('access_token')
         refresh_token = request.args.get('refresh_token')
+        type_param = request.args.get('type')
         
-        if token and type_param == 'recovery':
-            # This is a Supabase password reset link
-            print(f"Received password reset token: {token[:10]}...")
-            return render_template('reset_password.html', 
-                                token=token,
-                                type=type_param)
-        elif access_token and refresh_token and type_param == 'recovery':
-            # This is for backward compatibility
-            print(f"Received access token (legacy): {access_token[:10]}...")
+        if access_token and refresh_token and type_param == 'recovery':
+            # Store tokens in session for the POST request
             session['reset_access_token'] = access_token
             session['reset_refresh_token'] = refresh_token
-            return render_template('reset_password.html',
-                                access_token=access_token,
-                                refresh_token=refresh_token)
-        
-        # No valid tokens found
-        print("No valid reset tokens found in URL")
-        return render_template('reset_password.html', error='Invalid or expired reset link')
+            
+            # Return the reset password page
+            return render_template('reset_password.html', 
+                                 access_token=access_token,
+                                 refresh_token=refresh_token)
+        return render_template('reset_password.html')
     
     try:
         print("\n=== Reset Password Request ===")
