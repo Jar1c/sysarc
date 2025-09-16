@@ -1810,19 +1810,9 @@ def forgot_password():
 @app.route('/reset_password', methods=['GET', 'POST'])
 def reset_password():
     if request.method == 'GET':
-        # Get token and email from URL
-        token = request.args.get('token', '').strip()
         email = request.args.get('email', '').strip().lower()
-
-        print(f"GET - Token: {token}, Email: {email}")
-
-        # If no token, redirect to forgot password
-        if not token:
-            flash('Invalid or expired reset link. Please request a new password reset.', 'error')
-            return redirect(url_for('forgot_password'))
-
-        # Pass token and email to template
-        return render_template('reset_password.html', token=token, email=email)
+        print(f"Password reset page loaded for email: {email}")
+        return render_template('reset_password.html', email=email)
 
     try:
         print("\n=== Reset Password Request ===")
@@ -1831,57 +1821,45 @@ def reset_password():
         email = request.form.get('email', '').strip().lower()
         new_password = request.form.get('new_password', '').strip()
         confirm_password = request.form.get('confirm_password', '').strip()
-        token = request.form.get('token', '').strip()  # From hidden field
 
         print(f"Email: {email}")
-        print(f"Token: {token}")
         print(f"New password provided: {'Yes' if new_password else 'No'}")
 
         # Validate required fields
-        if not all([email, new_password, confirm_password, token]):
+        if not all([email, new_password, confirm_password]):
             missing = []
             if not email: missing.append('email')
             if not new_password: missing.append('new_password')
             if not confirm_password: missing.append('confirm_password')
-            if not token: missing.append('token')
             error_msg = f'Missing required fields: {", ".join(missing)}'
             print(f"Validation Error: {error_msg}")
             flash(error_msg, 'error')
-            return redirect(url_for('reset_password', token=token, email=email))
+            return redirect(url_for('reset_password', email=email))
 
         # Check if passwords match
         if new_password != confirm_password:
             print("Error: Passwords do not match")
-            flash('Passwords do not match. Please try again.', 'error')
-            return redirect(url_for('reset_password', token=token, email=email))
+            flash('Passwords do not match.', 'error')
+            return redirect(url_for('reset_password', email=email))
 
         # Validate password strength
         password_error = validate_password_strength(new_password)
         if password_error:
             print(f"Password Error: {password_error}")
             flash(password_error, 'error')
-            return redirect(url_for('reset_password', token=token, email=email))
+            return redirect(url_for('reset_password', email=email))
 
         print("\n=== Starting Password Reset Process ===")
 
         try:
-            # Verify the recovery token
-            verify_response = supabase.auth.verify_otp({
-                'email': email,
-                'token': token,
-                'type': 'recovery'
-            })
-
-            print(f"OTP verification successful: {verify_response}")
-
-            # Update password
+            # Update password directly
             update_response = supabase.auth.update_user({
                 'password': new_password
             })
 
             print(f"Password updated successfully: {update_response}")
 
-            # Optional: Send confirmation email
+            # Send confirmation email
             try:
                 subject = "Password Updated Successfully"
                 message = f"""
@@ -1903,13 +1881,8 @@ def reset_password():
             print(f"Error in password reset: {error_msg}")
             import traceback
             traceback.print_exc()
-
-            if 'invalid' in error_msg or 'expired' in error_msg or 'otp' in error_msg:
-                flash('Invalid or expired reset link. Please request a new password reset.', 'error')
-                return redirect(url_for('forgot_password'))
-            else:
-                flash('An error occurred while updating your password. Please try again.', 'error')
-                return redirect(url_for('reset_password', token=token, email=email))
+            flash('An error occurred while updating your password. Please try again.', 'error')
+            return redirect(url_for('reset_password', email=email))
 
     except Exception as e:
         error_msg = str(e).lower()
