@@ -1842,65 +1842,48 @@ def reset_password():
     
     try:
         print("\n=== Reset Password Request ===")
-        print(f"Form Data: {request.form}")
         
-        # Check if this is a JSON request
-        is_json = request.headers.get('Content-Type') == 'application/json'
-        
-        # Get form data
-        if is_json:
+        # Check if request is JSON
+        if request.is_json:
             data = request.get_json()
             email = data.get('email', '').strip().lower()
             new_password = data.get('new_password', '').strip()
             confirm_password = data.get('confirm_password', '').strip()
-            # Handle both token formats
-            token = data.get('token', '') or data.get('access_token', '')
-            token = token.strip()
+            token = data.get('access_token', '').strip() or data.get('token', '').strip()
         else:
+            # Handle form data
             email = request.form.get('email', '').strip().lower()
             new_password = request.form.get('new_password', '').strip()
             confirm_password = request.form.get('confirm_password', '').strip()
-            # Handle both token formats
-            token = request.form.get('token', '') or request.form.get('access_token', '')
-            token = token.strip()
+            token = request.form.get('access_token', '').strip() or request.form.get('token', '').strip()
+        
+        print(f"Email: {email}")
+        print(f"Token present: {'Yes' if token else 'No'}")
+        print(f"Request content type: {request.content_type}")
+        print(f"Request is JSON: {request.is_json}")
         
         print(f"Email: {email}")
         print(f"Token present: {'Yes' if token else 'No'}")
         
         # Validate required fields
-        missing_fields = []
-        if not email:
-            missing_fields.append('email')
-        if not new_password:
-            missing_fields.append('new_password')
-        if not confirm_password:
-            missing_fields.append('confirm_password')
-        if not token:
-            missing_fields.extend(['token', 'access_token'])
-            
-        if missing_fields:
-            error_msg = f'Missing required fields: {", ".join(missing_fields)}'
+        if not all([email, new_password, confirm_password, token]):
+            missing = [field for field in ['email', 'new_password', 'confirm_password', 'token'] 
+                      if not request.form.get(field)]
+            error_msg = f'Missing required fields: {", ".join(missing)}'
             print(f"Validation Error: {error_msg}")
-            if is_json:
-                return jsonify({'success': False, 'error': error_msg}), 400
             flash(error_msg, 'error')
-            return redirect(url_for('forgot_password'))
+            return redirect(url_for('reset_password'))
             
         # Check if passwords match
         if new_password != confirm_password:
-            error_msg = 'Passwords do not match. Please try again.'
-            print(f"Error: {error_msg}")
-            if is_json:
-                return jsonify({'success': False, 'error': error_msg}), 400
-            flash(error_msg, 'error')
+            print("Error: Passwords do not match")
+            flash('Passwords do not match. Please try again.', 'error')
             return redirect(url_for('reset_password', token=token, email=email))
             
         # Validate password strength
         password_error = validate_password_strength(new_password)
         if password_error:
             print(f"Password Error: {password_error}")
-            if is_json:
-                return jsonify({'success': False, 'error': password_error}), 400
             flash(password_error, 'error')
             return redirect(url_for('reset_password', token=token, email=email))
             
@@ -1910,11 +1893,9 @@ def reset_password():
             
             # Verify we have the required parameters
             if not token or not email:
-                error_msg = 'Invalid reset link. Please request a new password reset.'
+                error_msg = f'Missing required parameters: token={token is not None}, email={email is not None}'
                 print(error_msg)
-                if is_json:
-                    return jsonify({'success': False, 'error': error_msg}), 400
-                flash(error_msg, 'error')
+                flash('Invalid reset link. Please request a new password reset.', 'error')
                 return redirect(url_for('forgot_password'))
                 
             print(f"Resetting password for email: {email}")
@@ -1924,50 +1905,22 @@ def reset_password():
                 if not supabase:
                     raise Exception('Supabase client not initialized')
                 
-                print(f"Attempting to reset password for email: {email}")
+                # Update the user's password using the token
+                print("Updating password...")
+                update_response = supabase.auth.update_user({
+                    'password': new_password,
+                    'token': token
+                })
                 
-                # First, try to update the password using the token
-                try:
-                    print("Updating password using token...")
-                    update_response = supabase.auth.update_user({
-                        'password': new_password,
-                        'token': token
-                    })
-                    print(f"Password update response: {update_response}")
-                    
-                except Exception as update_error:
-                    print(f"Error updating password with token: {str(update_error)}")
-                    # If token is invalid or expired, try with the access token
-                    if 'Invalid token' in str(update_error) or 'expired' in str(update_error).lower():
-                        print("Token invalid or expired, trying with access token...")
-                        try:
-                            # Set the session with the access token
-                            supabase.auth.set_auth(token)
-                            # Try to update the password directly
-                            user = supabase.auth.update_user({'password': new_password})
-                            print(f"Password updated using access token: {user}")
-                        except Exception as auth_error:
-                            print(f"Error updating password with access token: {str(auth_error)}")
-                            raise auth_error
-                    else:
-                        raise update_error
+                print(f"Password update response: {update_response}")
                 
                 # If we get here, the password was updated successfully
                 print(f"Password updated successfully for {email}")
                 
-                # Update password in the users table as well
-                try:
-                    hashed_password = generate_password_hash(new_password)
-                    supabase.table("users").update({"password": hashed_password})\
-                        .eq("email", email).execute()
-                    print("Password updated in users table")
-                except Exception as db_error:
-                    print(f"Warning: Could not update password in users table: {db_error}")
-                
                 # Send confirmation email
                 try:
                     subject = "Password Updated Successfully"
-                    message = """
+                    message = f"""
                     <h2>Password Updated Successfully</h2>
                     <p>Your password has been successfully updated.</p>
                     <p>If you did not make this change, please contact support immediately.</p>
@@ -1978,17 +1931,16 @@ def reset_password():
                 except Exception as email_error:
                     print(f"Error sending confirmation email: {str(email_error)}")
                 
-                # Return success response
-                success_msg = 'Your password has been updated successfully. Please sign in with your new password.'
-                if is_json:
+                # Return appropriate response based on request type
+                if request.is_json:
                     return jsonify({
                         'success': True,
-                        'message': success_msg,
+                        'message': 'Your password has been updated successfully. Please sign in with your new password.',
                         'redirect': url_for('signin')
-                    })
-                
-                flash(success_msg, 'success')
-                return redirect(url_for('signin'))
+                    }), 200
+                else:
+                    flash('Your password has been updated successfully. Please sign in with your new password.', 'success')
+                    return redirect(url_for('signin'))
                 
             except Exception as e:
                 error_msg = str(e).lower()
@@ -1999,13 +1951,13 @@ def reset_password():
                 
                 if 'invalid token' in error_msg or 'expired' in error_msg:
                     error_msg = 'Invalid or expired reset link. Please request a new password reset.'
-                    if is_json:
+                    if request.is_json:
                         return jsonify({'success': False, 'error': error_msg}), 400
                     flash(error_msg, 'error')
                     return redirect(url_for('forgot_password'))
                 else:
                     error_msg = 'An error occurred while updating your password. Please try again.'
-                    if is_json:
+                    if request.is_json:
                         return jsonify({'success': False, 'error': error_msg}), 500
                     flash(error_msg, 'error')
                     return redirect(url_for('reset_password', token=token, email=email))
@@ -2018,7 +1970,7 @@ def reset_password():
             traceback.print_exc()
             
             error_msg = 'An error occurred while processing your request. Please try again.'
-            if is_json:
+            if request.is_json:
                 return jsonify({'success': False, 'error': error_msg}), 500
             flash(error_msg, 'error')
             return redirect(url_for('reset_password', token=token, email=email))
@@ -2034,7 +1986,7 @@ def reset_password():
         print("\n")
         
         error_msg = 'An unexpected error occurred. Please try again later.'
-        if request.headers.get('Content-Type') == 'application/json':
+        if request.is_json:
             return jsonify({'success': False, 'error': error_msg}), 500
         flash(error_msg, 'error')
         return redirect(url_for('forgot_password'))
