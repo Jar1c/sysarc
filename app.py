@@ -1786,16 +1786,17 @@ def forgot_password():
         print(f"Sending password reset to {email} with redirect to: {reset_url}")
         
         try:
-            # Use the correct Supabase method for password reset
-            response = supabase.auth.reset_password_for_email(
-                email=email,
-                options={
-                    "redirect_to": reset_url,
-                    "data": {
-                        "email": email
+            # Use the correct Supabase method for password reset in v2.4.0
+            # First, we'll use the sign_in method to get a session
+            response = supabase.auth.sign_in_with_otp({
+                'email': email,
+                'options': {
+                    'email_redirect_to': reset_url,
+                    'data': {
+                        'email': email
                     }
                 }
-            )
+            })
             
             print(f"Password reset email sent to {email}")
             print(f"Supabase response: {response}")
@@ -1942,11 +1943,10 @@ def reset_password():
             
             # First, verify the token by getting the user
             try:
-                # Set the session with the access token
-                supabase.auth.set_session(access_token, refresh_token)
-                
-                # Update the user's password
-                response = supabase.auth.update_user({
+                # Verify the OTP token and update the password
+                response = supabase.auth.verify_otp({
+                    'token_hash': access_token,
+                    'type': 'recovery',
                     'password': new_password
                 })
                 
