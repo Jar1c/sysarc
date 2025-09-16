@@ -1748,22 +1748,36 @@ def test_email_config():
             "error_type": type(e).__name__
         })
 
-@app.route('/forgot_password', methods=['POST'])
+@app.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
+    if request.method == 'GET':
+        email = request.args.get('email', '')
+        return render_template('forgot_password.html', email=email)
+    
+    # Handle POST request
     try:
         email = request.form.get('email', '').strip().lower()
         
         if not email:
             flash('Please enter your email address.', 'error')
             return redirect(url_for('forgot_password'))
+            
+        if not validate_email_format(email):
+            flash('Please enter a valid email address.', 'error')
+            return redirect(url_for('forgot_password'))
         
-        # Send password reset email with proper redirect URL
-        reset_response = supabase.auth.reset_password_for_email(
-            email,
-            {
-                'redirect_to': f"{request.host_url}reset_password"
-            }
-        )
+        # Get the site URL for the reset password link
+        site_url = request.url_root.rstrip('/')
+        redirect_to = f"{site_url}reset_password"
+        
+        # Use Supabase's built-in password reset
+        print(f"\n=== Sending Password Reset Email via Supabase ===")
+        print(f"Email: {email}")
+        print(f"Redirect URL: {redirect_to}")
+        
+        response = supabase.auth.reset_password_email(email, {
+            'redirect_to': redirect_to
+        })
         
         print(f"Password reset email sent to {email}")
         flash('If an account with that email exists, a password reset link has been sent.', 'success')
@@ -1771,6 +1785,8 @@ def forgot_password():
         
     except Exception as e:
         print(f"Error in forgot_password: {str(e)}")
+        import traceback
+        traceback.print_exc()
         flash('An error occurred. Please try again.', 'error')
         return redirect(url_for('forgot_password'))
 
