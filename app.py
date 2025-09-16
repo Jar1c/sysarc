@@ -1786,21 +1786,8 @@ def forgot_password():
         print(f"Sending password reset to {email} with redirect to: {reset_url}")
         
         try:
-            # Use the auth admin API to send reset email
-            from gotrue import SyncGoTrueAPI
-            from gotrue.types import AuthResponse
-            
-            # Initialize the auth client
-            auth_api = SyncGoTrueAPI(
-                url=f"{SUPABASE_URL}/auth/v1",
-                headers={
-                    "apikey": SUPABASE_KEY,
-                    "Authorization": f"Bearer {SUPABASE_KEY}"
-                }
-            )
-            
-            # Send the reset email
-            response = auth_api.reset_password_for_email(
+            # Use the Supabase client to send password reset email
+            response = supabase.auth.reset_password_email(
                 email=email,
                 options={"redirect_to": reset_url}
             )
