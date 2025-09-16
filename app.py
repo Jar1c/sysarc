@@ -1769,46 +1769,24 @@ def forgot_password():
         }), 400
 
     try:
-        # First check if user exists by attempting to sign in
-        try:
-            # This will fail with 'Invalid login credentials' if email doesn't exist
-            # We don't care about the actual password here
-            supabase.auth.sign_in_with_password({
-                'email': email,
-                'password': 'dummy_password_123!@#'
-            })
-        except Exception as auth_error:
-            error_msg = str(auth_error).lower()
-            if 'email' in error_msg and ('not found' in error_msg or 'invalid' in error_msg):
-                return jsonify({
-                    'success': False,
-                    'error': 'No account found with this email address.'
-                }), 404
-            # If it's a different error, continue with reset attempt
-        
         # Generate reset link with redirect
         reset_url = request.url_root.rstrip('/') + url_for('reset_password')
-        # Make sure to use the same domain as your Supabase site URL
+        
+        # Make sure to use HTTPS in production
         if 'localhost' not in reset_url and '127.0.0.1' not in reset_url:
             reset_url = reset_url.replace('http://', 'https://')
         
         # Log the reset URL for debugging
-        print(f"Sending password reset to {email} with redirect to: {reset_url}")
-        print(f"Request URL: {request.url}")
-        print(f"Request headers: {dict(request.headers)}")
+        print(f"Attempting to send password reset to {email} with redirect to: {reset_url}")
         
         try:
             # Send password reset email through Supabase
-            print(f"Calling Supabase reset_password_for_email with email: {email}")
-            print(f"Redirect URL being used: {reset_url}")
-            
-            # Try with a simpler redirect URL for testing
-            test_redirect_url = "https://brgybaritan.onrender.com/reset_password"
-            print(f"Trying with test redirect URL: {test_redirect_url}")
-            
             response = supabase.auth.reset_password_for_email(
-                email,
-                {"redirect_to": test_redirect_url}
+                email=email,
+                options={
+                    "redirect_to": reset_url,
+                    "email_redirect_to": reset_url
+                }
             )
             
             print(f"Password reset email sent to {email}")
@@ -1821,56 +1799,44 @@ def forgot_password():
             })
             
         except Exception as reset_error:
-            # Log detailed error information
-            error_details = {
-                'error_type': type(reset_error).__name__,
-                'error_message': str(reset_error),
-                'email': email,
-                'reset_url': reset_url
-            }
-            print(f"Error sending reset email: {error_details}")
-            # Log full traceback
+            error_msg = str(reset_error).lower()
+            print(f"Error sending reset email: {error_msg}")
+            
+            # Check for specific error cases
+            if 'user not found' in error_msg:
+                return jsonify({
+                    'success': False,
+                    'error': 'No account found with this email address.'
+                }), 404
+                
+            if 'rate limit' in error_msg:
+                return jsonify({
+                    'success': False,
+                    'error': 'Too many reset attempts. Please try again later.'
+                }), 429
+                
+            # Log the full error for debugging
             import traceback
             traceback.print_exc()
             
-            # Check for specific error types to provide better error messages
-            error_msg = 'Failed to send reset email. Please try again later.'
-            if 'rate limit' in str(reset_error).lower():
-                error_msg = 'Too many password reset attempts. Please try again later.'
-            elif 'email' in str(reset_error).lower() and ('not found' in str(reset_error).lower() or 'invalid' in str(reset_error).lower()):
-                error_msg = 'No account found with this email address.'
-                
+            # Return generic error message for security
             return jsonify({
                 'success': False,
-                'error': error_msg,
-                'error_details': str(reset_error) if app.debug else None
+                'error': 'Failed to send reset email. Please try again later.'
             }), 500
         
     except Exception as e:
         error_msg = str(e).lower()
-        error_details = {
-            'error_type': type(e).__name__,
-            'error_message': str(e),
-            'email': email
-        }
-        print(f"Error in forgot_password: {error_details}")
+        print(f"Unexpected error in forgot_password: {error_msg}")
         
         # Log the full error for debugging
         import traceback
         traceback.print_exc()
         
-        # Check for specific error types to provide better error messages
-        error_msg = 'An error occurred. Please try again later.'
-        if 'rate limit' in error_msg:
-            error_msg = 'Too many password reset attempts. Please try again later.'
-        elif 'email' in error_msg and ('not found' in error_msg or 'invalid' in error_msg):
-            error_msg = 'No account found with this email address.'
-            
         # Return error message
         return jsonify({
             'success': False,
-            'error': error_msg,
-            'error_details': str(e) if app.debug else None
+            'error': 'An unexpected error occurred. Please try again later.'
         }), 500
 
 
