@@ -1758,66 +1758,52 @@ def forgot_password():
         return redirect(url_for("forgot_password"))
 
     try:
-        # Determine the correct base URL based on environment
-        if 'RENDER' in os.environ:  # Running on Render
-            base_url = "https://brgybaritan.onrender.com"
-        else:  # Local development
-            base_url = request.url_root.rstrip('/')
-            
-        reset_link = f"{base_url}/reset_password"
+        # Use Supabase's password reset with redirect URL
+        reset_link = f"{request.url_root}reset_password"
         print(f"Attempting to send password reset for {email} with redirect to {reset_link}")
         
-        # Use the correct Supabase client method with proper options
-        try:
-            response = supabase.auth.reset_password_for_email(
-                email,
-                {
-                    "redirect_to": reset_link,
-                    "data": {"name": email.split('@')[0]}
-                }
-            )
-            print(f"Supabase response for password reset: {response}")
-        except Exception as supabase_error:
-            print(f"Supabase reset email error: {supabase_error}")
-            # Fall back to direct SMTP if Supabase fails
-            try:
-                email_subject = "Password Reset Request"
-                email_body = f"""
-                <p>You requested a password reset. Please click the link below to reset your password:</p>
-                <p><a href='{reset_link}'>Reset Password</a></p>
-                <p>If you didn't request this, please ignore this email.</p>
-                """
-                send_email_notification(email, email_subject, email_body)
-            except Exception as email_error:
-                print(f"SMTP email error: {email_error}")
+        response = supabase.auth.reset_password_for_email(email, {"redirect_to": reset_link})
+        
+        # Log the full response from Supabase for debugging
+        print(f"Supabase response for password reset: {response}")
+
+        # Always show success message for security (don't reveal if email exists)
+        flash("If this email is registered, you will receive a password reset link.", "success")
+        return redirect(url_for("forgot_password"))
+
+    except Exception as e:
+        error_msg = str(e).lower()
+        print(f"[CRITICAL] Supabase Auth Error in forgot_password: {e}")
+        
+        # Show success message for security (don't reveal if email exists)
+        flash("If this email is registered, you will receive a password reset link.", "success")
+        return redirect(url_for("forgot_password"))
 
 @app.route('/reset_password', methods=['GET', 'POST'])
 def reset_password():
     if request.method == 'GET':
-        # Check for Supabase style token in URL (type=recovery&access_token=...)
-        token_type = request.args.get('type')
+        # Check if tokens are in URL parameters (from email link)
         access_token = request.args.get('access_token')
+        refresh_token = request.args.get('refresh_token')
         
-        # If Supabase style token is present, handle it
-        if token_type == 'recovery' and access_token:
-            try:
-                # Verify the token is valid by getting the user
-                user = supabase.auth.get_user(access_token)
-                if user and hasattr(user, 'user'):
-                    # Store just the access token in session
-                    session['reset_access_token'] = access_token
-                    return render_template("reset_password.html", show_token_error=False)
-            except Exception as e:
-                print(f"Token validation error: {e}")
-        
-        flash("Invalid or expired reset link. Please request a new one.", "error")
-        return redirect(url_for("forgot_password"))
+        # If no tokens in URL, check hash (handled by frontend JS)
+        if not access_token or not refresh_token:
+            # Still render the template but with a flag for frontend to handle
+            return render_template("reset_password.html", show_token_error=False)
+            
+        # Store tokens in session for form submission
+        session['reset_access_token'] = access_token
+        session['reset_refresh_token'] = refresh_token
+        return render_template("reset_password.html", show_token_error=False)
     
     # Handle POST request (form submission)
     new_password = request.form.get('new_password')
     confirm_password = request.form.get('confirm_password')
-    access_token = session.get('reset_access_token')
-    
+
+    # Tokens may be posted from hidden fields populated by JS
+    access_token = request.form.get('access_token') or session.get('reset_access_token')
+    refresh_token = request.form.get('refresh_token') or session.get('reset_refresh_token')
+
     # Basic validation
     if not new_password or not confirm_password:
         flash("Please fill in all fields", "error")
@@ -1833,45 +1819,140 @@ def reset_password():
         flash(password_error, "error")
         return render_template("reset_password.html")
 
-    if not access_token:
+    if not access_token or not refresh_token:
         flash("Invalid or expired reset link. Please request a new one.", "error")
         return redirect(url_for("forgot_password"))
 
     try:
-        print(f"[DEBUG] Attempting password reset with access token")
+        print(f"[DEBUG] Attempting password reset with tokens - Access: {bool(access_token)}, Refresh: {bool(refresh_token)}")
         
-        # Update password using the access token directly
-        print("[DEBUG] Updating password with access token...")
-        update_response = supabase.auth.api.update_user(
-            access_token,
-            password=new_password
-        )
+        # Create a new client with the provided tokens
+        from supabase import create_client
+        reset_client = create_client(SUPABASE_URL, SUPABASE_KEY)
         
-        print(f"[DEBUG] Password update response: {update_response}")
-        
-        # Clear the reset token from session
-        session.pop('reset_access_token', None)
-        session.pop('reset_refresh_token', None)
-        
-        flash("Your password has been successfully updated. You can now sign in with your new password.", "success")
-        return redirect(url_for("signin"))
-        
+        try:
+            # Set the session with the reset tokens
+            print("[DEBUG] Setting session with reset tokens...")
+            reset_client.auth.set_session(access_token, refresh_token)
+            
+            # Verify we have a valid session first
+            try:
+                user = reset_client.auth.get_user()
+                print(f"[DEBUG] Current user before update: {user.user.id if user and hasattr(user, 'user') else 'None'}")
+            except Exception as auth_error:
+                print(f"[ERROR] Failed to get user before update: {str(auth_error)}")
+                raise Exception(f"Authentication failed: {str(auth_error)}")
+            
+            # Update the password using the reset client
+            print("[DEBUG] Attempting to update password...")
+            try:
+                update_response = reset_client.auth.update_user({
+                    "password": new_password
+                })
+                print(f"[DEBUG] Update response: {update_response}")
+            except Exception as update_error:
+                print(f"[ERROR] Update user error: {str(update_error)}")
+                raise
+            
+            # Verify the password was updated by getting the user
+            try:
+                user = reset_client.auth.get_user()
+                print(f"[DEBUG] User after update: {user.user.id if user and hasattr(user, 'user') else 'None'}")
+                
+                if user and hasattr(user, 'user'):
+                    try:
+                        # Update password and ensure user remains verified in the users table
+                        hashed_password = generate_password_hash(new_password)
+                        update_data = {
+                            'password': hashed_password,
+                            'is_verified': True
+                        }
+                        
+                        update_response = supabase.table('users')\
+                            .update(update_data)\
+                            .eq('email', user.user.email)\
+                            .execute()
+                        
+                        if not update_response.data:
+                            print(f"[WARNING] Failed to update user record for {user.user.email}")
+                            # Try to get user by email first to get the ID
+                            user_query = supabase.table('users')\
+                                .select('id')\
+                                .eq('email', user.user.email)\
+                                .execute()
+                            
+                            if user_query.data:
+                                # If user found by email, try updating by ID
+                                user_id = user_query.data[0]['id']
+                                update_response = supabase.table('users')\
+                                    .update(update_data)\
+                                    .eq('id', user_id)\
+                                    .execute()
+                                
+                                if not update_response.data:
+                                    print(f"[ERROR] Failed to update user record by ID: {user_id}")
+                            else:
+                                print(f"[ERROR] User not found with email: {user.user.email}")
+                        
+                    except Exception as update_error:
+                        print(f"[ERROR] Failed to update users table: {update_error}")
+                        flash("Password was reset, but there was an issue updating your profile. Please contact support.", "warning")
+                    
+                    # Clear any stored tokens from session
+                    session.pop('reset_access_token', None)
+                    session.pop('refresh_token', None)
+                    
+                    # Invalidate the current session
+                    try:
+                        reset_client.auth.sign_out()
+                    except:
+                        pass  # Ignore sign out errors
+                    
+                    flash("Password reset successful! You can now sign in with your new password.", "success")
+                    return redirect(url_for("signin"))
+                else:
+                    raise Exception("Failed to verify password update - no user returned after update")
+                    
+            except Exception as verify_error:
+                print(f"[ERROR] Verification after update failed: {str(verify_error)}")
+                raise Exception(f"Failed to verify password was updated: {str(verify_error)}")
+                
+        except Exception as update_error:
+            error_msg = str(update_error)
+            print(f"[ERROR] Password update error: {error_msg}")
+            print(f"[DEBUG] Error type: {type(update_error).__name__}")
+            
+            # Check for specific Supabase errors
+            if hasattr(update_error, 'message'):
+                error_msg = update_error.message
+            
+            if "invalid_grant" in error_msg or "invalid refresh token" in error_msg:
+                flash("The password reset link has expired. Please request a new one.", "error")
+            elif "Password should be at least" in error_msg:
+                flash(error_msg, "error")
+            else:
+                flash(f"Failed to update password: {error_msg}", "error")
+            
+            # Return to reset password page with form data preserved
+            return render_template("reset_password.html", 
+                                email=request.form.get('email'),
+                                access_token=access_token,
+                                refresh_token=refresh_token)
+            
     except Exception as e:
         error_msg = str(e)
-        print(f"[PASSWORD_RESET_ERROR] Failed to reset password: {error_msg}")
+        print(f"[CRITICAL] Unexpected error in password reset: {error_msg}")
         print(f"[DEBUG] Error type: {type(e).__name__}")
-        
-        if hasattr(e, 'message'):
-            error_msg = e.message
         
         if "invalid_grant" in error_msg or "invalid refresh token" in error_msg:
             flash("The password reset link has expired. Please request a new one.", "error")
-        elif "Password should be at least" in error_msg:
-            flash(error_msg, "error")
+            return redirect(url_for("forgot_password"))
         else:
-            flash(f"Failed to update password: {error_msg}", "error")
-        
-        return redirect(url_for("forgot_password"))
+            flash(f"An unexpected error occurred: {error_msg}", "error")
+            return render_template("reset_password.html", 
+                                email=request.form.get('email'),
+                                access_token=access_token,
+                                refresh_token=refresh_token)
 
 if __name__ == "__main__":
     app.run(host='127.0.0.1', port=5000, debug=True)
