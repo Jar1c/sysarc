@@ -1810,28 +1810,33 @@ def forgot_password():
 @app.route('/reset_password', methods=['GET', 'POST'])
 def reset_password():
     if request.method == 'GET':
-        # Get token from URL parameters (this is how Supabase sends it)
-        token = request.args.get('token', '')
-        email = request.args.get('email', '')
-        
-        print(f"GET request - Token from URL: {token}")
-        print(f"GET request - Email from URL: {email}")
-        
+        # Get token and email from URL
+        token = request.args.get('token', '').strip()
+        email = request.args.get('email', '').strip().lower()
+
+        print(f"GET - Token: {token}, Email: {email}")
+
+        # If no token, redirect to forgot password
+        if not token:
+            flash('Invalid or expired reset link. Please request a new password reset.', 'error')
+            return redirect(url_for('forgot_password'))
+
+        # Pass token and email to template
         return render_template('reset_password.html', token=token, email=email)
-    
+
     try:
         print("\n=== Reset Password Request ===")
-        
-        # Get data from form
+
+        # Get form data
         email = request.form.get('email', '').strip().lower()
         new_password = request.form.get('new_password', '').strip()
         confirm_password = request.form.get('confirm_password', '').strip()
-        token = request.form.get('token', '').strip()  # This should come from hidden field
-        
+        token = request.form.get('token', '').strip()  # From hidden field
+
         print(f"Email: {email}")
         print(f"Token: {token}")
         print(f"New password provided: {'Yes' if new_password else 'No'}")
-        
+
         # Validate required fields
         if not all([email, new_password, confirm_password, token]):
             missing = []
@@ -1839,45 +1844,44 @@ def reset_password():
             if not new_password: missing.append('new_password')
             if not confirm_password: missing.append('confirm_password')
             if not token: missing.append('token')
-            
             error_msg = f'Missing required fields: {", ".join(missing)}'
             print(f"Validation Error: {error_msg}")
             flash(error_msg, 'error')
             return redirect(url_for('reset_password', token=token, email=email))
-            
+
         # Check if passwords match
         if new_password != confirm_password:
             print("Error: Passwords do not match")
             flash('Passwords do not match. Please try again.', 'error')
             return redirect(url_for('reset_password', token=token, email=email))
-            
+
         # Validate password strength
         password_error = validate_password_strength(new_password)
         if password_error:
             print(f"Password Error: {password_error}")
             flash(password_error, 'error')
             return redirect(url_for('reset_password', token=token, email=email))
-            
+
         print("\n=== Starting Password Reset Process ===")
-        
+
         try:
-            # Verify the recovery token and update password
+            # Verify the recovery token
             verify_response = supabase.auth.verify_otp({
                 'email': email,
                 'token': token,
                 'type': 'recovery'
             })
-            
+
             print(f"OTP verification successful: {verify_response}")
-            
-            # Now update the password
+
+            # Update password
             update_response = supabase.auth.update_user({
                 'password': new_password
             })
-            
+
             print(f"Password updated successfully: {update_response}")
-            
-            # Send confirmation email
+
+            # Optional: Send confirmation email
             try:
                 subject = "Password Updated Successfully"
                 message = f"""
@@ -1890,32 +1894,28 @@ def reset_password():
                 print(f"Confirmation email sent to {email}")
             except Exception as email_error:
                 print(f"Error sending confirmation email: {str(email_error)}")
-            
+
             flash('Your password has been updated successfully. Please sign in with your new password.', 'success')
             return redirect(url_for('signin'))
-            
+
         except Exception as e:
             error_msg = str(e).lower()
             print(f"Error in password reset: {error_msg}")
-            print(f"Error type: {type(e).__name__}")
             import traceback
             traceback.print_exc()
-            
+
             if 'invalid' in error_msg or 'expired' in error_msg or 'otp' in error_msg:
-                error_msg = 'Invalid or expired reset link. Please request a new password reset.'
-                flash(error_msg, 'error')
+                flash('Invalid or expired reset link. Please request a new password reset.', 'error')
                 return redirect(url_for('forgot_password'))
             else:
-                error_msg = 'An error occurred while updating your password. Please try again.'
-                flash(error_msg, 'error')
+                flash('An error occurred while updating your password. Please try again.', 'error')
                 return redirect(url_for('reset_password', token=token, email=email))
-    
+
     except Exception as e:
         error_msg = str(e).lower()
         print(f"Unexpected error: {error_msg}")
         import traceback
         traceback.print_exc()
-        
         flash('An unexpected error occurred. Please try again later.', 'error')
         return redirect(url_for('forgot_password'))
 
