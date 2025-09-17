@@ -25,6 +25,32 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
 
+def get_db_user_by_email(email):
+    """Get user from custom users table by email"""
+    try:
+        response = supabase.table('users').select('*').eq('email', email).execute()
+        if response.data:
+            return response.data[0]
+        return None
+    except Exception as e:
+        print(f"Error fetching DB user: {e}")
+        return None
+
+def update_db_password(email, new_password):
+    """Update password in custom users table"""
+    try:
+        from werkzeug.security import generate_password_hash
+        hashed_password = generate_password_hash(new_password)
+        response = supabase.table('users').update({
+            'password': hashed_password
+        }).eq('email', email).execute()
+        
+        return response
+    except Exception as e:
+        print(f"Error updating DB password: {e}")
+        raise e
+
+
 # Helper functions
 def validate_email_format(email):
     return re.match(r"[^@]+@[^@]+\.[^@]+", email)
@@ -1750,219 +1776,195 @@ def test_email_config():
 
 @app.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
+    is_json = wants_json()
+    
     if request.method == 'GET':
         email = request.args.get('email', '')
-        return render_template("forgot_password.html", email=email)
-
-    email = request.form.get('email', '').strip().lower()
-    
-    if not email:
-        return jsonify({
-            'success': False,
-            'error': 'Please enter your email address'
-        }), 400
-
-    if not validate_email_format(email):
-        return jsonify({
-            'success': False,
-            'error': 'Please enter a valid email address'
-        }), 400
-
-    try:
-        # Optional: Check if user exists (you can remove this if you want to avoid leaking user info)
-        user_data = supabase.table('users').select('id').eq('email', email).execute()
-        if not user_data.data:
+        if is_json:
             return jsonify({
                 'success': False,
-                'error': 'No account found with this email address.'
-            }), 404
-        
+                'error': 'GET method not allowed for JSON requests'
+            }), 405
+        return render_template("forgot_password.html", email=email)
+
+    # Get email from form or JSON
+    if request.is_json:
+        data = request.get_json()
+        email = data.get('email', '').strip().lower()
+    else:
+        email = request.form.get('email', '').strip().lower()
+    
+    # Validate email
+    if not email:
+        if is_json:
+            return jsonify({
+                'success': False,
+                'error': 'Please enter your email address',
+                'field': 'email'
+            }), 400
+        flash('Please enter your email address', 'error')
+        return redirect(url_for('forgot_password'))
+
+    if not validate_email_format(email):
+        if is_json:
+            return jsonify({
+                'success': False,
+                'error': 'Please enter a valid email address',
+                'field': 'email'
+            }), 400
+        flash('Please enter a valid email address', 'error')
+        return redirect(url_for('forgot_password'))
+
+    try:
         # Get the site URL for the reset password link
         site_url = request.url_root.rstrip('/')
         redirect_to = f"{site_url}/reset_password"
         
-        # Use Supabase's built-in password reset — it will send the email automatically
-        response = supabase.auth.reset_password_email(email, {
+        print(f"Sending password reset email to: {email}")
+        print(f"Redirect URL after reset: {redirect_to}")
+        
+        # Use Supabase's password reset email
+        response = supabase.auth.reset_password_for_email(email, {
             'redirect_to': redirect_to
         })
         
-        print(f"Password reset email sent via Supabase to: {email}")
+        print(f"Password reset email sent successfully to: {email}")
         
-        return jsonify({
-            'success': True,
-            'message': 'A password reset link has been sent to your email.'
-        })
+        if is_json:
+            return jsonify({
+                'success': True,
+                'message': 'A password reset link has been sent to your email.'
+            })
+            
+        flash('A password reset link has been sent to your email.', 'success')
+        return redirect(url_for('forgot_password'))
         
     except Exception as e:
         error_msg = str(e).lower()
         print(f"\n=== Error in forgot_password ===")
         print(f"Error Type: {type(e).__name__}")
         print(f"Error Message: {error_msg}")
-        import traceback
-        traceback.print_exc()
         
-        return jsonify({
-            'success': False,
-            'error': 'Failed to process your request. Please try again later.'
-        }), 500
-
-
-def wants_json():
-    best = request.accept_mimetypes \
-        .best_match(['application/json', 'text/html'])
-    return best == 'application/json' and \
-        request.accept_mimetypes[best] > request.accept_mimetypes['text/html']
+        # Handle specific error cases
+        if 'auth' in error_msg and 'not found' in error_msg:
+            if is_json:
+                return jsonify({
+                    'success': False,
+                    'error': 'No account found with this email address.',
+                    'field': 'email'
+                }), 404
+            flash('No account found with this email address.', 'error')
+            return redirect(url_for('forgot_password'))
+        
+        if 'rate limit' in error_msg:
+            error_msg = 'Too many requests. Please try again later.'
+        elif 'email' in error_msg and 'already in use' in error_msg:
+            error_msg = 'A password reset has already been requested. Please check your email.'
+        else:
+            error_msg = 'Failed to send password reset email. Please try again later.'
+            
+        if is_json:
+            return jsonify({
+                'success': False,
+                'error': error_msg
+            }), 500
+            
+        flash(error_msg, 'error')
+        return redirect(url_for('forgot_password'))
 
 @app.route('/reset_password', methods=['GET', 'POST'])
 def reset_password():
     if request.method == 'GET':
-        email = request.args.get('email', '').strip().lower()
-        print(f"Password reset page loaded for email: {email}")
-        return render_template('reset_password.html', email=email)
-
-    try:
-        print("\n=== Reset Password Request ===")
+        # Check if we have a valid token from the reset email
+        token = request.args.get('token')
+        type = request.args.get('type')
         
-        # Check if request is JSON
-        is_json = request.is_json or 'application/json' in request.headers.get('Accept', '')
-        
-        # Get form data
-        if is_json and request.get_json():
-            data = request.get_json()
-            email = data.get('email', '').strip().lower()
-            new_password = data.get('new_password', '').strip()
-            confirm_password = data.get('confirm_password', '').strip()
-        else:
-            email = request.form.get('email', '').strip().lower()
-            new_password = request.form.get('new_password', '').strip()
-            confirm_password = request.form.get('confirm_password', '').strip()
-
-        print(f"Email: {email}")
-        print(f"Request is JSON: {is_json}")
-
-        # Validate required fields
-        if not all([email, new_password, confirm_password]):
-            missing = []
-            if not email: missing.append('email')
-            if not new_password: missing.append('new_password')
-            if not confirm_password: missing.append('confirm_password')
-            error_msg = f'Missing required fields: {", ".join(missing)}'
-            print(f"Validation Error: {error_msg}")
-            
-            if is_json:
-                return jsonify({
-                    'success': False,
-                    'error': error_msg,
-                    'missing_fields': missing
-                }), 400
-                
-            flash(error_msg, 'error')
-            return redirect(url_for('reset_password', email=email))
-
-        # Check if passwords match
-        if new_password != confirm_password:
-            error_msg = 'Passwords do not match.'
-            print(f"Error: {error_msg}")
-            
-            if is_json:
-                return jsonify({
-                    'success': False,
-                    'error': error_msg,
-                    'field': 'confirm_password'
-                }), 400
-                
-            flash(error_msg, 'error')
-            return redirect(url_for('reset_password', email=email))
-
-        # Validate password strength
-        password_error = validate_password_strength(new_password)
-        if password_error:
-            print(f"Password Error: {password_error}")
-            
-            if is_json:
-                return jsonify({
-                    'success': False,
-                    'error': password_error,
-                    'field': 'new_password'
-                }), 400
-                
-            flash(password_error, 'error')
-            return redirect(url_for('reset_password', email=email))
-
-        print("\n=== Starting Password Reset Process ===")
-
-        try:
-            # Update password directly
-            update_response = supabase.auth.update_user({
-                'password': new_password
-            })
-
-            print(f"Password updated successfully")
-
-            # Send confirmation email
+        if token and type == 'recovery':
             try:
-                subject = "Password Updated Successfully"
-                message = f"""
-                <h2>Password Updated Successfully</h2>
-                <p>Your password has been successfully updated.</p>
-                <p>If you did not make this change, please contact support immediately.</p>
-                <p>Best regards,<br>Barangay Baritan</p>
-                """
-                send_email_notification(email, subject, message)
-                print(f"Confirmation email sent to {email}")
-            except Exception as email_error:
-                print(f"Error sending confirmation email: {str(email_error)}")
-                # Don't fail the request if email fails
-
-            success_msg = 'Your password has been updated successfully. Please sign in with your new password.'
-            
-            if is_json:
-                return jsonify({
-                    'success': True,
-                    'message': success_msg,
-                    'redirect': url_for('signin', _external=True)
+                # VERIFY THE TOKEN PROPERLY WITH SUPABASE
+                # This exchanges the recovery token for a session
+                response = supabase.auth.verify_otp({
+                    "token_hash": token,
+                    "type": "recovery"
                 })
                 
-            flash(success_msg, 'success')
-            return redirect(url_for('signin'))
-
-        except Exception as e:
-            error_msg = str(e)
-            print(f"Error in password reset: {error_msg}")
-            import traceback
-            traceback.print_exc()
-            
-            # More specific error handling
-            if 'password' in error_msg.lower():
-                error_msg = 'The password does not meet the requirements.'
-            elif 'email' in error_msg.lower():
-                error_msg = 'No account found with this email address.'
-            else:
-                error_msg = 'An error occurred while updating your password. Please try again.'
-            
-            if is_json:
-                return jsonify({
-                    'success': False,
-                    'error': error_msg
-                }), 400
-                
-            flash(error_msg, 'error')
-            return redirect(url_for('reset_password', email=email))
-
-    except Exception as e:
-        error_msg = str(e)
-        print(f"Unexpected error: {error_msg}")
-        import traceback
-        traceback.print_exc()
+                if response and response.user:
+                    email = response.user.email
+                    return render_template('reset_password.html', email=email, token=token)
+                else:
+                    flash('Invalid or expired reset link', 'error')
+                    return redirect(url_for('forgot_password'))
+                    
+            except Exception as e:
+                print(f"Token verification error: {e}")
+                flash('Invalid or expired reset link', 'error')
+                return redirect(url_for('forgot_password'))
+        else:
+            flash('Please request a password reset first', 'error')
+            return redirect(url_for('forgot_password'))
+    
+    elif request.method == 'POST':
+        email = request.form.get('email')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+        token = request.form.get('token')
         
-        if is_json:
-            return jsonify({
-                'success': False,
-                'error': 'An unexpected error occurred. Please try again later.'
-            }), 500
+        # Validation checks (same as before)
+        if not all([email, new_password, confirm_password, token]):
+            flash('All fields are required', 'error')
+            return redirect(url_for('forgot_password'))
+        
+        if new_password != confirm_password:
+            flash('Passwords do not match', 'error')
+            return redirect(url_for('forgot_password'))
+        
+        # Validate password strength
+        if len(new_password) < 8:
+            flash('Password must be at least 8 characters long', 'error')
+            return redirect(url_for('forgot_password'))
+        
+        if not re.search(r'[A-Z]', new_password):
+            flash('Password must contain at least one uppercase letter', 'error')
+            return redirect(url_for('forgot_password'))
+        
+        if not re.search(r'[a-z]', new_password):
+            flash('Password must contain at least one lowercase letter', 'error')
+            return redirect(url_for('forgot_password'))
+        
+        if not re.search(r'[0-9]', new_password):
+            flash('Password must contain at least one number', 'error')
+            return redirect(url_for('forgot_password'))
+        
+        try:
+            # STEP 1: Verify the token again to get a session
+            response = supabase.auth.verify_otp({
+                "token_hash": token,
+                "type": "recovery"
+            })
             
-        flash('An unexpected error occurred. Please try again later.', 'error')
-        return redirect(url_for('forgot_password'))
+            if not response or not response.user:
+                flash('Invalid or expired reset token', 'error')
+                return redirect(url_for('forgot_password'))
+            
+            # STEP 2: Update password using the authenticated session
+            # Get the access token from the response
+            access_token = response.session.access_token
+            
+            # Update the user's password
+            update_response = supabase.auth.update_user({
+                "password": new_password
+            })
+            
+            # STEP 3: Also update password in your custom users table
+            update_db_password(email, new_password)
+            
+            flash('Your password has been reset successfully! You can now sign in.', 'success')
+            return redirect(url_for('signin'))
+            
+        except Exception as e:
+            print(f"Password reset error: {e}")
+            flash('Failed to reset password. The link may have expired. Please request a new reset link.', 'error')
+            return redirect(url_for('forgot_password'))
 
 
 @app.route('/test_supabase', methods=['GET'])
