@@ -19,9 +19,25 @@ app = Flask(__name__)
 app.secret_key = os.urandom(24) 
 
 # Constants
-SUPABASE_URL = "https://vehpeqlxmucsgasedcuh.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZlaHBlcWx4bXVjc2dhc2VkY3VoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjYxNjIyMiwiZXhwIjoyMDcyMTkyMjIyfQ.Xp5JiKtJVPMfZR1ethvOwguVBwjbIYKapi-1STLLfd8"
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://vehpeqlxmucsgasedcuh.supabase.co')
+SUPABASE_KEY = os.environ.get('SUPABASE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZlaHBlcWx4bXVjc2dhc2VkY3VoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjYxNjIyMiwiZXhwIjoyMDcyMTkyMjIyfQ.Xp5JiKtJVPMfZR1ethvOwguVBwjbIYKapi-1STLLfd8')
+
+# Initialize Supabase client with error handling
+try:
+    print(f"Initializing Supabase client with URL: {SUPABASE_URL}")
+    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+    
+    # Test the connection
+    test_response = supabase.auth.get_user()
+    print(f"Supabase connection test successful. Response: {test_response}")
+    
+except Exception as e:
+    print(f"\n=== ERROR INITIALIZING SUPABASE CLIENT ===")
+    print(f"Error: {str(e)}")
+    print(f"Supabase URL: {SUPABASE_URL}")
+    print("Please check your Supabase URL and API key in the environment variables.")
+    print("===================================\n")
+    raise
 
 
 
@@ -1769,33 +1785,44 @@ def forgot_password():
         }), 400
 
     try:
-        # First check if user exists by attempting to sign in
+        print(f"\n=== CHECKING IF USER EXISTS ===")
+        print(f"Email: {email}")
+        
+        # First check if user exists by querying the users table directly
         try:
-            # This will fail with 'Invalid login credentials' if email doesn't exist
-            # We don't care about the actual password here
-            supabase.auth.sign_in_with_password({
-                'email': email,
-                'password': 'dummy_password_123!@#'
-            })
-        except Exception as auth_error:
-            error_msg = str(auth_error).lower()
-            if 'email' in error_msg and ('not found' in error_msg or 'invalid' in error_msg):
+            user_data = supabase.table('users').select('*').eq('email', email).execute()
+            print(f"User data query response: {user_data}")
+            
+            if not user_data.data:
+                print(f"No user found with email: {email}")
                 return jsonify({
                     'success': False,
                     'error': 'No account found with this email address.'
                 }), 404
-            # If it's a different error, continue with reset attempt
+                
+            print(f"User found: {user_data.data[0]['email']}")
+            
+        except Exception as user_query_error:
+            print(f"Error querying user: {str(user_query_error)}")
+            print(f"Error type: {type(user_query_error).__name__}")
+            raise Exception('Error checking user account. Please try again later.')
         
-        # Generate reset link with redirect - use environment variable for production URL
-        if app.config.get('ENV') == 'production':
+        # Generate reset link with redirect - handle both production and development environments
+        is_production = (app.config.get('ENV') == 'production' or 
+                        os.environ.get('FLASK_ENV') == 'production' or 
+                        'render.com' in os.environ.get('RENDER_EXTERNAL_HOSTNAME', ''))
+        
+        if is_production:
             # Production URL for password reset
             base_url = 'https://brgybaritan.onrender.com'
             reset_url = f"{base_url.rstrip('/')}{url_for('reset_password')}"
+            print(f"Using production reset URL: {reset_url}")
         else:
             # For local development
             reset_url = request.url_root.rstrip('/') + url_for('reset_password')
             if 'localhost' in reset_url or '127.0.0.1' in reset_url:
                 reset_url = reset_url.replace('https://', 'http://')  # Use http for localhost
+            print(f"Using development reset URL: {reset_url}")
         
         # Log the reset URL and environment for debugging
         print(f"\n=== Password Reset Debug ===")
@@ -1824,10 +1851,24 @@ def forgot_password():
                 raise Exception(f"Cannot connect to Supabase: {str(test_error)}")
             
             # Send password reset email through Supabase 2.4.0
-            print("Attempting to send password reset email...")
+            print("\n=== SENDING PASSWORD RESET EMAIL ===")
+            print(f"Email: {email}")
+            print(f"Reset URL: {reset_url}")
+            print(f"Supabase URL: {SUPABASE_URL}")
             
             try:
+                # First, verify the Supabase client is working
+                print("Verifying Supabase client...")
+                try:
+                    # Test the connection
+                    test_user = supabase.auth.get_user()
+                    print(f"Supabase connection test successful. User: {test_user}")
+                except Exception as test_error:
+                    print(f"Supabase connection test failed: {str(test_error)}")
+                    raise Exception(f"Cannot connect to Supabase: {str(test_error)}")
+                
                 # In Supabase 2.4.0, we use auth.reset_password_for_email with options
+                print("Sending password reset email...")
                 response = supabase.auth.reset_password_for_email(
                     email=email,
                     options={
