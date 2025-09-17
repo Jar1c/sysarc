@@ -1869,22 +1869,32 @@ def forgot_password():
                 
                 # In Supabase 1.0.3, we use auth.reset_password_email directly
                 print("Sending password reset email...")
-                response = supabase.auth.reset_password_email(email, reset_url)
-                
-                print(f"Supabase response type: {type(response)}")
-                print(f"Supabase response: {response}")
-                
-                # Check for errors in the response
-                if hasattr(response, 'error') and response.error:
-                    error_msg = response.error.message if hasattr(response.error, 'message') else str(response.error)
-                    print(f"Supabase error: {error_msg}")
-                    raise Exception(f"Supabase error: {error_msg}")
-                elif response is None or (hasattr(response, 'data') and not response.data):
-                    # Some Supabase versions return None or empty data on success
-                    print("Password reset email sent successfully (no data returned)")
-                else:
-                    print(f"Password reset email sent to {email}")
-                    print(f"Response data: {response.data if hasattr(response, 'data') else 'No data'}")
+                try:
+                    # The reset_password_email method in 1.0.3 doesn't return anything meaningful
+                    # So we'll just check if it raises an exception
+                    supabase.auth.reset_password_email(email, reset_url)
+                    print("Password reset email sent successfully")
+                    
+                    # Return success response
+                    return jsonify({
+                        'success': True,
+                        'message': 'A password reset link has been sent to your email.'
+                    })
+                    
+                except Exception as e:
+                    error_msg = str(e).lower()
+                    print(f"Error sending password reset email: {error_msg}")
+                    
+                    # Handle specific error cases
+                    if 'email' in error_msg and 'not found' in error_msg:
+                        raise Exception('No account found with this email address.')
+                    elif 'rate limit' in error_msg:
+                        raise Exception('Too many attempts. Please try again later.')
+                    elif 'email not confirmed' in error_msg:
+                        raise Exception('Please confirm your email before resetting your password.')
+                    else:
+                        # For any other error, raise a generic message
+                        raise Exception('Failed to send reset email. Please try again later.')
                 
                 # If we got here, the request was successful
                 return jsonify({
