@@ -1786,11 +1786,16 @@ def forgot_password():
                 }), 404
             # If it's a different error, continue with reset attempt
         
-        # Generate reset link with redirect
-        reset_url = request.url_root.rstrip('/') + url_for('reset_password')
-        # Make sure to use the same domain as your Supabase site URL
-        if 'localhost' not in reset_url and '127.0.0.1' not in reset_url:
-            reset_url = reset_url.replace('http://', 'https://')
+        # Generate reset link with redirect - use environment variable for production URL
+        if app.config.get('ENV') == 'production':
+            # Production URL for password reset
+            base_url = 'https://brgybaritan.onrender.com'
+            reset_url = f"{base_url.rstrip('/')}{url_for('reset_password')}"
+        else:
+            # For local development
+            reset_url = request.url_root.rstrip('/') + url_for('reset_password')
+            if 'localhost' in reset_url or '127.0.0.1' in reset_url:
+                reset_url = reset_url.replace('https://', 'http://')  # Use http for localhost
         
         # Log the reset URL for debugging
         print(f"Sending password reset to {email} with redirect to: {reset_url}")
