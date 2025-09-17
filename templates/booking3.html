@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Equipment Booking Form</title>
+    <link rel="icon" type="image/png" href="/static/img/brgy_baritan_logo.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary-color: #023e8a;
+            --secondary-color: #2c3e50;
+            --accent-color: #e74c3c;
+            --light-color: #f5f7fa;
+            --dark-color: #023e8a;
+            --success-color: #27ae60;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f3f4f6;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #023e8a;
+            border-radius: 10px;
+            transition: background 0.3s;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #2563eb;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--secondary-color), var(--dark-color));
+            color: white;
+            padding: 25px 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        header h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            text-decoration: none;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: bold;
+        }
+
+        .back-btn:hover {
+            color: #f1c40f;
+        }
+
+        .form-container {
+            padding: 30px;
+        }
+
+        .form-section {
+            margin-bottom: 30px;
+        }
+
+        .form-section h2 {
+            color: var(--secondary-color);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-section h2 i {
+            color: var(--primary-color);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 14px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+
+        .equipment-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+        }
+
+        .equipment-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-color);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .equipment-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .equipment-info {
+            flex: 1;
+        }
+
+        .equipment-name {
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+
+        .equipment-unit {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+        }
+
+        .quantity-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .qty-input {
+            width: 70px;
+            text-align: center;
+            padding: 10px;
+        }
+
+        .qty-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .qty-btn:hover {
+            background: #2980b9;
+            transform: scale(1.05);
+        }
+
+        .btn-submit {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            padding: 16px 35px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            display: block;
+            margin: 30px auto 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 250px;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+
+        .required {
+            color: var(--accent-color);
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            background: #f9f9f9;
+            border-top: 1px solid #eee;
+        }
+
+        .flash {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .flash.success {
+            background-color: #27ae60;
+            color: white;
+        }
+
+        .flash.error {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        /* Improved Other Equipment Section */
+        .other-equipment-section {
+            background-color: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 25px;
+            border: 2px dashed #023e8a;
+        }
+
+        .other-equipment-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            color: #023e8a;
+        }
+
+        .other-equipment-header i {
+            font-size: 1.5rem;
+            margin-right: 10px;
+            color: #023e8a;
+        }
+
+        .other-equipment-header h3 {
+            margin: 0;
+            color: #023e8a;
+        }
+
+        .other-input-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 15px;
+        }
+
+        @media (max-width: 576px) {
+            .other-input-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .other-input-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .other-input-group label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #023e8a;
+        }
+
+        .other-note {
+            font-size: 0.85rem;
+            color: #023e8a;
+            margin-top: 8px;
+        }
+
+        .add-item-btn {
+            background: #023e8a;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 15px;
+            transition: background 0.3s;
+        }
+
+        .add-item-btn:hover {
+            background: #022e6a;
+        }
+
+        /* Loading Overlay Styles */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(243, 243, 243, 0.274);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            backdrop-filter: blur(5px);
+        }
+
+        .loading-content {
+            text-align: center;
+            color: rgb(0, 0, 0);
+            padding: 40px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 20px;
+            border: 3px solid #e0e0e0;
+            border-top: 3px solid #666;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .loading-text {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .loading-subtext {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; }
+        }
+
+        /* Disable form when loading */
+        .form-disabled {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Processing Your Booking</div>
+            <div class="loading-subtext">Please wait while we submit your request...</div>
+        </div>
+    </div>
+
+    <div class="container">
+        <header>
+            <a href="{{ url_for('booking') }}" class="back-btn">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+            <h1>EQUIPMENT BOOKING</h1>
+            <p>Reserve equipment for your needs</p>
+        </header>
+
+        <div class="form-container">
+            <!-- Flash messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <div id="flash-messages">
+                {% for category, message in messages %}
+                <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
+
+            <form id="bookingForm" action="{{ url_for('booking3') }}" method="POST">
+                <div class="form-section">
+                    <h2><i class="fas fa-calendar-alt"></i> Booking Details</h2>
+
+                    <div class="form-group">
+                        <label for="eventDate">Date <span class="required">*</span></label>
+                        <input type="date" id="eventDate" name="event_date" required>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h2><i class="fas fa-user"></i> Contact Information</h2>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fullName">Full Name <span class="required">*</span></label>
+                            <input type="text" id="fullName" name="full_name" placeholder="Enter your full name"
+                                required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="phone">Phone Number <span class="required">*</span></label>
+                            <input type="tel" id="phone" name="phone" placeholder="Enter your phone number" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email">Email <span class="required">*</span></label>
+                            <input type="email" id="email" name="email" placeholder="Enter your email" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="address">Address</label>
+                            <input type="text" id="address" name="address" placeholder="Enter your address">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h2><i class="fas fa-boxes"></i> Equipment Selection</h2>
+
+                    <!-- Equipment Categories -->
+                    <div class="equipment-categories">
+                        {% for cat_id, category in active_categories.items() %}
+                        <div class="equipment-category-section">
+                            <h3 style="margin: 20px 0 10px 0; color: var(--dark-color);">{{ category.name }}</h3>
+                            <div class="equipment-grid">
+                                {% for item in category["items"] %}
+                                <div class="equipment-item">
+                                    <div class="equipment-info">
+                                        <div class="equipment-name">{{ item.name }}</div>
+                                        <div class="equipment-unit">Available: <strong>{{ item.quantity_available
+                                                }}</strong> / {{ item.quantity_total }}</div>
+                                    </div>
+                                    <div class="quantity-control">
+                                        <button type="button" class="qty-btn"
+                                            onclick="adjustQty('{{ item.id }}', -1)">-</button>
+                                        <input type="number" id="{{ item.id }}-qty" name="{{ item.id }}_qty"
+                                            class="qty-input" value="0" min="0" max="{{ item.quantity_available }}">
+                                        <button type="button" class="qty-btn"
+                                            onclick="adjustQty('{{ item.id }}', 1)">+</button>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="form-section">
+                        <h2><i class="fas fa-sticky-note"></i> Additional Notes</h2>
+                        <div class="form-group">
+                            <textarea id="additionalNotes" name="additional_notes" rows="3"
+                                placeholder="Any special requests or additional information we should know?"></textarea>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-submit">Submit Booking</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Set minimum date to today
+        const today = new Date();
+        const nextWeek = new Date(today);
+        nextWeek.setDate(today.getDate() + 7); // Add 7 days
+        const minDate = nextWeek.toISOString().split('T')[0];
+        document.getElementById('eventDate').setAttribute('min', minDate);
+
+        function adjustQty(itemId, change) {
+            const input = document.getElementById(`${itemId}-qty`);
+            if (!input) return;
+
+            let newValue = parseInt(input.value) + change;
+            if (newValue < 0) newValue = 0;
+
+            const max = parseInt(input.getAttribute('max')) || 0;
+            if (newValue > max) {
+                newValue = max;
+                alert(`Maximum available quantity reached! Only ${max} left.`);
+            }
+
+            input.value = newValue;
+        }
+
+        // Loading functions
+        function showLoading() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+            document.body.classList.add('form-disabled');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+            document.body.classList.remove('form-disabled');
+        }
+
+        // Form validation
+        document.getElementById('bookingForm').addEventListener('submit', function (e) {
+            const requiredFields = [
+                document.getElementById('eventDate'),
+                document.getElementById('fullName'),
+                document.getElementById('phone'),
+                document.getElementById('email')
+            ];
+
+            let isValid = true;
+
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    isValid = false;
+                    field.style.borderColor = 'var(--accent-color)';
+                } else {
+                    field.style.borderColor = '#ddd';
+                }
+            });
+
+            if (!isValid) {
+                e.preventDefault();
+                alert('Please fill in all required fields marked with *.');
+                return;
+            }
+
+            // Show loading overlay when form is valid and submitting
+            showLoading();
+        });
+
+        // Functionality for adding more other equipment items
+        let itemCount = 0;
+        document.getElementById('addOtherItem').addEventListener('click', function () {
+            const itemName = document.getElementById('otherItem').value;
+            const itemQty = document.getElementById('otherQty').value;
+
+            if (!itemName && !itemQty) {
+                alert('Please enter equipment name and quantity first.');
+                return;
+            }
+
+            if (itemName && itemQty) {
+                itemCount++;
+
+                const newItem = document.createElement('div');
+                newItem.className = 'other-input-grid';
+                newItem.style.marginTop = '15px';
+                newItem.style.padding = '10px';
+                newItem.style.backgroundColor = '#e9ecef';
+                newItem.style.borderRadius = '8px';
+                newItem.innerHTML = `
+                    <div class="other-input-group">
+                        <label>Equipment ${itemCount}</label>
+                        <input type="text" value="${itemName}" readonly>
+                    </div>
+                    
+                    <div class="other-input-group">
+                        <label>Quantity</label>
+                        <input type="number" value="${itemQty}" readonly>
+                    </div>
+                    
+                    <input type="hidden" name="other_items[]" value="${itemName} - ${itemQty}">
+                `;
+
+                document.getElementById('additionalItems').appendChild(newItem);
+
+                // Clear the input fields
+                document.getElementById('otherItem').value = '';
+                document.getElementById('otherQty').value = '';
+            }
+        });
+
+        // Hide flash messages after 5 seconds
+        document.addEventListener('DOMContentLoaded', function() {
+            const flashMessages = document.getElementById('flash-messages');
+            if (flashMessages) {
+                setTimeout(function() {
+                    flashMessages.style.opacity = '0';
+                    setTimeout(function() {
+                        flashMessages.style.display = 'none';
+                    }, 300);
+                }, 5000);
+            }
+        });
+    </script>
+</body>
+</html>
