@@ -1797,11 +1797,18 @@ def forgot_password():
             if 'localhost' in reset_url or '127.0.0.1' in reset_url:
                 reset_url = reset_url.replace('https://', 'http://')  # Use http for localhost
         
-        # Log the reset URL for debugging
-        print(f"Sending password reset to {email} with redirect to: {reset_url}")
+        # Log the reset URL and environment for debugging
+        print(f"\n=== Password Reset Debug ===")
+        print(f"Environment: {app.config.get('ENV', 'not set')}")
+        print(f"Request URL: {request.url}")
+        print(f"Request headers: {dict(request.headers)}")
+        print(f"Reset URL: {reset_url}")
+        print(f"Supabase URL: {os.getenv('SUPABASE_URL')}")
+        print("======================\n")
         
         try:
             # Send password reset email through Supabase
+            print("Attempting to send password reset email...")
             response = supabase.auth.reset_password_for_email(
                 email,
                 {"redirect_to": reset_url}
@@ -1817,11 +1824,26 @@ def forgot_password():
             })
             
         except Exception as reset_error:
-            print(f"Error sending reset email: {str(reset_error)}")
-            # Return generic error message for security
+            import traceback
+            error_details = traceback.format_exc()
+            print(f"\n=== ERROR SENDING RESET EMAIL ===")
+            print(f"Error type: {type(reset_error).__name__}")
+            print(f"Error details: {error_details}")
+            print("==============================\n")
+            
+            # Check for specific Supabase errors
+            error_msg = str(reset_error).lower()
+            if 'invalid login credentials' in error_msg:
+                error_response = 'Invalid email or password.'
+            elif 'email not confirmed' in error_msg:
+                error_response = 'Please confirm your email before resetting your password.'
+            else:
+                error_response = 'Failed to send reset email. Please try again later.'
+            
             return jsonify({
                 'success': False,
-                'error': 'Failed to send reset email. Please try again later.'
+                'error': error_response,
+                'debug': str(reset_error) if app.debug else None
             }), 500
         
     except Exception as e:
