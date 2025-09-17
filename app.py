@@ -51,6 +51,16 @@ def update_db_password(email, new_password):
         raise e
 
 
+def wants_json():
+    # Check if the request wants JSON response
+    if request.accept_mimetypes['application/json'] > request.accept_mimetypes['text/html']:
+        return True
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return True
+    if request.is_json:
+        return True
+    return False
+
 # Helper functions
 def validate_email_format(email):
     return re.match(r"[^@]+@[^@]+\.[^@]+", email)
