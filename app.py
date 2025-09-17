@@ -1807,26 +1807,65 @@ def forgot_password():
         print("======================\n")
         
         try:
+            print("\n=== Sending Password Reset Email ===")
+            print(f"Email: {email}")
+            print(f"Reset URL: {reset_url}")
+            print(f"Supabase URL: {SUPABASE_URL}")
+            
+            # First, check if we can connect to Supabase
+            try:
+                # Test the Supabase connection by making a simple request
+                print("Testing Supabase connection...")
+                test_response = supabase.auth.get_user()
+                print(f"Supabase connection test response: {test_response}")
+            except Exception as test_error:
+                print(f"Supabase connection test failed: {str(test_error)}")
+                print(f"Error type: {type(test_error).__name__}")
+                raise Exception(f"Cannot connect to Supabase: {str(test_error)}")
+            
             # Send password reset email through Supabase 2.4.0
             print("Attempting to send password reset email...")
             
-            # In Supabase 2.4.0, we use auth.reset_password_for_email with options
-            response = supabase.auth.reset_password_for_email(
-                email=email,
-                options={
-                    'redirect_to': reset_url,
-                    'captcha_token': None  # Add this if you're using captcha
-                }
-            )
-            
-            print(f"Password reset email sent to {email}")
-            print(f"Supabase response: {response}")
-            
-            # Return success response
-            return jsonify({
-                'success': True,
-                'message': 'A password reset link has been sent to your email.'
-            })
+            try:
+                # In Supabase 2.4.0, we use auth.reset_password_for_email with options
+                response = supabase.auth.reset_password_for_email(
+                    email=email,
+                    options={
+                        'redirect_to': reset_url,
+                        'captcha_token': None  # Add this if you're using captcha
+                    }
+                )
+                
+                print(f"Supabase response type: {type(response)}")
+                print(f"Supabase response: {response}")
+                
+                if hasattr(response, 'error') and response.error:
+                    error_msg = response.error.message if hasattr(response.error, 'message') else str(response.error)
+                    print(f"Supabase error: {error_msg}")
+                    raise Exception(f"Supabase error: {error_msg}")
+                
+                print(f"Password reset email sent to {email}")
+                
+                # Return success response
+                return jsonify({
+                    'success': True,
+                    'message': 'A password reset link has been sent to your email.'
+                })
+                
+            except Exception as reset_error:
+                print(f"Error in reset_password_for_email: {str(reset_error)}")
+                print(f"Error type: {type(reset_error).__name__}")
+                
+                # Check for common Supabase errors
+                error_msg = str(reset_error).lower()
+                if 'email' in error_msg and 'not found' in error_msg:
+                    raise Exception('No account found with this email address.')
+                elif 'rate limit' in error_msg:
+                    raise Exception('Too many attempts. Please try again later.')
+                elif 'email not confirmed' in error_msg:
+                    raise Exception('Please confirm your email before resetting your password.')
+                else:
+                    raise
             
         except Exception as reset_error:
             import traceback
@@ -1838,12 +1877,21 @@ def forgot_password():
             
             # Check for specific Supabase errors
             error_msg = str(reset_error).lower()
+            print(f"Error message: {error_msg}")
+            
             if 'invalid login credentials' in error_msg:
                 error_response = 'Invalid email or password.'
             elif 'email not confirmed' in error_msg:
                 error_response = 'Please confirm your email before resetting your password.'
+            elif 'no account found' in error_msg:
+                error_response = 'No account found with this email address.'
+            elif 'rate limit' in error_msg:
+                error_response = 'Too many attempts. Please try again later.'
+            elif 'supabase error' in error_msg:
+                # Extract the actual error message from Supabase
+                error_response = str(reset_error).replace('Supabase error: ', '')
             else:
-                error_response = 'Failed to send reset email. Please try again later.'
+                error_response = f'Failed to send reset email: {str(reset_error)}'
             
             return jsonify({
                 'success': False,
