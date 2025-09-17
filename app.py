@@ -1867,27 +1867,26 @@ def forgot_password():
                     print(f"Supabase connection test failed: {str(test_error)}")
                     raise Exception(f"Cannot connect to Supabase: {str(test_error)}")
                 
-                # In Supabase 2.4.0, we use auth.reset_password_for_email with options
+                # In Supabase 1.0.3, we use auth.reset_password_email method
                 print("Sending password reset email...")
-                response = supabase.auth.reset_password_for_email(
-                    email=email,
-                    options={
-                        'redirect_to': reset_url,
-                        'captcha_token': None  # Add this if you're using captcha
-                    }
-                )
+                response = supabase.auth.api.reset_password_email(email, reset_url)
                 
                 print(f"Supabase response type: {type(response)}")
                 print(f"Supabase response: {response}")
                 
+                # Check for errors in the response
                 if hasattr(response, 'error') and response.error:
                     error_msg = response.error.message if hasattr(response.error, 'message') else str(response.error)
                     print(f"Supabase error: {error_msg}")
                     raise Exception(f"Supabase error: {error_msg}")
+                elif response is None or (hasattr(response, 'data') and not response.data):
+                    # Some Supabase versions return None or empty data on success
+                    print("Password reset email sent successfully (no data returned)")
+                else:
+                    print(f"Password reset email sent to {email}")
+                    print(f"Response data: {response.data if hasattr(response, 'data') else 'No data'}")
                 
-                print(f"Password reset email sent to {email}")
-                
-                # Return success response
+                # If we got here, the request was successful
                 return jsonify({
                     'success': True,
                     'message': 'A password reset link has been sent to your email.'
@@ -2017,35 +2016,44 @@ def reset_password():
             
             # Verify the access token and get user info
             try:
-                # In Supabase 2.4.0, we can use the access token directly
-                user_response = supabase.auth.get_user(access_token)
-                print(f"User response: {user_response}")
-                
-                if not user_response or not hasattr(user_response, 'user') or not user_response.user:
-                    print("Invalid user response from Supabase")
+                # In Supabase 1.0.3, we use the access token to update the password
+                try:
+                    # First, verify the access token is valid
+                    user_response = supabase.auth.api.get_user(access_token)
+                    print(f"User response: {user_response}")
+                    
+                    if not user_response or 'id' not in getattr(user_response, 'user', {}):
+                        print("Invalid user response from Supabase")
+                        return jsonify({
+                            'success': False,
+                            'error': 'Invalid or expired reset link. Please request a new password reset.'
+                        }), 400
+                    
+                    current_user = user_response.user
+                    current_email = current_user.get('email', '').lower()
+                    
+                    # Verify the email matches
+                    if current_email != email:
+                        print(f"Email mismatch: {current_email} != {email}")
+                        return jsonify({
+                            'success': False,
+                            'error': 'Email does not match the reset token.'
+                        }), 400
+                    
+                    # Update the password using Supabase Admin API
+                    print("Updating password...")
+                    
+                    # In Supabase 1.0.3, we use update_user with the access token
+                    update_response = supabase.auth.api.update_user(
+                        access_token,
+                        password=new_password
+                    )
+                except Exception as update_error:
+                    print(f"Error updating user: {str(update_error)}")
                     return jsonify({
                         'success': False,
-                        'error': 'Invalid or expired reset link. Please request a new password reset.'
+                        'error': 'Failed to update password. Please try again.'
                     }), 400
-                
-                current_user = user_response.user
-                current_email = getattr(current_user, 'email', '').lower()
-                
-                # Verify the email matches
-                if current_email != email:
-                    print(f"Email mismatch: {current_email} != {email}")
-                    return jsonify({
-                        'success': False,
-                        'error': 'Email does not match the reset token.'
-                    }), 400
-                
-                # Update the password using Supabase Admin API
-                print("Updating password...")
-                
-                # In Supabase 2.4.0, we can use update_user with the access token
-                update_response = supabase.auth.update_user({
-                    'password': new_password
-                })
                 
                 if hasattr(update_response, 'error') and update_response.error:
                     error_msg = f'Failed to update password: {update_response.error.message if hasattr(update_response.error, "message") else "Unknown error"}'
