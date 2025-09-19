@@ -63,6 +63,13 @@ def api_check_email():
 # --- NEW: Notification Helper Function ---
 def create_notification(user_id, message, booking_id=None, borrowed_item_id=None, admin_only=False, link=None):
     try:
+        # If no link is provided but we have a booking_id, create a link to the booking details
+        if not link and booking_id:
+            if admin_only:
+                link = f"/admin/booking/{booking_id}"  # Admin view
+            else:
+                link = f"/booking_details/{booking_id}"  # User view
+        
         notification_data = {
             "id": str(uuid.uuid4()),
             "user_id": user_id,
@@ -571,24 +578,24 @@ def booking():
                     continue
         return items
 
-    # My Bookings: Pending or Approved only
+    # My Bookings: Pending or Approved only (sorted by created_at in descending order - newest first)
     bookings_data = supabase.table("bookings") \
         .select("*") \
         .eq("user_id", user_id) \
         .in_("status", ["Pending", "Approved"]) \
-        .order("event_date", desc=False) \
+        .order("created_at", desc=True) \
         .execute()
     bookings = bookings_data.data if bookings_data.data else []
 
     for booking in bookings:
         booking["parsed_items"] = parse_other_items(booking.get("other_items", ""))
 
-    # Booking History
+    # Booking History (sorted by created_at in descending order - newest first)
     history_data = supabase.table("bookings") \
         .select("*") \
         .eq("user_id", user_id) \
         .in_("status", ["Completed", "Cancelled"]) \
-        .order("event_date", desc=True) \
+        .order("created_at", desc=True) \
         .execute()
     booking_history = history_data.data if history_data.data else []
 
@@ -624,14 +631,30 @@ def booking():
 @app.route("/booking_details/<booking_id>")
 def booking_details(booking_id):
     if "user" not in session:
-        return jsonify({"success": False, "message": "Please login first"})
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({"success": False, "message": "Please login first"}), 401
+        flash("Please login first!", "error")
+        return redirect(url_for("signin"))
     
     try:
-        # Kunin ang booking details
-        booking_data = supabase.table("bookings").select("*").eq("id", booking_id).eq("user_id", session["user"]["id"]).execute()
+        # Check if user is admin
+        is_admin = session.get("user", {}).get("role") == "admin"
+        
+        # Build the query based on user role
+        query = supabase.table("bookings").select("*")
+        if is_admin:
+            query = query.eq("id", booking_id)
+        else:
+            query = query.eq("id", booking_id).eq("user_id", session["user"]["id"])
+        
+        # Execute the query
+        booking_data = query.execute()
         
         if not booking_data.data:
-            return jsonify({"success": False, "message": "Booking not found"})
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({"success": False, "message": "Booking not found"}), 404
+            flash("Booking not found!", "error")
+            return redirect(url_for("booking"))
         
         booking = booking_data.data[0]
         
@@ -665,11 +688,36 @@ def booking_details(booking_id):
 
         # I-override ang booking data para isama ang decoded equipment (kasama category_id)
         booking["equipment_list"] = equipment_list
+        
+        # Mark notification as read if coming from notification
+        if request.args.get('from_notification'):
+            try:
+                notification_id = request.args.get('notification_id')
+                if notification_id:
+                    supabase.table("notifications") \
+                        .update({"is_read": True}) \
+                        .eq("id", notification_id) \
+                        .eq("user_id", session["user"]["id"]) \
+                        .execute()
+            except Exception as e:
+                print(f"Error marking notification as read: {e}")
 
-        return jsonify({"success": True, "data": booking})
+        # Return JSON for AJAX requests
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({"success": True, "data": booking})
+            
+        # Return HTML for direct navigation
+        return render_template(
+            "booking_details.html", 
+            booking=booking,
+            is_admin=is_admin
+        )
     
     except Exception as e:
-        return jsonify({"success": False, "message": str(e)})
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({"success": False, "message": str(e)}), 500
+        flash(f"An error occurred: {str(e)}", "error")
+        return redirect(url_for("booking"))
 
 
 @app.route('/cancel_booking', methods=['POST'])
@@ -1181,8 +1229,12 @@ def admin_portal():
         total_bookings = supabase.table("bookings").select("*").execute()
         total_users = supabase.table("users").select("*").execute()
         
-        # Kunin ang mga pending approvals KASAMA ANG USER INFO
-        pending_approvals_data = supabase.table("bookings").select("*, users(first_name, last_name)").eq("status", "Pending").execute()
+        # Kunin ang mga pending approvals KASAMA ANG USER INFO at created_at (newest first)
+        pending_approvals_data = supabase.table("bookings") \
+            .select("*, users(first_name, last_name), created_at") \
+            .eq("status", "Pending") \
+            .order("created_at", desc=True) \
+            .execute()
         
         # ✅ Helper function to parse other_items
         def parse_other_items(items_str):
@@ -1209,8 +1261,12 @@ def admin_portal():
                 booking["parsed_items"] = parse_other_items(booking.get("other_items", ""))
                 pending_approvals.append(booking)
 
-        # Kunin ang lahat ng bookings
-        all_bookings_data = supabase.table("bookings").select("*, users(first_name, last_name)").execute()
+        # Kunin ang lahat ng bookings (newest first)
+        all_bookings_data = supabase.table("bookings") \
+            .select("*, users(first_name, last_name)") \
+            .order("created_at", desc=True) \
+            .execute()
+            
         all_bookings = []
         if all_bookings_data.data:
             for booking in all_bookings_data.data:
@@ -1220,6 +1276,10 @@ def admin_portal():
         # Kunin ang lahat ng equipment
         equipment_data = supabase.table("inventory").select("*").execute()
         equipment_items = equipment_data.data if equipment_data.data else []
+        
+        # Get all users for user management
+        users_data = supabase.table("users").select("*").order("created_at", desc=True).execute()
+        users = users_data.data if users_data.data else []
         
         # I-prepare ang data
         stats = {
@@ -1280,8 +1340,9 @@ def admin_portal():
             pending_approvals=pending_approvals,
             all_bookings=all_bookings,
             equipment_items=equipment_items,
-            admin_notifications=admin_notifications,  # ✅ ITO ANG IDINAGDAG
-            unread_admin_count=unread_admin_count   # ✅ ITO ANG IDINAGDAG
+            admin_notifications=admin_notifications,
+            unread_admin_count=unread_admin_count,
+            users=users
         )
     
     except Exception as e:
@@ -2081,6 +2142,147 @@ def reset_password():
             'success': False,
             'error': 'An unexpected error occurred. Please try again.'
         }), 500
+
+@app.route('/admin/users')
+def get_all_users():
+    if 'admin_logged_in' not in session or not session['admin_logged_in']:
+        return jsonify({'error': 'Unauthorized'}), 401
+        
+    try:
+        # Fetch all users from the database
+        response = supabase.table('users').select('*').order('created_at', desc=True).execute()
+        users = response.data if hasattr(response, 'data') else []
+        return jsonify(users)
+    except Exception as e:
+        print(f"Error fetching users: {str(e)}")
+        return jsonify({'error': 'Failed to fetch users'}), 500
+
+@app.route('/admin/users/<user_id>')
+def get_user(user_id):
+    print(f"[DEBUG] Fetching user with ID: {user_id}")
+    
+    # Check admin authentication
+    if 'admin_logged_in' not in session or not session['admin_logged_in']:
+        print("[AUTH] Unauthorized access attempt to user details")
+        return jsonify({'error': 'Unauthorized access'}), 401
+    
+    try:
+        # Ensure user_id is a valid UUID
+        try:
+            uuid.UUID(user_id)
+        except ValueError:
+            print(f"[ERROR] Invalid user ID format: {user_id}")
+            return jsonify({'error': 'Invalid user ID format'}), 400
+            
+        # Fetch user from database
+        print(f"[DEBUG] Querying database for user: {user_id}")
+        response = supabase.table('users').select('*').eq('id', user_id).single().execute()
+        
+        # Check if we got a valid response
+        if not hasattr(response, 'data') or not response.data:
+            print(f"[DEBUG] User not found: {user_id}")
+            return jsonify({'error': 'User not found'}), 404
+            
+        # Log successful fetch (without sensitive data)
+        user_data = response.data
+        print(f"[DEBUG] Successfully fetched user: {user_data.get('email', 'Unknown')}")
+        
+        # Return the user data
+        return jsonify(user_data)
+        
+    except Exception as e:
+        error_msg = f"Error fetching user {user_id}: {str(e)}"
+        print(f"[ERROR] {error_msg}")
+        return jsonify({
+            'error': 'Failed to fetch user details',
+            'details': str(e)
+        }), 500
+
+@app.route('/admin/users/add', methods=['POST'])
+def add_user():
+    if 'admin_logged_in' not in session or not session['admin_logged_in']:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+        
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        required_fields = ['first_name', 'last_name', 'email', 'password', 'role']
+        for field in required_fields:
+            if not data.get(field):
+                return jsonify({'success': False, 'message': f'{field.replace("_", " ").title()} is required'}), 400
+        
+        # Check if email already exists
+        existing_user = supabase.table('users').select('email').eq('email', data['email']).execute()
+        if hasattr(existing_user, 'data') and existing_user.data:
+            return jsonify({'success': False, 'message': 'Email already exists'}), 400
+        
+        # Hash the password
+        hashed_password = generate_password_hash(data['password'])
+        
+        # Prepare user data
+        user_data = {
+            'first_name': data['first_name'],
+            'last_name': data['last_name'],
+            'email': data['email'],
+            'password_hash': hashed_password,
+            'role': data['role'],
+            'is_active': True,
+            'barangay_id': data.get('barangay_id'),
+            'address': data.get('address')
+        }
+        
+        # Insert the new user
+        response = supabase.table('users').insert(user_data).execute()
+        
+        if hasattr(response, 'data') and response.data:
+            return jsonify({'success': True, 'message': 'User added successfully'})
+        else:
+            return jsonify({'success': False, 'message': 'Failed to add user'}), 500
+            
+    except Exception as e:
+        print(f"Error adding user: {str(e)}")
+        return jsonify({'success': False, 'message': 'An error occurred while adding the user'}), 500
+
+@app.route('/admin/users/<user_id>/update', methods=['POST'])
+def update_user(user_id):
+    if 'admin_logged_in' not in session or not session['admin_logged_in']:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+        
+    try:
+        data = request.get_json()
+        
+        # Check if user exists
+        existing_user = supabase.table('users').select('*').eq('id', user_id).single().execute()
+        if not hasattr(existing_user, 'data') or not existing_user.data:
+            return jsonify({'success': False, 'message': 'User not found'}), 404
+        
+        # Prepare update data
+        update_data = {
+            'first_name': data.get('first_name', existing_user.data['first_name']),
+            'last_name': data.get('last_name', existing_user.data['last_name']),
+            'email': data.get('email', existing_user.data['email']),
+            'role': data.get('role', existing_user.data['role']),
+            'barangay_id': data.get('barangay_id', existing_user.data.get('barangay_id')),
+            'address': data.get('address', existing_user.data.get('address')),
+            'is_active': data.get('is_active', existing_user.data.get('is_active', True))
+        }
+        
+        # If password is provided, update it
+        if data.get('password'):
+            update_data['password_hash'] = generate_password_hash(data['password'])
+        
+        # Update the user
+        response = supabase.table('users').update(update_data).eq('id', user_id).execute()
+        
+        if hasattr(response, 'data') and response.data:
+            return jsonify({'success': True, 'message': 'User updated successfully'})
+        else:
+            return jsonify({'success': False, 'message': 'Failed to update user'}), 500
+            
+    except Exception as e:
+        print(f"Error updating user: {str(e)}")
+        return jsonify({'success': False, 'message': 'An error occurred while updating the user'}), 500
 
 if __name__ == "__main__":
     app.run(host='127.0.0.1', port=5000, debug=True)

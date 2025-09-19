@@ -785,16 +785,39 @@
 
         .stat-card {
             background: white;
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
             text-align: center;
             transition: var(--transition);
+            cursor: pointer;
+            color: var(--secondary);
         }
 
         .stat-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            background: var(--primary);
+            color: white;
+        }
+
+        .stat-card:hover .stat-icon {
+            color: white;
+        }
+
+        .stat-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            color: var(--primary);
+            transition: var(--transition);
+        }
+
+        .management-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 180px;
         }
 
         .stat-number {
@@ -1283,7 +1306,7 @@
             <li><a href="#" class="active" data-target="dashboard"><i class="fas fa-home"></i> Dashboard</a></li>
             <li><a href="#" data-target="pending-approvals"><i class="fas fa-clock"></i> Pending Approvals</a></li>
             <li><a href="#" data-target="all-bookings"><i class="fas fa-calendar-alt"></i> All Bookings</a></li>
-            <li><a href="#" data-target="equipment-management"><i class="fas fa-dumbbell"></i> Equipment Management</a>
+            <li><a href="#equipment-management" data-target="equipment-management"><i class="fas fa-dumbbell"></i> Equipment Management</a>
             </li>
             <li><a href="#" data-target="user-management"><i class="fas fa-users"></i> User Management</a></li>
             <li><a href="#" data-target="reports"><i class="fas fa-chart-bar"></i> Reports</a></li>
@@ -1350,21 +1373,17 @@
         <!-- Dashboard Content -->
         <div class="dashboard-content active" id="dashboard">
             <div class="admin-stats">
-                <div class="stat-card">
-                    <div class="stat-number">{{ stats.pending_approvals }}</div>
-                    <div class="stat-label">Pending Approvals</div>
+                <div class="stat-card management-card" style="text-decoration: none; cursor: pointer;" onclick="document.dispatchEvent(new CustomEvent('showContent', { detail: 'equipment-management' }));">
+                    <div class="stat-icon"><i class="fas fa-tools"></i></div>
+                    <div class="stat-label">Equipment Management</div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-number">{{ stats.total_bookings }}</div>
-                    <div class="stat-label">Total Bookings</div>
+                <div class="stat-card management-card" style="text-decoration: none; cursor: pointer;" onclick="document.dispatchEvent(new CustomEvent('showContent', { detail: 'user-management' }));">
+                    <div class="stat-icon"><i class="fas fa-users-cog"></i></div>
+                    <div class="stat-label">User Management</div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-number">{{ stats.total_users }}</div>
-                    <div class="stat-label">Registered Users</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number">{{ stats.total_equipment or 0 }}</div>
-                    <div class="stat-label">Available Equipment</div>
+                <div class="stat-card management-card" style="text-decoration: none; cursor: pointer;" onclick="document.dispatchEvent(new CustomEvent('showContent', { detail: 'reports' }));">
+                    <div class="stat-icon"><i class="fas fa-chart-bar"></i></div>
+                    <div class="stat-label">Reports</div>
                 </div>
             </div>
             <div class="booking-section">
@@ -1376,6 +1395,7 @@
                                 <th>Ticket ID</th>
                                 <th>User</th>
                                 <th>Event Type</th>
+                                <th>Booking Date</th>
                                 <th>Event Date</th>
                                 <th>Equipment</th>
                                 <th>Action</th>
@@ -1394,6 +1414,19 @@
                                     {% endif %}
                                 </td>
                                 <td data-label="Event Type">{{ booking.event_type }}</td>
+                                <td data-label="Booking Date">
+                                    {% if booking.created_at %}
+                                        {% if booking.created_at is string %}
+                                            {{ booking.created_at.split('T')[0] }}
+                                            <br><small class="text-muted">{{ booking.created_at.split('T')[1].split('.')[0] }}</small>
+                                        {% else %}
+                                            {{ booking.created_at.strftime('%Y-%m-%d') }}
+                                            <br><small class="text-muted">{{ booking.created_at.strftime('%H:%M:%S') }}</small>
+                                        {% endif %}
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
                                 <td data-label="Event Date">{{ booking.event_date }}</td>
                                 <td data-label="Equipment" class="equipment-cell expandable"
                                     title="Click to view full details">
@@ -1435,11 +1468,11 @@
                             {% endfor %}
                             {% else %}
                             <tr>
-                                <td colspan="6" style="text-align:center; padding: 30px;">
-                                    <div class="empty-state">
-                                        <i class="fas fa-check-circle"></i>
-                                        <h3>No Pending Approvals</h3>
-                                        <p>All bookings have been processed.</p>
+                                <td colspan="6" style="padding: 30px;">
+                                    <div class="empty-state" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; width: 100%;">
+                                        <i class="fas fa-check-circle" style="font-size: 48px; color: #95a5a6; margin-bottom: 15px;"></i>
+                                        <h3 style="margin: 10px 0; color: #2c3e50;">No Pending Approvals</h3>
+                                        <p style="color: #7f8c8d; margin: 0;">All bookings have been processed.</p>
                                     </div>
                                 </td>
                             </tr>
@@ -1474,9 +1507,9 @@
                                 <th>Ticket ID</th>
                                 <th>User</th>
                                 <th>Event Type</th>
+                                <th>Booking Date</th>
                                 <th>Event Date</th>
                                 <th>Equipment</th>
-                                <th>Booking Date</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -1493,6 +1526,19 @@
                                     {% endif %}
                                 </td>
                                 <td data-label="Event Type">{{ booking.event_type }}</td>
+                                <td data-label="Booking Date">
+                                    {% if booking.created_at %}
+                                        {% if booking.created_at is string %}
+                                            {{ booking.created_at.split('T')[0] }}
+                                            <br><small class="text-muted">{{ booking.created_at.split('T')[1].split('.')[0] }}</small>
+                                        {% else %}
+                                            {{ booking.created_at.strftime('%Y-%m-%d') }}
+                                            <br><small class="text-muted">{{ booking.created_at.strftime('%H:%M:%S') }}</small>
+                                        {% endif %}
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
                                 <td data-label="Event Date">{{ booking.event_date }}</td>
                                 <td data-label="Equipment" class="equipment-cell expandable"
                                     title="Click to view full details">
@@ -1502,11 +1548,9 @@
                                     🏕️ {{ item.name }} x{{ item.quantity }}
                                     {% elif 'Chair' in item.name or 'Table' in item.name or 'Furniture' in item.name %}
                                     🪑 {{ item.name }} x{{ item.quantity }}
-                                    {% elif 'Basketball' in item.name or 'Volleyball' in item.name or 'Sports' in
-                                    item.name %}
+                                    {% elif 'Basketball' in item.name or 'Volleyball' in item.name or 'Sports' in item.name %}
                                     🏀 {{ item.name }} x{{ item.quantity }}
-                                    {% elif 'Microphone' in item.name or 'Speaker' in item.name or 'Sound' in item.name
-                                    %}
+                                    {% elif 'Microphone' in item.name or 'Speaker' in item.name or 'Sound' in item.name %}
                                     🎤 {{ item.name }} x{{ item.quantity }}
                                     {% elif 'Stove' in item.name or 'Cooking' in item.name or 'Pot' in item.name %}
                                     🍳 {{ item.name }} x{{ item.quantity }}
@@ -1519,7 +1563,6 @@
                                     No equipment
                                     {% endif %}
                                 </td>
-                                <td data-label="Booking Date">{{ booking.created_at[:10] }}</td>
                                 <td data-label="Action">
                                     <button class="btn-action btn-view view-details" data-booking-id="{{ booking.id }}">
                                         <i class="fas fa-eye"></i> Details
@@ -1535,11 +1578,11 @@
                             {% endfor %}
                             {% else %}
                             <tr>
-                                <td colspan="7" style="text-align:center; padding: 30px;">
-                                    <div class="empty-state">
-                                        <i class="fas fa-check-circle"></i>
-                                        <h3>No Pending Approvals</h3>
-                                        <p>All bookings have been processed.</p>
+                                <td colspan="7" style="padding: 30px;">
+                                    <div class="empty-state" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; width: 100%;">
+                                        <i class="fas fa-check-circle" style="font-size: 48px; color: #95a5a6; margin-bottom: 15px;"></i>
+                                        <h3 style="margin: 10px 0; color: #2c3e50;">No Pending Approvals</h3>
+                                        <p style="color: #7f8c8d; margin: 0;">All bookings have been processed.</p>
                                     </div>
                                 </td>
                             </tr>
@@ -1581,6 +1624,7 @@
                                 <th>Ticket ID</th>
                                 <th>User</th>
                                 <th>Event Type</th>
+                                <th>Booking Date</th>
                                 <th>Event Date</th>
                                 <th>Equipment</th>
                                 <th>Status</th>
@@ -1600,6 +1644,19 @@
                                     {% endif %}
                                 </td>
                                 <td data-label="Event Type">{{ booking.event_type }}</td>
+                                <td data-label="Booking Date">
+                                    {% if booking.created_at %}
+                                        {% if booking.created_at is string %}
+                                            {{ booking.created_at.split('T')[0] }}
+                                            <br><small class="text-muted">{{ booking.created_at.split('T')[1].split('.')[0] }}</small>
+                                        {% else %}
+                                            {{ booking.created_at.strftime('%Y-%m-%d') }}
+                                            <br><small class="text-muted">{{ booking.created_at.strftime('%H:%M:%S') }}</small>
+                                        {% endif %}
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
                                 <td data-label="Event Date">{{ booking.event_date }}</td>
                                 <td data-label="Equipment" class="equipment-cell expandable"
                                     title="Click to view full details">
@@ -1652,11 +1709,11 @@
                             {% endfor %}
                             {% else %}
                             <tr>
-                                <td colspan="7" style="text-align:center; padding: 30px;">
-                                    <div class="empty-state">
-                                        <i class="fas fa-calendar-times"></i>
-                                        <h3>No Bookings Found</h3>
-                                        <p>There are no bookings in the system yet.</p>
+                                <td colspan="7" style="padding: 30px;">
+                                    <div class="empty-state" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; width: 100%;">
+                                        <i class="fas fa-calendar-times" style="font-size: 48px; color: #95a5a6; margin-bottom: 15px;"></i>
+                                        <h3 style="margin: 10px 0; color: #2c3e50;">No Bookings Found</h3>
+                                        <p style="color: #7f8c8d; margin: 0;">There are no bookings in the system yet.</p>
                                     </div>
                                 </td>
                             </tr>
@@ -1845,13 +1902,188 @@
         <!-- User Management Content -->
         <div class="dashboard-content" id="user-management">
             <div class="booking-section">
-                <h2>User Management</h2>
-                <div class="empty-state">
-                    <i class="fas fa-users"></i>
-                    <h3>User Management</h3>
-                    <p>Manage user accounts and permissions</p>
-                    <p class="text-muted">This feature is coming soon.</p>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>User Management</h2>
+                    <div class="search-box" style="width: 300px;">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="userSearch" placeholder="Search by name, email, or ID...">
+                    </div>
                 </div>
+                
+                <!-- User Filters -->
+                <div class="filter-controls" style="margin-bottom: 20px; display: flex; gap: 15px; flex-wrap: wrap;">
+                    <div class="form-group" style="margin: 0;">
+                        <select class="filter-select" id="roleFilter" style="min-width: 150px;">
+                            <option value="">All Roles</option>
+                            <option value="user">User</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                        <select class="filter-select" id="statusFilter" style="min-width: 150px;">
+                            <option value="">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                    <button class="btn" id="addUserBtn" style="margin-left: auto;">
+                        <i class="fas fa-plus"></i> Add New User
+                    </button>
+                </div>
+
+                <!-- Users Table -->
+                <div class="booking-table-container" style="overflow-x: auto;">
+                    <table class="booking-table" style="min-width: 900px;">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Barangay ID</th>
+                                <th>Role</th>
+                                <th>Date Joined</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            {% for user in users %}
+                            <tr data-role="{{ user.role }}" data-status="{{ 'active' if user.is_active else 'inactive' }}">
+                                <td data-label="Name">
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <div class="user-avatar" style="width: 36px; height: 36px; border-radius: 50%; background-color: #3498db; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">
+                                            {{ user.first_name[0]|upper }}{{ user.last_name[0]|upper if user.last_name }}
+                                        </div>
+                                        <div>
+                                            <strong>{{ user.first_name }} {{ user.last_name }}</strong>
+                                            {% if user.id == session.user.id %}
+                                            <span class="badge" style="background: #e74c3c; color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: 5px;">You</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td data-label="Email">{{ user.email }}</td>
+                                <td data-label="Barangay ID">{{ user.barangay_id or 'N/A' }}</td>
+                                <td data-label="Role">
+                                    <span class="status-badge {{ 'status-approved' if user.role == 'admin' else 'status-pending' }}" style="text-transform: capitalize;">
+                                        {{ user.role }}
+                                    </span>
+                                </td>
+                                <td data-label="Date Joined">
+                                    {{ user.created_at.split('T')[0] }}
+                                </td>
+                                <td data-label="Actions" class="action-buttons">
+                                    <button class="btn-action btn-view view-user" data-user-id="{{ user.id }}" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn-action btn-edit edit-user" data-user-id="{{ user.id }}" title="Edit User">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    {% if user.id != session.user.id %}
+                                    <button class="btn-action btn-delete delete-user" data-user-id="{{ user.id }}" title="Delete User">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    {% else %}
+                                    <button class="btn-action" disabled style="opacity: 0.5; cursor: not-allowed;" title="Cannot delete your own account">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="7" style="text-align:center; padding: 30px;">
+                                    <div class="empty-state">
+                                        <i class="fas fa-users" style="font-size: 48px; color: #95a5a6; margin-bottom: 15px;"></i>
+                                        <h3>No Users Found</h3>
+                                        <p>No users have been registered yet.</p>
+                                        <button class="btn" id="addFirstUser" style="margin-top: 15px;">
+                                            <i class="fas fa-plus"></i> Add Your First User
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination" style="margin-top: 20px; display: flex; justify-content: center; align-items: center;">
+                    <button class="btn" id="prevPage" disabled style="min-width: 100px;">
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </button>
+                    <span id="pageInfo" style="margin: 0 15px; line-height: 38px; min-width: 100px; text-align: center;">
+                        Page 1 of {{ (users|length / 10)|round(0, 'ceil')|int if users else 1 }}
+                    </span>
+                    <button class="btn" id="nextPage" disabled style="min-width: 100px;">
+                        Next <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Details Modal -->
+        <div class="modal" id="userDetailsModal">
+            <div class="modal-content" style="max-width: 600px;">
+                <h3>User Details</h3>
+                <div id="userDetailsContent">
+                    <!-- User details will be loaded here via JavaScript -->
+                </div>
+                <div class="modal-buttons" style="margin-top: 20px;">
+                    <button class="btn" id="closeUserDetailsModal">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add/Edit User Modal -->
+        <div class="modal" id="userFormModal">
+            <div class="modal-content" style="max-width: 600px;">
+                <h3 id="userFormTitle">Add New User</h3>
+                <form id="userForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="firstName">First Name *</label>
+                            <input type="text" id="firstName" name="first_name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="lastName">Last Name *</label>
+                            <input type="text" id="lastName" name="last_name" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email *</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="barangayId">Barangay ID</label>
+                            <input type="text" id="barangayId" name="barangay_id">
+                        </div>
+                        <div class="form-group">
+                            <label for="role">Role *</label>
+                            <select id="role" name="role" required>
+                                <option value="user">User</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="address">Address</label>
+                        <textarea id="address" name="address" rows="2"></textarea>
+                    </div>
+                    <div class="form-group" id="passwordField">
+                        <label for="password">Password *</label>
+                        <div class="input-group">
+                            <input type="password" id="password" name="password" required>
+                            <i class="fas fa-eye toggle-password" onclick="togglePasswordVisibility('password', this)"></i>
+                        </div>
+                        <small>Password must be at least 8 characters long and contain numbers and letters.</small>
+                    </div>
+                    <input type="hidden" id="userId" name="id">
+                    <div class="modal-buttons" style="margin-top: 20px;">
+                        <button type="submit" class="btn">Save User</button>
+                        <button type="button" class="btn btn-cancel" id="cancelUserForm">Cancel</button>
+                    </div>
+                </form>
             </div>
         </div>
         <!-- Reports Content -->
@@ -1951,52 +2183,76 @@
 
             if (!bellIcon || !dropdown) return;
 
-            // Toggle dropdown on click
+            // Toggle dropdown when clicking the bell
             bellIcon.addEventListener('click', function (e) {
-                e.stopPropagation();
-                dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+                e.stopPropagation(); // Prevent the click from reaching document
+                const isVisible = dropdown.style.display === 'block';
+                dropdown.style.display = isVisible ? 'none' : 'block';
 
                 // Mark all as read when opening
-                if (dropdown.style.display === 'block') {
+                if (!isVisible) {
                     fetch('/mark_notifications_as_read', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
                         },
-                        body: JSON.stringify({})
+                        body: JSON.stringify({ admin: true })
                     })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                // Remove badge
-                                const badge = bellIcon.querySelector('.notification-badge');
-                                if (badge) {
-                                    badge.remove();
-                                }
-                                // Remove unread background
-                                document.querySelectorAll('.notification-item.unread').forEach(item => {
-                                    item.classList.remove('unread');
-                                });
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Remove badge
+                            const badge = bellIcon.querySelector('.notification-badge');
+                            if (badge) {
+                                badge.remove();
                             }
-                        })
-                        .catch(error => console.error('Error:', error));
+                            // Remove unread background
+                            document.querySelectorAll('.notification-item.unread').forEach(item => {
+                                item.classList.remove('unread');
+                            });
+                        }
+                    })
+                    .catch(error => console.error('Error marking notifications as read:', error));
                 }
             });
 
             // Hide dropdown when clicking outside
             document.addEventListener('click', function (e) {
-                if (!bellIcon.contains(e.target) && !dropdown.contains(e.target)) {
+                const isClickInside = bellIcon.contains(e.target) || dropdown.contains(e.target);
+                if (!isClickInside) {
                     dropdown.style.display = 'none';
                 }
             });
 
             // Handle click on notification item
             document.querySelectorAll('.notification-item').forEach(item => {
-                item.addEventListener('click', function () {
-                    const link = this.getAttribute('data-link');
-                    if (link) {
-                        window.location.href = link;
+                item.addEventListener('click', function (e) {
+                    // Don't trigger if clicking on action buttons inside the notification
+                    if (e.target.closest('button, a, input, select, textarea, .notification-actions')) {
+                        return;
                     }
+                    
+                    // Try to find the closest link in the notification
+                    const link = this.querySelector('a');
+                    if (link && link.href) {
+                        e.preventDefault();
+                        window.location.href = link.href;
+                    } else {
+                        // Fallback to data-link attribute if no <a> tag is found
+                        const dataLink = this.getAttribute('data-link');
+                        if (dataLink) {
+                            e.preventDefault();
+                            window.location.href = dataLink;
+                        }
+                    }
+                });
+                
+                // Make sure links inside notifications work properly
+                item.querySelectorAll('a').forEach(link => {
+                    link.addEventListener('click', function(e) {
+                        e.stopPropagation(); // Prevent the notification click handler from firing
+                    });
                 });
             });
         });
@@ -2085,6 +2341,9 @@
                 document.getElementById('addEquipmentBtn')?.addEventListener('click', () => {
                     this.openEquipmentModal();
                 });
+                
+                // Initialize user management
+                this.initUserManagement();
                 // Add first equipment button
                 const addFirstBtn = document.getElementById('addFirstEquipment');
                 if (addFirstBtn) {
@@ -2595,6 +2854,391 @@
                     submitBtn.disabled = false;
                 }
             }
+            // User Management Methods
+            initUserManagement() {
+                // Add user button
+                document.getElementById('addUserBtn')?.addEventListener('click', () => {
+                    this.openUserFormModal();
+                });
+
+                // Search functionality
+                const userSearch = document.getElementById('userSearch');
+                if (userSearch) {
+                    userSearch.addEventListener('input', (e) => {
+                        this.filterUsers(e.target.value, 'search');
+                    });
+                }
+
+                // Role filter
+                const roleFilter = document.getElementById('roleFilter');
+                if (roleFilter) {
+                    roleFilter.addEventListener('change', (e) => {
+                        this.filterUsers(e.target.value, 'role');
+                    });
+                }
+
+                // Status filter
+                const statusFilter = document.getElementById('statusFilter');
+                if (statusFilter) {
+                    statusFilter.addEventListener('change', (e) => {
+                        this.filterUsers(e.target.value, 'status');
+                    });
+                }
+
+                // View user details
+                document.addEventListener('click', (e) => {
+                    if (e.target.closest('.view-user')) {
+                        const userId = e.target.closest('.view-user').getAttribute('data-user-id');
+                        this.viewUserDetails(userId);
+                    } else if (e.target.closest('.edit-user')) {
+                        const userId = e.target.closest('.edit-user').getAttribute('data-user-id');
+                        this.editUser(userId);
+                    }
+                });
+
+                // User form submission
+                const userForm = document.getElementById('userForm');
+                if (userForm) {
+                    userForm.addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        this.saveUser();
+                    });
+                }
+
+                // Close modals
+                document.getElementById('closeUserDetailsModal')?.addEventListener('click', () => {
+                    document.getElementById('userDetailsModal').style.display = 'none';
+                });
+
+                document.getElementById('cancelUserForm')?.addEventListener('click', () => {
+                    document.getElementById('userFormModal').style.display = 'none';
+                });
+
+                // Initialize pagination
+                this.setupUserPagination();
+            }
+
+            async viewUserDetails(userId) {
+                console.log('Fetching user details for ID:', userId);
+                const modal = document.getElementById('userDetailsModal');
+                const content = modal.querySelector('.modal-content');
+                
+                try {
+                    // Show loading state
+                    content.innerHTML = `
+                        <h3>User Details</h3>
+                        <div class="loading" style="padding: 20px; text-align: center;">
+                            <i class="fas fa-spinner fa-spin" style="font-size: 24px; margin-bottom: 10px; display: block;"></i>
+                            <p>Loading user details...</p>
+                        </div>
+                    `;
+                    modal.style.display = 'flex';
+
+                    // Fetch user details with error handling
+                    console.log('Sending request to:', `/admin/users/${userId}`);
+                    let response;
+                    try {
+                        // Add a timestamp to prevent caching issues
+                        const timestamp = new Date().getTime();
+                        response = await fetch(`/admin/users/${userId}?_=${timestamp}`, {
+                            headers: {
+                                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                                'Pragma': 'no-cache',
+                                'Expires': '0'
+                            }
+                        });
+                        console.log('Response status:', response.status);
+                        
+                        if (!response.ok) {
+                            const errorText = await response.text();
+                            console.error('API Error Response:', errorText);
+                            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+                        }
+                    } catch (fetchError) {
+                        console.error('Fetch error:', fetchError);
+                            content.innerHTML = `
+                                <h3>Connection Error</h3>
+                                <div class="error-message" style="color: #e74c3c; padding: 20px; text-align: center;">
+                                    <i class="fas fa-wifi" style="font-size: 48px; margin-bottom: 15px; display: block;"></i>
+                                    <p>Unable to connect to the server. Please check your internet connection and try again.</p>
+                                    <p><small>Error: ${fetchError.message}</small></p>
+                                    <button class="btn" onclick="this.closest('.modal').style.display='none'" style="margin-top: 15px;">
+                                        <i class="fas fa-times"></i> Close
+                                    </button>
+                                </div>
+                            `;
+                        return;
+                    }
+
+                    let user;
+                    try {
+                        user = await response.json();
+                        console.log('User data received:', user);
+                    } catch (jsonError) {
+                        console.error('JSON parse error:', jsonError);
+                        throw new Error('Failed to parse user data. The server returned invalid data.');
+                    }
+
+                    // Render user details
+                    content.innerHTML = `
+                        <h3>User Details</h3>
+                        <div class="user-details">
+                            <div class="detail-row">
+                                <span class="detail-label">Name:</span>
+                                <span class="detail-value">${user.first_name || 'N/A'} ${user.last_name || ''}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Email:</span>
+                                <span class="detail-value">${user.email || 'N/A'}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Barangay ID:</span>
+                                <span class="detail-value">${user.barangay_id || 'N/A'}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Role:</span>
+                                <span class="status-badge ${user.role === 'admin' ? 'status-approved' : 'status-pending'}">
+                                    ${user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'N/A'}
+                                </span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Status:</span>
+                                <span class="status-badge ${user.is_active ? 'status-approved' : 'status-cancelled'}">
+                                    ${user.is_active ? 'Active' : 'Inactive'}
+                                </span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Address:</span>
+                                <span class="detail-value">${user.address || 'N/A'}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Date Joined:</span>
+                                <span class="detail-value">${user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}</span>
+                            </div>
+                        </div>
+                        <div class="modal-buttons" style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+                            <button class="btn btn-primary" id="closeUserDetailsModal">
+                                <i class="fas fa-times"></i> Close
+                            </button>
+                        </div>
+                    `;
+
+                    // Add click outside to close
+                    modal.onclick = (e) => {
+                        if (e.target === modal) {
+                            modal.style.display = 'none';
+                        }
+                    };
+
+                    // Add escape key to close
+                    const handleKeyDown = (e) => {
+                        if (e.key === 'Escape') {
+                            modal.style.display = 'none';
+                            document.removeEventListener('keydown', handleKeyDown);
+                        }
+                    };
+                    document.addEventListener('keydown', handleKeyDown);
+
+                } catch (error) {
+                    console.error('Error in viewUserDetails:', error);
+                    const errorMessage = error.message || 'An unknown error occurred';
+                    const isNetworkError = error.message && (
+                        error.message.includes('Failed to fetch') || 
+                        error.message.includes('NetworkError')
+                    );
+                    
+                    content.innerHTML = `
+                        <h3>Error Loading User Details</h3>
+                        <div class="error-message" style="color: #e74c3c; padding: 20px; text-align: center;">
+                            <i class="fas ${isNetworkError ? 'fa-wifi' : 'fa-exclamation-triangle'}" 
+                               style="font-size: 48px; margin-bottom: 15px; display: block;">
+                            </i>
+                            <p>${isNetworkError ? 'Network Error' : 'Error'}: ${errorMessage}</p>
+                            <p><small>User ID: ${userId}</small></p>
+                            <div style="margin-top: 20px;">
+                                <button class="btn btn-primary" onclick="this.closest('.modal').style.display='none'" style="margin: 5px;">
+                                    <i class="fas fa-times"></i> Close
+                                </button>
+                                <button class="btn" onclick="window.location.reload()" style="margin: 5px;">
+                                    <i class="fas fa-sync-alt"></i> Reload Page
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            openUserFormModal(userId = null) {
+                const modal = document.getElementById('userFormModal');
+                const form = document.getElementById('userForm');
+                const title = modal.querySelector('h3');
+                const passwordField = document.getElementById('passwordField');
+                
+                // Reset form
+                form.reset();
+                
+                if (userId) {
+                    // Edit mode
+                    title.textContent = 'Edit User';
+                    passwordField.style.display = 'none';
+                    form.querySelector('#password').removeAttribute('required');
+                    
+                    // Fetch user data and populate form
+                    fetch(`/admin/users/${userId}`)
+                        .then(response => response.json())
+                        .then(user => {
+                            document.getElementById('firstName').value = user.first_name || '';
+                            document.getElementById('lastName').value = user.last_name || '';
+                            document.getElementById('email').value = user.email || '';
+                            document.getElementById('barangayId').value = user.barangay_id || '';
+                            document.getElementById('role').value = user.role || 'user';
+                            document.getElementById('address').value = user.address || '';
+                            document.getElementById('userId').value = user.id;
+                        })
+                        .catch(error => {
+                            console.error('Error fetching user data:', error);
+                            this.showFlashMessage('Error loading user data', 'error');
+                        });
+                } else {
+                    // Add new user mode
+                    title.textContent = 'Add New User';
+                    passwordField.style.display = 'block';
+                    form.querySelector('#password').setAttribute('required', '');
+                    document.getElementById('userId').value = '';
+                }
+                
+                modal.style.display = 'flex';
+            }
+
+            async saveUser() {
+                const form = document.getElementById('userForm');
+                const formData = new FormData(form);
+                const userId = formData.get('id');
+                const isEdit = !!userId;
+                
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const originalText = submitBtn.textContent;
+                submitBtn.innerHTML = '<span class="loading"></span> Saving...';
+                submitBtn.disabled = true;
+                
+                try {
+                    const response = await fetch(
+                        isEdit ? `/admin/users/${userId}/update` : '/admin/users/add',
+                        {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(Object.fromEntries(formData))
+                        }
+                    );
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        this.showFlashMessage(
+                            isEdit ? 'User updated successfully!' : 'User added successfully!',
+                            'success'
+                        );
+                        document.getElementById('userFormModal').style.display = 'none';
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        this.showFlashMessage(data.message || 'Error saving user', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error saving user:', error);
+                    this.showFlashMessage('Network error. Please try again.', 'error');
+                } finally {
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                }
+            }
+
+            filterUsers(value, type) {
+                const rows = document.querySelectorAll('#usersTableBody tr');
+                rows.forEach(row => {
+                    let showRow = true;
+                    
+                    if (type === 'search' && value) {
+                        const searchText = value.toLowerCase();
+                        const name = row.querySelector('td[data-label="Name"]').textContent.toLowerCase();
+                        const email = row.querySelector('td[data-label="Email"]').textContent.toLowerCase();
+                        const barangayId = row.querySelector('td[data-label="Barangay ID"]').textContent.toLowerCase();
+                        
+                        showRow = name.includes(searchText) || 
+                                 email.includes(searchText) || 
+                                 barangayId.includes(searchText);
+                    } else if (type === 'role' && value) {
+                        showRow = row.getAttribute('data-role') === value;
+                    } else if (type === 'status' && value) {
+                        showRow = row.getAttribute('data-status') === value;
+                    }
+                    
+                    row.style.display = showRow ? '' : 'none';
+                });
+                
+                // Update pagination
+                this.updateUserPagination();
+            }
+
+            setupUserPagination() {
+                const itemsPerPage = 10;
+                let currentPage = 1;
+                const prevBtn = document.getElementById('prevPage');
+                const nextBtn = document.getElementById('nextPage');
+                const pageInfo = document.getElementById('pageInfo');
+                
+                if (!prevBtn || !nextBtn || !pageInfo) return;
+                
+                const updatePagination = () => {
+                    const rows = Array.from(document.querySelectorAll('#usersTableBody tr:not([style*="display: none"])'));
+                    const totalPages = Math.ceil(rows.length / itemsPerPage);
+                    
+                    // Update page info
+                    pageInfo.textContent = `Page ${currentPage} of ${totalPages || 1}`;
+                    
+                    // Toggle pagination buttons
+                    prevBtn.disabled = currentPage === 1 || rows.length === 0;
+                    nextBtn.disabled = currentPage === totalPages || rows.length === 0;
+                    
+                    // Show/hide rows based on current page
+                    const startIndex = (currentPage - 1) * itemsPerPage;
+                    const endIndex = startIndex + itemsPerPage;
+                    
+                    rows.forEach((row, index) => {
+                        if (index >= startIndex && index < endIndex) {
+                            row.style.display = '';
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    });
+                };
+                
+                prevBtn.addEventListener('click', () => {
+                    if (currentPage > 1) {
+                        currentPage--;
+                        updatePagination();
+                    }
+                });
+                
+                nextBtn.addEventListener('click', () => {
+                    const visibleRows = document.querySelectorAll('#usersTableBody tr:not([style*="display: none"])').length;
+                    const totalPages = Math.ceil(visibleRows / itemsPerPage);
+                    
+                    if (currentPage < totalPages) {
+                        currentPage++;
+                        updatePagination();
+                    }
+                });
+                
+                // Initial pagination setup
+                updatePagination();
+            }
+            
+            updateUserPagination() {
+                this.setupUserPagination();
+            }
+
             async deleteEquipment(itemId) {
                 const deleteBtn = document.getElementById('confirmDeleteEquipment');
                 const originalText = deleteBtn.textContent;
@@ -2630,7 +3274,17 @@
                 flashMessage.className = `flash ${type}`;
                 flashMessage.textContent = message;
                 flashContainer.appendChild(flashMessage);
-                document.body.appendChild(flashContainer);
+                
+                // Position the flash message container if it doesn't exist
+                if (!document.getElementById('flash-messages')) {
+                    const header = document.querySelector('.header');
+                    if (header) {
+                        header.parentNode.insertBefore(flashContainer, header.nextSibling);
+                    } else {
+                        document.body.insertBefore(flashContainer, document.body.firstChild);
+                    }
+                }
+                
                 this.autoHideFlashMessages();
             }
             autoHideFlashMessages() {
@@ -2649,7 +3303,24 @@
         }
         // Initialize the application
         document.addEventListener('DOMContentLoaded', () => {
-            new AdminPortalUI();
+            const app = new AdminPortalUI();
+            
+            // Listen for the showContent custom event
+            document.addEventListener('showContent', (e) => {
+                if (e.detail) {
+                    app.showContent(e.detail);
+                    // Update URL hash
+                    window.location.hash = e.detail;
+                    // Update active state in sidebar
+                    const activeLink = document.querySelector(`.sidebar-menu a[data-target="${e.detail}"]`);
+                    if (activeLink) {
+                        document.querySelectorAll('.sidebar-menu a').forEach(link => {
+                            link.classList.remove('active');
+                        });
+                        activeLink.classList.add('active');
+                    }
+                }
+            });
         });
         // Add smooth scrolling for better UX
         document.documentElement.style.scrollBehavior = 'smooth';

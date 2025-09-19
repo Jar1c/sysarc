@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Details - Barangay Baritan</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #023e8a;
+            --secondary: #2c3e50;
+            --accent: #e74c3c;
+            --light: #f5f7fa;
+            --dark: #023e8a;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+            --text: #2c3e50;
+            --text-light: #7f8c8d;
+            --border: #e0e0e0;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: #f5f7fa;
+            color: var(--text);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .back-button {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateX(-3px);
+        }
+
+        .booking-details {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section h2 {
+            font-size: 1.3rem;
+            color: var(--primary);
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .detail-row {
+            display: flex;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            width: 200px;
+            color: var(--text-light);
+        }
+
+        .detail-value {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+
+        .status-pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .status-approved {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status-rejected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-cancelled {
+            background-color: #e2e3e5;
+            color: #383d41;
+        }
+
+        .status-completed {
+            background-color: #cce5ff;
+            color: #004085;
+        }
+
+        .equipment-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .equipment-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .equipment-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .equipment-quantity {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (max-width: 768px) {
+            .detail-row {
+                flex-direction: column;
+                gap: 5px;
+            }
+
+            .detail-label {
+                width: 100%;
+            }
+
+            .equipment-list {
+                grid-template-columns: 1fr;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Booking Details</h1>
+            <a href="{{ url_for('booking') }}" class="back-button">
+                <i class="fas fa-arrow-left"></i> Back to Bookings
+            </a>
+        </div>
+
+        <div class="booking-details">
+            <div class="section">
+                <h2>Event Information</h2>
+                <div class="detail-row">
+                    <div class="detail-label">Ticket Number</div>
+                    <div class="detail-value">{{ booking.ticket_number }}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Event Type</div>
+                    <div class="detail-value">{{ booking.event_type }}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Event Date</div>
+                    <div class="detail-value">{{ booking.event_date }}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Status</div>
+                    <div class="detail-value">
+                        <span class="status-badge status-{{ booking.status|lower }}">
+                            {{ booking.status }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Requestor Information</h2>
+                <div class="detail-row">
+                    <div class="detail-label">Name</div>
+                    <div class="detail-value">{{ booking.first_name }} {{ booking.last_name }}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Email</div>
+                    <div class="detail-value">{{ booking.email }}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Contact Number</div>
+                    <div class="detail-value">{{ booking.contact_number }}</div>
+                </div>
+                {% if booking.note %}
+                <div class="detail-row">
+                    <div class="detail-label">Additional Notes</div>
+                    <div class="detail-value">{{ booking.note }}</div>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="section">
+                <h2>Equipment Requested</h2>
+                {% if booking.equipment_list %}
+                    <div class="equipment-list">
+                        {% for item in booking.equipment_list %}
+                            <div class="equipment-item">
+                                <div class="equipment-name">
+                                    <span class="emoji">
+                                        {% if item.category_id == 'cat1' %}🏕️{% elif item.category_id == 'cat2' %}🪑
+                                        {% elif item.category_id == 'cat3' %}🎤{% elif item.category_id == 'cat4' %}🔊
+                                        {% elif item.category_id == 'cat5' %}📋{% else %}📦{% endif %}
+                                    </span>
+                                    {{ item.name }}
+                                </div>
+                                <div class="equipment-quantity">Quantity: {{ item.quantity }}</div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p>No equipment requested.</p>
+                {% endif %}
+            </div>
+
+            <div class="section">
+                <h2>Booking Information</h2>
+                <div class="detail-row">
+                    <div class="detail-label">Date Requested</div>
+                    <div class="detail-value">{{ booking.created_at }}</div>
+                </div>
+                {% if booking.approved_at %}
+                <div class="detail-row">
+                    <div class="detail-label">Date {{ 'Approved' if booking.status == 'Approved' else 'Rejected' }}</div>
+                    <div class="detail-value">{{ booking.approved_at }}</div>
+                </div>
+                {% endif %}
+            </div>
+
+            {% if not is_admin %}
+            <div class="actions">
+                {% if booking.status == 'Pending' or booking.status == 'Approved' %}
+                    <button class="btn btn-danger" id="cancelBtn">
+                        <i class="fas fa-times"></i> Cancel Booking
+                    </button>
+                {% endif %}
+                <a href="{{ url_for('booking') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to My Bookings
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        // Handle cancel button click
+        document.getElementById('cancelBtn')?.addEventListener('click', function() {
+            if (confirm('Are you sure you want to cancel this booking?')) {
+                fetch('{{ url_for("cancel_booking") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        booking_id: '{{ booking.id }}'
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Booking cancelled successfully!');
+                        window.location.reload();
+                    } else {
+                        alert('Failed to cancel booking: ' + (data.message || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while cancelling the booking.');
+                });
+            }
+        });
+    </script>
+</body>
+</html>
