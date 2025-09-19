@@ -1,0 +1,463 @@
+/* Optimized CSS for Barangay Baritan */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #023e8a;
+  border-radius: 10px;
+  transition: background 0.3s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #2563eb;
+}
+
+/* Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Body */
+body {
+  font-family: "Poppins", Arial, sans-serif;
+  background: url("/static/img/background.jpg") no-repeat center center fixed;
+  background-size: cover;
+  background-attachment: fixed;
+  padding-top: 70px;
+  color: #374151;
+  -webkit-font-smoothing: antialiased;
+  margin: 0;
+  min-height: 100vh;
+}
+
+/* Navigation */
+.navbar {
+  background: linear-gradient(90deg, #01306d, #023e8a);
+  color: white;
+  padding: 12px 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+
+.nav-container {
+  max-width: 1900px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 24px;
+}
+
+.logo-circle {
+  width: 50px;
+  height: 50px;
+  background-color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  transition: transform 0.3s ease;
+}
+
+.logo-circle:hover {
+  transform: rotate(6deg) scale(1.08);
+}
+
+.menu {
+  display: flex;
+  gap: 28px;
+}
+
+.menu a {
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: 0.5px;
+  transition: color 0.3s, transform 0.2s;
+}
+
+.menu a:hover {
+  color: #bfdbfe;
+  transform: translateY(-2px);
+}
+
+/* Main Content */
+.main {
+  padding: 90px 0;
+  text-align: center;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Headers */
+.headers h1, .headers h2, .headers h3 {
+  color: #00227e;
+  font-family: "Gideon Roman", serif;
+  font-weight: 500;
+  margin-bottom: 12px;
+  line-height: 1.3;
+}
+
+.headers h1 { font-size: 34px; }
+.headers h2 { font-size: 30px; }
+.headers h3 { font-size: 26px; margin-bottom: 40px; }
+
+/* Main Section */
+.main-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  margin-bottom: 50px;
+}
+
+/* Official Seals */
+.city-seal, .barangay-seal {
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
+  background: #fff;
+}
+
+.city-seal:hover, .barangay-seal:hover {
+  transform: scale(1.1) rotate(3deg);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+}
+
+.city-seal img, .barangay-seal img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Main Title */
+.title h1 {
+  font-size: 72px;
+  font-weight: 800;
+  color: #1e40af;
+  text-shadow: 2px 2px 8px rgba(0,0,0,0.2);
+  transition: color 0.3s ease, text-shadow 0.3s ease;
+}
+
+.title h1:hover {
+  color: #2563eb;
+  text-shadow: 3px 3px 14px rgba(0,0,0,0.3);
+}
+
+/* Address */
+.address h4 {
+  color: #02237c;
+  font-family: "Gideon Roman", serif;
+  font-weight: 500;
+  margin-bottom: 280px;
+  font-size: 22px;
+}
+
+/* Contact Section */
+.contact-section {
+  background-color: #f3f4f6;
+  padding: 70px 0;
+}
+
+.address-section {
+  margin-bottom: 50px;
+}
+
+.address-section h2 {
+  font-size: 24px;
+  font-weight: bold;
+  color: #023e8a;
+  margin-bottom: 20px;
+}
+
+.address-text {
+  font-size: 16px;
+  color: #374151;
+  line-height: 1.6;
+}
+
+.map-link {
+  color: #5a5a5a;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.map-link:hover {
+  text-decoration: underline;
+}
+
+/* Directory Section */
+.directory-section h2 {
+  font-size: 24px;
+  font-weight: bold;
+  color: #1e40af;
+  margin-bottom: 30px;
+}
+
+.directory-table {
+  background-color: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+}
+
+.table-header {
+  background-color: #023e8a;
+  color: white;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.header-item, .table-cell {
+  padding: 20px;
+  text-align: center;
+}
+
+.table-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  border-bottom: 1px solid #e5e7eb;
+  transition: background 0.2s;
+}
+
+.table-row:hover {
+  background: #f9fafb;
+}
+
+.table-row:last-child {
+  border-bottom: none;
+}
+
+.table-cell {
+  font-size: 15px;
+  color: #374151;
+}
+
+.table-cell:first-child {
+  font-weight: 500;
+}
+
+/* Footer */
+.footer {
+  background: linear-gradient(180deg, #374151 0%, #1f2937 50%, #111827 100%);
+  color: white;
+  padding: 60px 0 0;
+}
+
+.footer-content {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 50px;
+  margin-bottom: 50px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid #374151;
+}
+
+.footer-section h3 {
+  color: #60a5fa;
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 25px;
+  position: relative;
+}
+
+.footer-section h3:after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  width: 30px;
+  height: 2px;
+  background-color: #60a5fa;
+}
+
+.contact-info p, .office-hours p {
+  margin-bottom: 12px;
+  font-size: 15px;
+  display: flex;
+  align-items: flex-start;
+  line-height: 1.6;
+  color: #d1d5db;
+  transition: color 0.3s;
+}
+
+.contact-info p:hover, .office-hours p:hover {
+  color: #60a5fa;
+}
+
+.icon {
+  margin-right: 12px;
+  font-size: 16px;
+  margin-top: 3px;
+  color: #60a5fa;
+}
+
+.social-links {
+  display: flex;
+  gap: 15px;
+}
+
+.social-link {
+  width: 45px;
+  height: 45px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 18px;
+  color: white;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.social-link:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+  border-color: rgba(255,255,255,0.2);
+}
+
+.facebook { 
+  background: linear-gradient(45deg, #1877f2, #42a5f5);
+}
+.twitter { 
+  background: linear-gradient(45deg, #1da1f2, #42a5f5);
+}
+.instagram { 
+  background: linear-gradient(45deg, #e4405f, #f06292, #ffb74d);
+}
+
+.copyright {
+  padding: 25px 0;
+  text-align: center;
+}
+
+.copyright p {
+  font-size: 14px;
+  color: #9ca3af;
+  margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .main-section {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .title h1 {
+    font-size: 48px;
+  }
+
+  .address h4 {
+    margin-bottom: 100px;
+    font-size: 18px;
+  }
+
+  .footer-content {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 30px;
+  }
+}
+
+@media (max-width: 768px) {
+  .nav-container {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .menu {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .title h1 {
+    font-size: 36px;
+  }
+
+  .city-seal, .barangay-seal {
+    width: 90px;
+    height: 90px;
+  }
+
+  .headers h1 { font-size: 26px; }
+  .headers h2 { font-size: 22px; }
+  .headers h3 { font-size: 20px; }
+
+  .directory-table, 
+  .table-header, 
+  .table-row {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .footer-content {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .logo-circle {
+    width: 40px;
+    height: 40px;
+  }
+
+  .title h1 {
+    font-size: 28px;
+  }
+
+  .address h4 {
+    font-size: 16px;
+    margin-bottom: 60px;
+  }
+
+  .footer {
+    padding: 40px 0 0;
+  }
+
+  .footer-section h3 {
+    font-size: 18px;
+  }
+
+  .contact-info p, .office-hours p {
+    font-size: 14px;
+  }
+  
+  .header-item, .table-cell {
+    padding: 15px 10px;
+  }
+}

@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In</title>
+    <link rel="icon" type="image/png" href="/static/img/brgy_baritan_logo.png">
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .popup {
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            text-align: center;
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-weight: bold;
+            z-index: 9999;
+            min-width: 300px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            animation: slideDown 0.5s ease-out;
+        }
+
+        /* Success */
+        .popup.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        /* Error */
+        .popup.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        /* Close button */
+        .close-btn {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        @keyframes slideDown {
+            from {
+                top: -50px;
+                opacity: 0;
+            }
+            to {
+                top: 20px;
+                opacity: 1;
+            }
+        }
+
+        /* Loading overlay - FIXED CENTERING */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Loading content - PERFECTLY CENTERED */
+        .loading-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        /* Loading spinner */
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #023e8a;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Loading text */
+        .loading-text {
+            font-weight: 600;
+            color: #023e8a;
+            font-size: 1.2rem;
+            margin: 0;
+        }
+
+        /* Form container */
+        .container {
+            position: relative;
+            transition: filter 0.3s ease;
+        }
+
+        .container.blur {
+            filter: blur(2px);
+        }
+
+        /* Submit button */
+        .submit-btn {
+            position: relative;
+        }
+
+        .btn-loading {
+            position: relative;
+            color: transparent;
+        }
+
+        .btn-loading::after {
+            content: "";
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            top: 50%;
+            left: 50%;
+            margin: -10px 0 0 -10px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        /* Auth links row: Sign Up left, Forgot Password right */
+        .auth-links {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 5px;
+            margin-top: 1px;    /* closer to the password field */
+            margin-bottom: 16px; /* keep comfy space before the Sign In button */
+        }
+        .auth-links p {
+            margin: 0;
+        }
+        /* Add a bit of space above the button (in case structure changes) */
+        .submit-btn {
+            margin-top: 5px;
+        }
+        @media (max-width: 480px) {
+            .auth-links {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .auth-links p {
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Error Popup Container -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="popup {{ 'success' if category=='success' else 'error' }}">
+        {{ message }}
+        <span class="close-btn" onclick="this.parentElement.remove()">&times;</span>
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <!-- Loading Overlay - NOW PERFECTLY CENTERED -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p class="loading-text">Signing in...</p>
+        </div>
+    </div>
+
+    <div class="container" id="formContainer">
+        <h2>Sign In</h2>
+        <form action="{{ url_for('signin') }}" method="POST" id="signinForm">
+            <!-- Email -->
+            <div class="input-group">
+                <i class="fas fa-envelope icon"></i>
+                <input type="email" name="email" placeholder="Email" required>
+            </div>
+
+            <!-- Password -->
+            <div class="input-group">
+                <i class="fas fa-lock icon"></i>
+                <input type="password" name="password" placeholder="Password" id="passwordField" required>
+                <i class="fa-solid fa-eye toggle-password" id="togglePassword"></i>
+            </div>
+            <div class="auth-links">
+                <p><a href="{{ url_for('forgot_password') }}">Forgot Password?</a></p>
+                <p><a href="{{ url_for('signup') }}">Don't have an account?</a></p>
+            </div>
+            <button type="submit" class="submit-btn" id="submitBtn">Sign In</button>
+            <p><a href="{{ url_for('admin_login') }}">Are you an admin?</a></p>
+        </form>
+    </div>
+
+    <script>
+        // Toggle password visibility
+        const togglePassword = document.querySelector('#togglePassword');
+        const passwordField = document.querySelector('#passwordField');
+
+        togglePassword.addEventListener('click', function () {
+            const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordField.setAttribute('type', type);
+            this.classList.toggle('fa-eye');
+            this.classList.toggle('fa-eye-slash');
+        });
+
+        // Auto-hide error messages after 5 seconds
+        document.querySelectorAll('.popup').forEach(popup => {
+            setTimeout(() => {
+                popup.style.opacity = '0';
+                setTimeout(() => popup.remove(), 300);
+            }, 5000);
+        });
+
+        // Loading effect for form submission
+        document.getElementById('signinForm').addEventListener('submit', function(e) {
+            const submitBtn = document.getElementById('submitBtn');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const formContainer = document.getElementById('formContainer');
+            
+            // Show loading state
+            submitBtn.classList.add('btn-loading');
+            loadingOverlay.classList.add('active');
+            formContainer.classList.add('blur');
+        });
+
+        // Close popup when clicking outside
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('popup')) {
+                e.target.style.opacity = '0';
+                setTimeout(() => e.target.remove(), 300);
+            }
+        });
+    </script>
+</body>
+
+</html>
