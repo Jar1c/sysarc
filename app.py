@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, make_response
 from supabase import create_client, Client
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
@@ -6,8 +6,11 @@ import uuid
 import os
 import re  # Moved to top
 import smtplib
+import jwt
+from functools import wraps
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from flask_cors import CORS
 
 # Email Configuration
 EMAIL_HOST = "smtp.gmail.com"  # o kung ano ang SMTP mo
@@ -16,7 +19,31 @@ EMAIL_USER = "brgybaritan1@gmail.com"  # palitan mo
 EMAIL_PASSWORD = "ogqkndywpqznqout"  # gamitin ang App Password, hindi yung regular password
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24) 
+app.secret_key = os.urandom(24)
+CORS(app, supports_credentials=True)  # Enable CORS for all routes
+
+# JWT Secret Key - In production, use a secure way to store this
+app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'your-secret-key-here')
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
+
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+        if 'Authorization' in request.headers:
+            token = request.headers['Authorization'].split(" ")[1] if 'Bearer' in request.headers['Authorization'] else None
+        
+        if not token:
+            return jsonify({'message': 'Token is missing!'}), 401
+            
+        try:
+            data = jwt.decode(token, app.config['JWT_SECRET_KEY'], algorithms=["HS256"])
+            current_user = data['user_id']
+        except:
+            return jsonify({'message': 'Token is invalid!'}), 401
+            
+        return f(current_user, *args, **kwargs)
+    return decorated
 
 # Constants
 SUPABASE_URL = "https://vehpeqlxmucsgasedcuh.supabase.co"
@@ -469,8 +496,10 @@ def verify_success():
 @app.route('/signin', methods=['GET', 'POST'])
 def signin():
     if request.method == 'GET':
+        if "user" in session:
+            return redirect(url_for("booking"))
         return render_template("signin.html")
-    
+        
     # Process POST request
     email = request.form['email'].strip()
     password = request.form['password']
@@ -1713,39 +1742,33 @@ def signout():
 
 
 @app.route('/mark_notifications_as_read', methods=['POST'])
-def mark_notifications_as_read():
-    if "user" not in session:
-        return jsonify({"success": False, "message": "Please login first!"})
-
+@token_required
+def mark_notifications_as_read(current_user):
     try:
-        user_id = session["user"]["id"]
         supabase.table("notifications") \
             .update({"is_read": True}) \
-            .eq("user_id", user_id) \
+            .eq("user_id", current_user) \
             .eq("is_read", False) \
             .execute()
 
         return jsonify({"success": True, "message": "Notifications marked as read"})
     except Exception as e:
-        return jsonify({"success": False, "message": f"Error: {str(e)}"})
+        return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500
     
 
 @app.route('/get_unread_count', methods=['GET'])
-def get_unread_count():
-    if "user" not in session:
-        return jsonify({"success": False, "unread_count": 0})
-
+@token_required
+def get_unread_count(current_user):
     try:
-        user_id = session["user"]["id"]
         unread_notif_data = supabase.table("notifications") \
             .select("id") \
-            .eq("user_id", user_id) \
+            .eq("user_id", current_user) \
             .eq("is_read", False) \
             .execute()
         unread_count = len(unread_notif_data.data) if unread_notif_data.data else 0
         return jsonify({"success": True, "unread_count": unread_count})
     except Exception as e:
-        return jsonify({"success": False, "unread_count": 0})
+        return jsonify({"success": False, "message": str(e), "unread_count": 0}), 500
 
 
 

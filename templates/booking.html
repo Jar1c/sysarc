@@ -2038,42 +2038,64 @@
             `;
             document.head.appendChild(style);
             
+            // Function to get the JWT token from cookies
+            function getToken() {
+                const value = `; ${document.cookie}`;
+                const parts = value.split(`; auth_token=`);
+                if (parts.length === 2) return parts.pop().split(';').shift();
+                return null;
+            }
+
             // Function to update notification count
             function updateNotificationCount() {
-                fetch('/get_unread_count')
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            const bellIcon = document.querySelector('.notification-bell');
-                            const notificationCount = data.unread_count || 0;
-                            
-                            // Update or create badge
-                            if (notificationCount > 0) {
-                                let badge = bellIcon.querySelector('.notification-badge');
-                                if (!badge) {
-                                    badge = document.createElement('span');
-                                    badge.className = 'notification-badge';
-                                    badge.style.cssText = 'position: absolute; top: -5px; right: -5px; background-color: var(--accent); color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.75rem;';
-                                    bellIcon.appendChild(badge);
-                                }
-                                badge.textContent = notificationCount > 9 ? '9+' : notificationCount;
-                            } else {
-                                // Remove badge if no unread notifications
-                                const badge = bellIcon.querySelector('.notification-badge');
-                                if (badge) {
-                                    badge.remove();
-                                }
+                const token = getToken();
+                if (!token) return;
+
+                fetch('/get_unread_count', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'same-origin'
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        const bellIcon = document.querySelector('.notification-bell');
+                        if (!bellIcon) return;
+                        
+                        const notificationCount = data.unread_count || 0;
+                        
+                        // Update or create badge
+                        if (notificationCount > 0) {
+                            let badge = bellIcon.querySelector('.notification-badge');
+                            if (!badge) {
+                                badge = document.createElement('span');
+                                badge.className = 'notification-badge';
+                                badge.style.cssText = 'position: absolute; top: -5px; right: -5px; background-color: var(--accent); color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.75rem;';
+                                bellIcon.appendChild(badge);
+                            }
+                            badge.textContent = notificationCount > 9 ? '9+' : notificationCount;
+                        } else {
+                            // Remove badge if no unread notifications
+                            const badge = bellIcon.querySelector('.notification-badge');
+                            if (badge) {
+                                badge.remove();
                             }
                         }
-                    })
-                    .catch(error => console.error('Error fetching notification count:', error));
+                    }
+                })
+                .catch(error => console.error('Error fetching notification count:', error));
             }
+            
+            // Initial fetch after a short delay to ensure DOM is ready
+            setTimeout(updateNotificationCount, 1000);
             
             // Check for new notifications every 30 seconds
             setInterval(updateNotificationCount, 30000);
-            
-            // Initial fetch
-            updateNotificationCount();
             const bellIcon = document.querySelector('.notification-bell');
             const dropdown = document.getElementById('notificationDropdown');
 
@@ -2082,20 +2104,22 @@
             // Toggle dropdown on click
             bellIcon.addEventListener('click', function (e) {
                 e.stopPropagation();
-                dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-
-                // Toggle dropdown and mark as read when opening
                 const isVisible = dropdown.style.display === 'block';
                 dropdown.style.display = isVisible ? 'none' : 'block';
 
                 // Mark all as read when opening
                 if (!isVisible) {
+                    const token = getToken();
+                    if (!token) return;
+
                     fetch('/mark_notifications_as_read', {
                         method: 'POST',
                         headers: {
+                            'Authorization': `Bearer ${token}`,
                             'Content-Type': 'application/json',
                             'X-Requested-With': 'XMLHttpRequest'
                         },
+                        credentials: 'same-origin',
                         body: JSON.stringify({})
                     })
                     .then(response => response.json())
