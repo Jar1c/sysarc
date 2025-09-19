@@ -1,5 +1,5 @@
 Flask==2.3.3
-supabase==2.3.4
+supabase==1.0.3
 Werkzeug==2.3.7
 python-dotenv==1.0.0
 gunicorn==21.2.0
@@ -9,7 +9,7 @@ email-validator==2.1.0.post1
 python-dateutil==2.8.2
 pytz==2023.3.post1
 postgrest-py==0.10.6
-realtime==2.7.0
+realtime==1.1.0
 websockets==11.0.3
 Jinja2==3.1.2
 itsdangerous==2.1.2
