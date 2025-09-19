@@ -2038,37 +2038,42 @@
             `;
             document.head.appendChild(style);
             
-            // Auto-refresh notification count every 30 seconds
-            setInterval(function () {
+            // Function to update notification count
+            function updateNotificationCount() {
                 fetch('/get_unread_count')
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
                             const bellIcon = document.querySelector('.notification-bell');
-                            const existingBadge = bellIcon.querySelector('.notification-badge');
-
-                            if (data.unread_count > 0) {
-                                // If badge doesn't exist, create it
-                                if (!existingBadge) {
-                                    const badge = document.createElement('span');
+                            const notificationCount = data.unread_count || 0;
+                            
+                            // Update or create badge
+                            if (notificationCount > 0) {
+                                let badge = bellIcon.querySelector('.notification-badge');
+                                if (!badge) {
+                                    badge = document.createElement('span');
                                     badge.className = 'notification-badge';
                                     badge.style.cssText = 'position: absolute; top: -5px; right: -5px; background-color: var(--accent); color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.75rem;';
-                                    badge.textContent = data.unread_count;
                                     bellIcon.appendChild(badge);
-                                } else {
-                                    // Update existing badge
-                                    existingBadge.textContent = data.unread_count;
                                 }
+                                badge.textContent = notificationCount > 9 ? '9+' : notificationCount;
                             } else {
-                                // Remove badge if count is 0
-                                if (existingBadge) {
-                                    existingBadge.remove();
+                                // Remove badge if no unread notifications
+                                const badge = bellIcon.querySelector('.notification-badge');
+                                if (badge) {
+                                    badge.remove();
                                 }
                             }
                         }
                     })
-                    .catch(error => console.error('Error fetching unread count:', error));
-            }, 30000); // 30 seconds
+                    .catch(error => console.error('Error fetching notification count:', error));
+            }
+            
+            // Check for new notifications every 30 seconds
+            setInterval(updateNotificationCount, 30000);
+            
+            // Initial fetch
+            updateNotificationCount();
             const bellIcon = document.querySelector('.notification-bell');
             const dropdown = document.getElementById('notificationDropdown');
 
@@ -2079,30 +2084,35 @@
                 e.stopPropagation();
                 dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
 
+                // Toggle dropdown and mark as read when opening
+                const isVisible = dropdown.style.display === 'block';
+                dropdown.style.display = isVisible ? 'none' : 'block';
+
                 // Mark all as read when opening
-                if (dropdown.style.display === 'block') {
+                if (!isVisible) {
                     fetch('/mark_notifications_as_read', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
                         },
                         body: JSON.stringify({})
                     })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                // Remove badge
-                                const badge = bellIcon.querySelector('.notification-badge');
-                                if (badge) {
-                                    badge.remove();
-                                }
-                                // Remove unread background
-                                document.querySelectorAll('.notification-item.unread').forEach(item => {
-                                    item.classList.remove('unread');
-                                });
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Remove badge
+                            const badge = bellIcon.querySelector('.notification-badge');
+                            if (badge) {
+                                badge.remove();
                             }
-                        })
-                        .catch(error => console.error('Error:', error));
+                            // Remove unread background
+                            document.querySelectorAll('.notification-item.unread').forEach(item => {
+                                item.classList.remove('unread');
+                            });
+                        }
+                    })
+                    .catch(error => console.error('Error marking notifications as read:', error));
                 }
             });
 

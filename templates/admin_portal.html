@@ -2171,6 +2171,33 @@
             });
         }
 
+        // Function to fetch and update notification count
+        function updateNotificationCount() {
+            fetch('/get_unread_count')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const badge = document.querySelector('.notification-badge');
+                        const notificationCount = data.unread_count || 0;
+                        
+                        // Update or create badge
+                        if (notificationCount > 0) {
+                            if (!badge) {
+                                const newBadge = document.createElement('span');
+                                newBadge.className = 'notification-badge';
+                                newBadge.textContent = notificationCount > 9 ? '9+' : notificationCount;
+                                document.querySelector('.notification-bell').appendChild(newBadge);
+                            } else {
+                                badge.textContent = notificationCount > 9 ? '9+' : notificationCount;
+                            }
+                        } else if (badge) {
+                            badge.remove();
+                        }
+                    }
+                })
+                .catch(error => console.error('Error fetching notification count:', error));
+        }
+
         // Admin Notification Dropdown Logic
         document.addEventListener('DOMContentLoaded', function () {
             // Initialize notification timestamps
@@ -2178,6 +2205,12 @@
             
             // Update timestamps every minute
             setInterval(updateNotificationTimes, 60000);
+            
+            // Check for new notifications every 30 seconds
+            setInterval(updateNotificationCount, 30000);
+            
+            // Initial fetch
+            updateNotificationCount();
             const bellIcon = document.querySelector('.notification-bell');
             const dropdown = document.getElementById('adminNotificationDropdown');
 
