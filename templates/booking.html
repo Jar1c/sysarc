@@ -2024,33 +2024,52 @@
                 }, 5000);
             }
             
-            // Function to format relative time
+            // Function to format relative time with timezone handling
             function getTimeAgo(dateString) {
+                // Parse the date string and adjust for timezone
                 const date = new Date(dateString);
+                
+                // Get the timezone offset in minutes and convert to milliseconds
+                const timezoneOffset = date.getTimezoneOffset() * 60000;
+                
+                // Adjust the date by adding the timezone offset
+                const adjustedDate = new Date(date.getTime() + timezoneOffset);
                 const now = new Date();
-                const seconds = Math.floor((now - date) / 1000);
                 
-                let interval = Math.floor(seconds / 31536000);
-                if (interval > 1) return interval + ' years ago';
-                if (interval === 1) return 'a year ago';
+                // Calculate the difference in seconds
+                const seconds = Math.floor((now - adjustedDate) / 1000);
                 
-                interval = Math.floor(seconds / 2592000);
-                if (interval > 1) return interval + ' months ago';
-                if (interval === 1) return 'a month ago';
+                // If the date is in the future (shouldn't happen, but just in case)
+                if (seconds < 0) return 'just now';
                 
-                interval = Math.floor(seconds / 86400);
-                if (interval > 1) return interval + ' days ago';
-                if (interval === 1) return 'yesterday';
+                // Less than a minute
+                if (seconds < 60) return 'just now';
                 
-                interval = Math.floor(seconds / 3600);
-                if (interval > 1) return interval + ' hours ago';
-                if (interval === 1) return 'an hour ago';
+                // 1-59 minutes
+                const minutes = Math.floor(seconds / 60);
+                if (minutes < 60) {
+                    return minutes === 1 ? 'a minute ago' : `${minutes} minutes ago`;
+                }
                 
-                interval = Math.floor(seconds / 60);
-                if (interval > 1) return interval + ' minutes ago';
-                if (interval === 1) return 'a minute ago';
+                // 1-23 hours
+                const hours = Math.floor(seconds / 3600);
+                if (hours < 24) {
+                    return hours === 1 ? 'an hour ago' : `${hours} hours ago`;
+                }
                 
-                return 'just now';
+                // 1-30 days
+                const days = Math.floor(seconds / 86400);
+                if (days === 1) return 'yesterday';
+                if (days < 30) return `${days} days ago`;
+                
+                // 1-12 months
+                const months = Math.floor(days / 30);
+                if (months === 1) return 'a month ago';
+                if (months < 12) return `${months} months ago`;
+                
+                // 1+ years
+                const years = Math.floor(days / 365);
+                return years === 1 ? 'a year ago' : `${years} years ago`;
             }
 
             // Add animation styles for notifications
