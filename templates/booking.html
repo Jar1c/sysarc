@@ -1186,87 +1186,11 @@
         }
 
         @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
         }
-
-        .filter-select {
-            width: 100%;
-        }
-
-    @media (max-width: 480px) {
-        .sidebar {
-            width: 100%;
-            left: -100%;
-        }
-
-        .sidebar.active {
-            left: 0;
-            width: 100%;
-        }
-
-        .header {
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .booking-table {
-            font-size: 0.8rem;
-        }
-
-        .booking-table th,
-        .booking-table td {
-            padding: 8px 6px;
-        }
-
-        .modal-content {
-            padding: 20px;
-        }
-
-        .modal-buttons {
-            flex-direction: column;
-        }
-
-        /* Improve touch targets for mobile */
-        .sidebar-menu a,
-        .btn,
-        .btn-cancel,
-        .btn-view {
-            min-height: 44px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        /* Adjust flash messages for mobile */
-        .flash {
-            min-width: unset;
-            width: 90%;
-            margin: 0 5%;
-            font-size: 0.9rem;
-            padding: 12px 20px;
-        }
-    }
-
-    /* Loading Animation */
-    .loading {
-        display: inline-block;
-        width: 20px;
-        height: 20px;
-        border: 3px solid rgba(255, 255, 255, 0.3);
-        border-radius: 50%;
-        border-top-color: white;
-        animation: spin 1s ease-in-out infinite;
-    }
-</style>
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Court and Equipment Booking System</title>
-    <link rel="icon" type="image/png" href="/static/img/brgy_baritan_logo.png">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
+    </style>
 
 <body>
     <!-- Sidebar Dashboard -->
@@ -1305,9 +1229,7 @@
             <!-- Notification Bell -->
             <div class="notification-bell">
                 <i class="fas fa-bell" style="color: #023e8a;"></i> <!-- ✅ DITO DIN -->
-                {% if unread_count > 0 %}
-                <span class="notification-badge">{{ unread_count }}</span>
-                {% endif %}
+                <span class="notification-badge" style="display: none;"></span>
             </div>
         </div>
 
@@ -1370,15 +1292,15 @@
                 <div class="booking-options">
                     <div class="booking-option">
                         <i class="fa-solid fa-calendar"></i>
-                        <h3>Court and equipment booking</h3>
-                        <p>Reserve Court time for your upcoming events</p>
+                        <h3>COURT AND EQUIPMENT BOOKING</h3>
+                        <p>COURT AND EVENT NEEDS BOOKING</p>
                         <a href="{{ url_for('booking2_page') }}" class="btn">Book Now</a>
                     </div>
 
                     <div class="booking-option">
                         <i class="fas fa-basketball-ball"></i>
-                        <h3>Book equipment only</h3>
-                        <p>Book sports equipment for your activities</p>
+                        <h3>BOOK EQUIPMENT ONLY</h3>
+                        <p>SUPPLIES AND EQUIPMENT BOOKING</p>
                         <a href="{{ url_for('booking3') }}" class="btn">Book Now</a>
                     </div>
                 </div>
@@ -1621,6 +1543,7 @@
             </div>
         </div>
     </div>
+
     <style>
         /* Password Form Styles */
         .password-title {
@@ -2080,7 +2003,9 @@
                 setTimeout(() => {
                     notification.style.animation = 'slideOut 0.3s forwards';
                     setTimeout(() => {
-                        notificationContainer.removeChild(notification);
+                        if (notification.parentNode) {
+                            notification.parentNode.removeChild(notification);
+                        }
                     }, 300);
                 }, 5000);
             }
@@ -2099,37 +2024,106 @@
             `;
             document.head.appendChild(style);
             
-            // Auto-refresh notification count every 30 seconds
-            setInterval(function () {
-                fetch('/get_unread_count')
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            const bellIcon = document.querySelector('.notification-bell');
-                            const existingBadge = bellIcon.querySelector('.notification-badge');
+            // Function to format relative time for notifications
+            function getTimeAgo(dateString) {
+                if (!dateString) return 'just now';
+                
+                try {
+                    const date = new Date(dateString);
+                    if (isNaN(date.getTime())) return 'just now';
+                    
+                    const now = new Date();
+                    const seconds = Math.floor((now - date) / 1000);
+                    
+                    if (seconds < 0) return 'just now';
+                    if (seconds < 60) return 'just now';
+                    
+                    const minutes = Math.floor(seconds / 60);
+                    if (minutes < 60) {
+                        return minutes === 1 ? 'a minute ago' : `${minutes} minutes ago`;
+                    }
+                    
+                    const hours = Math.floor(seconds / 3600);
+                    if (hours < 24) {
+                        return hours === 1 ? 'an hour ago' : `${hours} hours ago`;
+                    }
+                    
+                    const days = Math.floor(seconds / 86400);
+                    if (days === 1) return 'yesterday';
+                    if (days < 30) return `${days} days ago`;
+                    
+                    const months = Math.floor(days / 30);
+                    if (months === 1) return 'a month ago';
+                    if (months < 12) return `${months} months ago`;
+                    
+                    const years = Math.floor(days / 365);
+                    return years === 1 ? 'a year ago' : `${years} years ago`;
+                } catch (e) {
+                    console.error('Error in getTimeAgo:', e);
+                    return 'just now';
+                }
+            }
+            
+            // Function to get the JWT token from cookies
+            function getToken() {
+                const value = `; ${document.cookie}`;
+                const parts = value.split(`; auth_token=`);
+                if (parts.length === 2) return parts.pop().split(';').shift();
+                return null;
+            }
 
-                            if (data.unread_count > 0) {
-                                // If badge doesn't exist, create it
-                                if (!existingBadge) {
-                                    const badge = document.createElement('span');
-                                    badge.className = 'notification-badge';
-                                    badge.style.cssText = 'position: absolute; top: -5px; right: -5px; background-color: var(--accent); color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.75rem;';
-                                    badge.textContent = data.unread_count;
-                                    bellIcon.appendChild(badge);
-                                } else {
-                                    // Update existing badge
-                                    existingBadge.textContent = data.unread_count;
-                                }
-                            } else {
-                                // Remove badge if count is 0
-                                if (existingBadge) {
-                                    existingBadge.remove();
-                                }
+            // Function to update notification count
+            function updateNotificationCount() {
+                const token = getToken();
+                if (!token) return;
+
+                fetch('/get_unread_count', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'same-origin'
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        const bellIcon = document.querySelector('.notification-bell');
+                        if (!bellIcon) return;
+                        
+                        const notificationCount = data.unread_count || 0;
+                        
+                        // Update or create badge
+                        if (notificationCount > 0) {
+                            let badge = bellIcon.querySelector('.notification-badge');
+                            if (!badge) {
+                                badge = document.createElement('span');
+                                badge.className = 'notification-badge';
+                                badge.style.cssText = 'position: absolute; top: -5px; right: -5px; background-color: var(--accent); color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.75rem;';
+                                bellIcon.appendChild(badge);
+                            }
+                            badge.textContent = notificationCount > 9 ? '9+' : notificationCount;
+                            // Ensure badge is visible if it existed hidden in markup
+                            badge.style.display = 'flex';
+                        } else {
+                            // Remove badge if no unread notifications
+                            const badge = bellIcon.querySelector('.notification-badge');
+                            if (badge) {
+                                badge.remove();
                             }
                         }
-                    })
-                    .catch(error => console.error('Error fetching unread count:', error));
-            }, 30000); // 30 seconds
+                    }
+                })
+                .catch(error => console.error('Error fetching notification count:', error));
+            }
+            
+            // Initial fetch after a short delay to ensure DOM is ready
+            setTimeout(updateNotificationCount, 1000);
+            
+            // Check for new notifications every 30 seconds
+            setInterval(updateNotificationCount, 30000);
             const bellIcon = document.querySelector('.notification-bell');
             const dropdown = document.getElementById('notificationDropdown');
 
@@ -2138,32 +2132,39 @@
             // Toggle dropdown on click
             bellIcon.addEventListener('click', function (e) {
                 e.stopPropagation();
-                dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+                const isVisible = dropdown.style.display === 'block';
+                dropdown.style.display = isVisible ? 'none' : 'block';
 
                 // Mark all as read when opening
-                if (dropdown.style.display === 'block') {
+                if (!isVisible) {
+                    const token = getToken();
+                    if (!token) return;
+
                     fetch('/mark_notifications_as_read', {
                         method: 'POST',
                         headers: {
+                            'Authorization': `Bearer ${token}`,
                             'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
                         },
+                        credentials: 'same-origin',
                         body: JSON.stringify({})
                     })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                // Remove badge
-                                const badge = bellIcon.querySelector('.notification-badge');
-                                if (badge) {
-                                    badge.remove();
-                                }
-                                // Remove unread background
-                                document.querySelectorAll('.notification-item.unread').forEach(item => {
-                                    item.classList.remove('unread');
-                                });
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Remove badge
+                            const badge = bellIcon.querySelector('.notification-badge');
+                            if (badge) {
+                                badge.remove();
                             }
-                        })
-                        .catch(error => console.error('Error:', error));
+                            // Remove unread background
+                            document.querySelectorAll('.notification-item.unread').forEach(item => {
+                                item.classList.remove('unread');
+                            });
+                        }
+                    })
+                    .catch(error => console.error('Error marking notifications as read:', error));
                 }
             });
 
@@ -2174,15 +2175,171 @@
                 }
             });
 
+            // Function to update the notification badge
+            function updateBadge(decrease = true) {
+                const bellIcon = document.querySelector('.notification-bell');
+                if (!bellIcon) return;
+                
+                // Get current count from badge
+                let badge = bellIcon.querySelector('.notification-badge');
+                
+                if (decrease) {
+                    if (badge) {
+                        const currentCount = parseInt(badge.textContent);
+                        if (currentCount > 1) {
+                            badge.textContent = currentCount - 1;
+                        } else {
+                            badge.remove();
+                        }
+                    }
+                } else {
+                    // Just update the count without decreasing
+                    const unreadItems = document.querySelectorAll('.notification-item.unread').length;
+                    if (unreadItems > 0) {
+                        if (!badge) {
+                            badge = document.createElement('span');
+                            badge.className = 'notification-badge';
+                            badge.style.cssText = 'position: absolute; top: -5px; right: -5px; background-color: var(--accent); color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.75rem;';
+                            bellIcon.appendChild(badge);
+                        }
+                        badge.textContent = unreadItems > 9 ? '9+' : unreadItems;
+                        // Ensure badge is visible if it existed hidden in markup
+                        badge.style.display = 'flex';
+                    } else if (badge) {
+                        badge.remove();
+                    }
+                }
+            }
+
             // Handle click on notification item
             document.querySelectorAll('.notification-item').forEach(item => {
-                item.addEventListener('click', function () {
+                item.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    const notificationId = this.getAttribute('data-notification-id');
                     const link = this.getAttribute('data-link');
-                    if (link) {
-                        window.location.href = link;
+                    
+                    // Mark as read if not already read
+                    if (this.classList.contains('unread')) {
+                        this.classList.remove('unread');
+                        updateBadge(false); // Update badge without decreasing
+                        
+                        const token = getToken();
+                        if (token) {
+                            fetch('/mark_notification_as_read', {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': `Bearer ${token}`,
+                                    'Content-Type': 'application/json',
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                },
+                                credentials: 'same-origin',
+                                body: JSON.stringify({ notification_id: notificationId })
+                            })
+                            .then(response => response.json())
+                            .catch(error => console.error('Error marking notification as read:', error));
+                        }
                     }
+                    
+                    // If link points to booking details, show modal styled like your screenshot
+                    const detailsModal = document.getElementById('detailsModal');
+                    const detailsContent = document.getElementById('bookingDetailsContent');
+                    if (link && /\/booking_details\//.test(link) && detailsModal && detailsContent) {
+                        // Hide dropdown while modal is open
+                        dropdown.style.display = 'none';
+                        detailsContent.innerHTML = '<div style="text-align:center;padding:20px;"><span class="loading"></span> Loading details...</div>';
+                        detailsModal.style.display = 'flex';
+
+                        fetch(link)
+                            .then(r => r.json())
+                            .then(data => {
+                                if (data && data.success && data.data) {
+                                    renderBookingDetailsModal(data.data);
+                                } else {
+                                    detailsContent.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Error loading booking details</p></div>';
+                                }
+                            })
+                            .catch(() => {
+                                detailsContent.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Error loading booking details</p></div>';
+                            });
+                        return; // prevent immediate navigation
+                    }
+
+                    // Fallback: navigate to the link if it exists
+                    if (link) window.location.href = link;
                 });
             });
+
+            // Minimal renderer to match your existing booking details modal style
+            function renderBookingDetailsModal(booking) {
+                const detailsContent = document.getElementById('bookingDetailsContent');
+                if (!detailsContent) return;
+
+                let equipmentHTML = '';
+                if (booking.equipment_list && booking.equipment_list.length > 0) {
+                    booking.equipment_list.forEach(item => {
+                        let emoji = '📦';
+                        if (item.category_id === 'cat1') emoji = '🏕️';
+                        else if (item.category_id === 'cat2') emoji = '🪑';
+                        else if (item.category_id === 'cat3') emoji = '⚽';
+                        else if (item.category_id === 'cat4') emoji = '🎤';
+                        else if (item.category_id === 'cat5') emoji = '🍳';
+                        equipmentHTML += `<li>${emoji} ${item.name}: ${item.quantity} pcs</li>`;
+                    });
+                } else {
+                    equipmentHTML = '<li>No equipment specified</li>';
+                }
+
+                let userName = 'User #' + booking.user_id;
+                if (booking.users) {
+                    userName = `${booking.users.first_name} ${booking.users.last_name}`;
+                } else if (booking.first_name && booking.last_name) {
+                    userName = `${booking.first_name} ${booking.last_name}`;
+                }
+
+                detailsContent.innerHTML = `
+        <div class="booking-detail">
+            <span class="detail-label">Ticket ID:</span>
+            <span class="detail-value">${booking.ticket_number}</span>
+        </div>
+        <div class="booking-detail">
+            <span class="detail-label">User:</span>
+            <span class="detail-value">${userName}</span>
+        </div>
+        <div class="booking-detail">
+            <span class="detail-label">Event Type:</span>
+            <span class="detail-value">${booking.event_type || ''}</span>
+        </div>
+        <div class="booking-detail">
+            <span class="detail-label">Event Date:</span>
+            <span class="detail-value">${booking.event_date || ''}</span>
+        </div>
+        <div class="booking-detail">
+            <span class="detail-label">Booking Date:</span>
+            <span class="detail-value">${booking.booking_date || ''}</span>
+        </div>
+        <div class="booking-detail">
+            <span class="detail-label">Status:</span>
+            <span class="detail-value"><span class="status-badge ${booking.status === 'Pending' ? 'status-pending' : booking.status === 'Approved' || booking.status === 'Completed' ? 'status-approved' : booking.status === 'Cancelled' ? 'status-cancelled' : ''}">${booking.status || ''}</span></span>
+        </div>
+        <div class="booking-detail">
+            <span class="detail-label">Contact Number:</span>
+            <span class="detail-value">${booking.contact_number || ''}</span>
+        </div>
+        <div class="booking-detail">
+            <span class="detail-label">Email:</span>
+            <span class="detail-value">${booking.email || ''}</span>
+        </div>
+        <div class="booking-detail">
+            <span class="detail-label">Equipment:</span>
+            <span class="detail-value" style="flex: 1;">
+                <ul class="equipment-list" style="margin-top: 8px;">${equipmentHTML}</ul>
+            </span>
+        </div>
+        `;
+            }
+            
+            // Update badge on page load
+            updateBadge(false);
         });
 
         class BookingSystemUI {

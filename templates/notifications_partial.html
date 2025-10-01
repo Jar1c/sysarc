@@ -4,7 +4,11 @@
         <div class="notif-item {% if not notif.is_read %}unread{% endif %}" style="padding: 20px; border-bottom: 1px solid #eee; background: #fafafa; border-radius: 8px; margin-bottom: 10px; transition: background 0.3s;">
             <div>{{ notif.message }}</div>
             {% if notif.link %}
-            <a href="{{ notif.link }}" style="display: inline-block; background: #023e8a; color: white; padding: 8px 16px; text-decoration: none; border-radius: 20px; font-size: 0.9rem; margin-top: 10px; transition: background 0.3s;">
+            <a href="#" 
+               class="view-booking-details" 
+               data-booking-id="{{ notif.link.split('/').pop() }}"
+               style="display: inline-block; background: #023e8a; color: white; padding: 8px 16px; text-decoration: none; border-radius: 20px; font-size: 0.9rem; margin-top: 10px; transition: background 0.3s;"
+               onclick="event.preventDefault(); event.stopPropagation(); return false;">
                 View Details
             </a>
             {% endif %}

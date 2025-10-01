@@ -475,24 +475,12 @@
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="fullName">Full Name <span class="required">*</span></label>
-                            <input type="text" id="fullName" name="full_name" placeholder="Enter your full name"
-                                required>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="phone">Phone Number <span class="required">*</span></label>
-                            <input type="tel" id="phone" name="phone" placeholder="Enter your phone number" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="email">Email <span class="required">*</span></label>
-                            <input type="email" id="email" name="email" placeholder="Enter your email" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="address">Address</label>
-                            <input type="text" id="address" name="address" placeholder="Enter your address">
+                            <label for="phone">Phone Number <span class="required">*</span> <small>(11 digits only)</small></label>
+                            <input type="tel" id="phone" name="phone" placeholder="Enter 11-digit phone number" 
+                                   pattern="\d{11}" title="Please enter exactly 11 digits" required>
+                            <div id="phoneError" class="error-message" style="color: red; display: none;">
+                                Please enter exactly 11 digits 
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -576,18 +564,55 @@
             document.body.classList.remove('form-disabled');
         }
 
+        // Phone number validation
+        const phoneInput = document.getElementById('phone');
+        const phoneError = document.getElementById('phoneError');
+        
+        // Restrict input to numbers only
+        phoneInput.addEventListener('input', function(e) {
+            // Remove any non-digit characters
+            this.value = this.value.replace(/\D/g, '');
+            
+            // Validate length and show/hide error
+            if (this.value.length > 11) {
+                this.value = this.value.slice(0, 11); // Limit to 11 digits
+            }
+            
+            if (this.value.length > 0 && this.value.length !== 11) {
+                phoneError.style.display = 'block';
+                this.style.borderColor = 'red';
+            } else {
+                phoneError.style.display = 'none';
+                this.style.borderColor = this.value ? '#ddd' : 'var(--accent-color)';
+            }
+        });
+        
         // Form validation
         document.getElementById('bookingForm').addEventListener('submit', function (e) {
             const requiredFields = [
                 document.getElementById('eventDate'),
-                document.getElementById('fullName'),
-                document.getElementById('phone'),
-                document.getElementById('email')
+                phoneInput
             ];
 
             let isValid = true;
+            const phoneNumber = phoneInput.value.trim();
 
+            // Validate phone number
+            if (phoneNumber.length !== 11 || !/^\d+$/.test(phoneNumber)) {
+                phoneError.style.display = 'block';
+                phoneInput.style.borderColor = 'red';
+                isValid = false;
+                phoneInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                phoneInput.focus();
+            } else {
+                phoneError.style.display = 'none';
+                phoneInput.style.borderColor = '#ddd';
+            }
+
+            // Validate other required fields
             requiredFields.forEach(field => {
+                if (field === phoneInput) return; // Skip phone as it's already validated
+                
                 if (!field.value.trim()) {
                     isValid = false;
                     field.style.borderColor = 'var(--accent-color)';
@@ -598,7 +623,11 @@
 
             if (!isValid) {
                 e.preventDefault();
-                alert('Please fill in all required fields marked with *.');
+                if (phoneNumber.length !== 11) {
+                    alert('Please enter a valid 11-digit phone number.');
+                } else {
+                    alert('Please fill in all required fields marked with *.');
+                }
                 return;
             }
 

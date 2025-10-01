@@ -708,6 +708,56 @@ def booking_details(booking_id):
         return jsonify({"success": False, "message": str(e)}), 500
 
 
+@app.get('/get_unread_count')
+def get_unread_count():
+    """Return unread notifications count for the logged-in user."""
+    if "user" not in session:
+        return jsonify({"success": False, "unread_count": 0}), 401
+
+    try:
+        user_id = session["user"]["id"]
+        res = supabase.table("notifications").select("id").eq("user_id", user_id).eq("is_read", False).execute()
+        count = len(res.data) if res.data else 0
+        return jsonify({"success": True, "unread_count": count})
+    except Exception as e:
+        print(f"/get_unread_count error: {e}")
+        return jsonify({"success": False, "unread_count": 0}), 500
+
+
+@app.post('/mark_notifications_as_read')
+def mark_notifications_as_read():
+    """Mark all notifications as read for the logged-in user."""
+    if "user" not in session:
+        return jsonify({"success": False, "message": "Please login first"}), 401
+
+    try:
+        user_id = session["user"]["id"]
+        supabase.table("notifications").update({"is_read": True}).eq("user_id", user_id).eq("is_read", False).execute()
+        return jsonify({"success": True})
+    except Exception as e:
+        print(f"/mark_notifications_as_read error: {e}")
+        return jsonify({"success": False}), 500
+
+
+@app.post('/mark_notification_as_read')
+def mark_notification_as_read():
+    """Mark a single notification as read for the logged-in user."""
+    if "user" not in session:
+        return jsonify({"success": False, "message": "Please login first"}), 401
+
+    try:
+        data = request.get_json(silent=True) or {}
+        notif_id = data.get('notification_id')
+        if not notif_id:
+            return jsonify({"success": False, "message": "notification_id required"}), 400
+
+        user_id = session["user"]["id"]
+        supabase.table("notifications").update({"is_read": True}).eq("id", notif_id).eq("user_id", user_id).execute()
+        return jsonify({"success": True})
+    except Exception as e:
+        print(f"/mark_notification_as_read error: {e}")
+        return jsonify({"success": False}), 500
+
 @app.route('/cancel_booking', methods=['POST'])
 def cancel_booking():
     if "user" not in session:
@@ -920,11 +970,19 @@ def booking3():
     # Collect form data
     event_date = request.form.get("event_date", "").strip()
     contact_number = request.form.get("phone", "").strip()
-    email = request.form.get("email", "").strip()
+    # Always use the logged-in user's email (account email), not from form
+    email = session.get('user', {}).get('email', '')
+    if not email:
+        try:
+            user_email_res = supabase.table("users").select("email").eq("id", user_id).execute()
+            email = (user_email_res.data[0]["email"] if user_email_res.data else "")
+        except Exception:
+            email = ""
 
-    # Generate IDs
+    # Generate IDs with appropriate ticket number format (4 digits)
     booking_id = str(uuid.uuid4())
-    ticket_number = "TKT-" + str(uuid.uuid4())[:8].upper()
+    # For equipment bookings (from booking3), use TKT-E{4-digit-number}
+    ticket_number = "TKT-E" + str(uuid.uuid4().int % 10000).zfill(4)
 
     # ✅ KUNIN ANG USER'S FIRST_NAME AT LAST_NAME MULA SA DATABASE
     try:
@@ -946,6 +1004,7 @@ def booking3():
         "ticket_number": ticket_number,
         "first_name": user_first_name,  # ✅ ADDED
         "last_name": user_last_name,   # ✅ ADDED
+        "event_type": "Equipment Rental",  # Set event_type for equipment bookings
         "event_date": event_date,
         "contact_number": contact_number,
         "email": email,
@@ -1051,7 +1110,14 @@ def book_event():
             
         event_date = request.form.get("event_date", "").strip()
         contact_number = request.form.get("phone", "").strip()
-        email = request.form.get("email", "").strip()
+        # Always use the logged-in user's email (account email), not from form
+        email = session.get('user', {}).get('email', '')
+        if not email:
+            try:
+                user_email_res = supabase.table("users").select("email").eq("id", user_id).execute()
+                email = (user_email_res.data[0]["email"] if user_email_res.data else "")
+            except Exception:
+                email = ""
 
         # ✅ Kunin muna ang listahan ng lahat ng active equipment para i-map
         try:
@@ -1099,9 +1165,10 @@ def book_event():
         # Calculate total others quantity
         others_qty = sum(int(qty) for item in all_equipment_list for qty in item.split('x')[1:] if 'x' in item)
 
-        # Generate IDs
+        # Generate IDs with appropriate ticket number format (4 digits)
         booking_id = str(uuid.uuid4())
-        ticket_number = "TKT-" + str(uuid.uuid4())[:8].upper()
+        # For court bookings (from booking2), use TKT-C{4-digit-number}
+        ticket_number = "TKT-C" + str(uuid.uuid4().int % 10000).zfill(4)
 
         # ✅ KUNIN ANG USER'S FIRST_NAME AT LAST_NAME MULA SA DATABASE
         try:
@@ -1699,41 +1766,16 @@ def signout():
     session.pop("user", None)
     return redirect(url_for("admin_login"))
 
-
-@app.route('/mark_notifications_as_read', methods=['POST'])
-def mark_notifications_as_read():
-    if "user" not in session:
-        return jsonify({"success": False, "message": "Please login first!"})
-
+def get_unread_notification_count(user_id):
     try:
-        user_id = session["user"]["id"]
-        supabase.table("notifications") \
-            .update({"is_read": True}) \
-            .eq("user_id", user_id) \
-            .eq("is_read", False) \
-            .execute()
-
-        return jsonify({"success": True, "message": "Notifications marked as read"})
-    except Exception as e:
-        return jsonify({"success": False, "message": f"Error: {str(e)}"})
-    
-
-@app.route('/get_unread_count', methods=['GET'])
-def get_unread_count():
-    if "user" not in session:
-        return jsonify({"success": False, "unread_count": 0})
-
-    try:
-        user_id = session["user"]["id"]
         unread_notif_data = supabase.table("notifications") \
-            .select("id") \
+            .select("id", count="exact") \
             .eq("user_id", user_id) \
             .eq("is_read", False) \
             .execute()
-        unread_count = len(unread_notif_data.data) if unread_notif_data.data else 0
-        return jsonify({"success": True, "unread_count": unread_count})
-    except Exception as e:
-        return jsonify({"success": False, "unread_count": 0})
+        return len(unread_notif_data.data) if unread_notif_data.data else 0
+    except:
+        return 0
 
 
 
