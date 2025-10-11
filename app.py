@@ -1020,7 +1020,7 @@ def booking3():
         "ticket_number": ticket_number,
         "first_name": user_first_name,  # ✅ ADDED
         "last_name": user_last_name,   # ✅ ADDED
-        "event_type": "Equipment Rental",  # Set event_type for equipment bookings
+        "event_type": "Equipment Booking",  # Set event_type for equipment bookings
         "event_date": event_date,
         "contact_number": contact_number,
         "email": email,
@@ -1086,7 +1086,7 @@ def booking3():
                 user_first_name=user_first_name,
                 ticket_number=ticket_number,
                 event_date=event_date,
-                event_type="Equipment Rental"  # Dahil sa booking3, wala naman event type
+                event_type="Equipment Booking"  # Dahil sa booking3, wala naman event type
             )
         )
         
