@@ -478,6 +478,9 @@
             border-bottom: 1px solid #f0f0f0;
         }
 
+        /* Ensure Event Type starts with big letters visually */
+        .event-type { text-transform: capitalize; }
+
         .booking-table th {
             background: var(--primary);
             color: white;
@@ -573,9 +576,25 @@
             color: #27ae60;
         }
 
+        /* Highlighted style for Borrowed status */
+        .status-borrowed {
+            background-color: #d6e4ff;
+            color: #1e40af;
+            box-shadow: 0 0 0 2px rgba(30, 64, 175, 0.25) inset, 0 2px 6px rgba(30, 64, 175, 0.2);
+            font-weight: 700;
+        }
+
         .status-cancelled {
             background-color: #ffcdd2;
             color: #c0392b;
+        }
+
+        /* Highlighted style for Completed status */
+        .status-completed {
+            background-color: #d1f7c4;
+            color: #1b5e20;
+            box-shadow: 0 0 0 2px rgba(27, 94, 32, 0.25) inset, 0 2px 6px rgba(27, 94, 32, 0.2);
+            font-weight: 700;
         }
 
         /* Modal Styles */
@@ -1331,7 +1350,7 @@
                             {% for booking in bookings %}
                             <tr>
                                 <td data-label="Ticket ID">{{ booking.ticket_number }}</td>
-                                <td data-label="Event Type">{{ booking.event_type }}</td>
+                                <td data-label="Event Type"><span class="event-type">{{ booking.event_type }}</span></td>
                                 <td data-label="Event Date">{{ booking.event_date }}</td>
                                 <td data-label="Equipment" class="equipment-cell expandable"
                                     title="Click to view full details">
@@ -1362,20 +1381,21 @@
                                     <span class="status-badge 
                                 {% if booking.status == 'Pending' %}status-pending
                                 {% elif booking.status == 'Approved' %}status-approved
+                                {% elif booking.status == 'Borrowed' %}status-borrowed
                                 {% elif booking.status == 'Cancelled' %}status-cancelled
                                 {% endif %}">
                                         {{ booking.status }}
                                     </span>
                                 </td>
                                 <td data-label="Action">
-                                    {% if booking.status != 'Cancelled' %}
                                     <button class="btn-view view-details" data-booking-id="{{ booking.id }}">
                                         <i class="fas fa-eye"></i> Details
                                     </button>
+                                    {% if booking.status != 'Cancelled' and booking.status != 'Borrowed' %}
                                     <button class="btn-cancel" data-booking-id="{{ booking.id }}">
                                         <i class="fas fa-times"></i> Cancel
                                     </button>
-                                    {% else %}
+                                    {% elif booking.status == 'Cancelled' %}
                                     <span class="status-cancelled">Cancelled</span>
                                     {% endif %}
                                 </td>
@@ -1424,7 +1444,7 @@
                             {% for booking in booking_history %}
                             <tr>
                                 <td data-label="Ticket ID">{{ booking.ticket_number }}</td>
-                                <td data-label="Event Type">{{ booking.event_type }}</td>
+                                <td data-label="Event Type"><span class="event-type">{{ booking.event_type }}</span></td>
                                 <td data-label="Event Date">{{ booking.event_date }}</td>
                                 <td data-label="Booking Date">{{ booking.booking_date }}</td>
                                 <td data-label="Equipment" class="equipment-cell expandable"
@@ -1455,7 +1475,8 @@
                                 </td>
                                 <td data-label="Status">
                                     <span class="status-badge 
-                                {% if booking.status == 'Completed' %}status-approved
+                                {% if booking.status == 'Completed' %}status-completed
+                                {% elif booking.status == 'Borrowed' %}status-borrowed
                                 {% elif booking.status == 'Cancelled' %}status-cancelled
                                 {% else %}status-pending
                                 {% endif %}">
@@ -1797,6 +1818,23 @@
         document.addEventListener('DOMContentLoaded', function () {
             // Update timestamps on page load
             updateNotificationTimes();
+            // Clear unread styling based on last read timestamp persisted locally
+            try {
+                const lastReadAt = localStorage.getItem('notif_last_read_at');
+                if (lastReadAt) {
+                    const lastRead = new Date(lastReadAt);
+                    document.querySelectorAll('.notification-item.unread').forEach(item => {
+                        const timeEl = item.querySelector('.notification-time');
+                        const ts = timeEl ? timeEl.getAttribute('data-timestamp') : null;
+                        if (ts) {
+                            const created = new Date(ts);
+                            if (!isNaN(created) && created <= lastRead) {
+                                item.classList.remove('unread');
+                            }
+                        }
+                    });
+                }
+            } catch (_) { /* ignore */ }
             
             // Update timestamps every minute
             setInterval(updateNotificationTimes, 60000);
@@ -2072,202 +2110,165 @@
                 return null;
             }
 
-            // Function to update notification count
-            function updateNotificationCount() {
-                const token = getToken();
-                if (!token) return;
-
-                fetch('/get_unread_count', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    credentials: 'same-origin'
-                })
-                .then(response => {
-                    if (!response.ok) throw new Error('Network response was not ok');
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success) {
-                        const bellIcon = document.querySelector('.notification-bell');
-                        if (!bellIcon) return;
-                        
-                        const notificationCount = data.unread_count || 0;
-                        
-                        // Update or create badge
-                        if (notificationCount > 0) {
-                            let badge = bellIcon.querySelector('.notification-badge');
-                            if (!badge) {
-                                badge = document.createElement('span');
-                                badge.className = 'notification-badge';
-                                badge.style.cssText = 'position: absolute; top: -5px; right: -5px; background-color: var(--accent); color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.75rem;';
-                                bellIcon.appendChild(badge);
-                            }
-                            badge.textContent = notificationCount > 9 ? '9+' : notificationCount;
-                            // Ensure badge is visible if it existed hidden in markup
-                            badge.style.display = 'flex';
-                        } else {
-                            // Remove badge if no unread notifications
-                            const badge = bellIcon.querySelector('.notification-badge');
-                            if (badge) {
-                                badge.remove();
-                            }
-                        }
-                    }
-                })
-                .catch(error => console.error('Error fetching notification count:', error));
-            }
-            
-            // Initial fetch after a short delay to ensure DOM is ready
-            setTimeout(updateNotificationCount, 1000);
-            
-            // Check for new notifications every 30 seconds
-            setInterval(updateNotificationCount, 30000);
+// Function to update notification count
+function updateNotificationCount() {
+    fetch('/get_unread_count', {
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
             const bellIcon = document.querySelector('.notification-bell');
-            const dropdown = document.getElementById('notificationDropdown');
-
-            if (!bellIcon || !dropdown) return;
-
-            // Toggle dropdown on click
-            bellIcon.addEventListener('click', function (e) {
-                e.stopPropagation();
-                const isVisible = dropdown.style.display === 'block';
-                dropdown.style.display = isVisible ? 'none' : 'block';
-
-                // Mark all as read when opening
-                if (!isVisible) {
-                    const token = getToken();
-                    if (!token) return;
-
-                    fetch('/mark_notifications_as_read', {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        credentials: 'same-origin',
-                        body: JSON.stringify({})
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            // Remove badge
-                            const badge = bellIcon.querySelector('.notification-badge');
-                            if (badge) {
-                                badge.remove();
-                            }
-                            // Remove unread background
-                            document.querySelectorAll('.notification-item.unread').forEach(item => {
-                                item.classList.remove('unread');
-                            });
-                        }
-                    })
-                    .catch(error => console.error('Error marking notifications as read:', error));
-                }
-            });
-
-            // Hide dropdown when clicking outside
-            document.addEventListener('click', function (e) {
-                if (!bellIcon.contains(e.target) && !dropdown.contains(e.target)) {
-                    dropdown.style.display = 'none';
-                }
-            });
-
-            // Function to update the notification badge
-            function updateBadge(decrease = true) {
-                const bellIcon = document.querySelector('.notification-bell');
-                if (!bellIcon) return;
-                
-                // Get current count from badge
+            if (!bellIcon) return;
+            
+            const notificationCount = data.unread_count || 0;
+            
+            // Update or create badge
+            if (notificationCount > 0) {
                 let badge = bellIcon.querySelector('.notification-badge');
-                
-                if (decrease) {
+                if (!badge) {
+                    badge = document.createElement('span');
+                    badge.className = 'notification-badge';
+                    bellIcon.appendChild(badge);
+                }
+                badge.textContent = notificationCount > 9 ? '9+' : notificationCount;
+                badge.style.display = 'flex';
+            } else {
+                // Remove badge if no unread notifications
+                const badge = bellIcon.querySelector('.notification-badge');
+                if (badge) {
+                    badge.remove();
+                }
+            }
+        }
+    })
+    .catch(error => console.error('Error fetching notification count:', error));
+}
+
+// Initial fetch after a short delay to ensure DOM is ready
+setTimeout(updateNotificationCount, 1000);
+
+// Check for new notifications every 30 seconds
+setInterval(updateNotificationCount, 30000);
+
+// Notification dropdown functionality
+const bellIcon = document.querySelector('.notification-bell');
+const dropdown = document.getElementById('notificationDropdown');
+
+if (bellIcon && dropdown) {
+    // Toggle dropdown on click
+    bellIcon.addEventListener('click', function (e) {
+        e.stopPropagation();
+        const isVisible = dropdown.style.display === 'block';
+        dropdown.style.display = isVisible ? 'none' : 'block';
+
+        // When dropdown becomes visible, mark all as read
+        if (!isVisible) {
+            // Optimistic UI: hide badge immediately
+            const existingBadge = bellIcon.querySelector('.notification-badge');
+            if (existingBadge) existingBadge.remove();
+
+            fetch('/mark_notifications_as_read', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Remove badge
+                    const badge = bellIcon.querySelector('.notification-badge');
                     if (badge) {
-                        const currentCount = parseInt(badge.textContent);
-                        if (currentCount > 1) {
-                            badge.textContent = currentCount - 1;
-                        } else {
-                            badge.remove();
-                        }
-                    }
-                } else {
-                    // Just update the count without decreasing
-                    const unreadItems = document.querySelectorAll('.notification-item.unread').length;
-                    if (unreadItems > 0) {
-                        if (!badge) {
-                            badge = document.createElement('span');
-                            badge.className = 'notification-badge';
-                            badge.style.cssText = 'position: absolute; top: -5px; right: -5px; background-color: var(--accent); color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.75rem;';
-                            bellIcon.appendChild(badge);
-                        }
-                        badge.textContent = unreadItems > 9 ? '9+' : unreadItems;
-                        // Ensure badge is visible if it existed hidden in markup
-                        badge.style.display = 'flex';
-                    } else if (badge) {
                         badge.remove();
                     }
+                    // Remove unread background
+                    document.querySelectorAll('.notification-item.unread').forEach(item => {
+                        item.classList.remove('unread');
+                    });
                 }
-            }
+            })
+            .catch(error => console.error('Error marking notifications as read:', error));
+        }
+    });
 
-            // Handle click on notification item
-            document.querySelectorAll('.notification-item').forEach(item => {
-                item.addEventListener('click', function (e) {
-                    e.stopPropagation();
-                    const notificationId = this.getAttribute('data-notification-id');
-                    const link = this.getAttribute('data-link');
-                    
-                    // Mark as read if not already read
-                    if (this.classList.contains('unread')) {
-                        this.classList.remove('unread');
-                        updateBadge(false); // Update badge without decreasing
-                        
-                        const token = getToken();
-                        if (token) {
-                            fetch('/mark_notification_as_read', {
-                                method: 'POST',
-                                headers: {
-                                    'Authorization': `Bearer ${token}`,
-                                    'Content-Type': 'application/json',
-                                    'X-Requested-With': 'XMLHttpRequest'
-                                },
-                                credentials: 'same-origin',
-                                body: JSON.stringify({ notification_id: notificationId })
-                            })
-                            .then(response => response.json())
-                            .catch(error => console.error('Error marking notification as read:', error));
-                        }
-                    }
-                    
-                    // If link points to booking details, show modal styled like your screenshot
-                    const detailsModal = document.getElementById('detailsModal');
-                    const detailsContent = document.getElementById('bookingDetailsContent');
-                    if (link && /\/booking_details\//.test(link) && detailsModal && detailsContent) {
-                        // Hide dropdown while modal is open
-                        dropdown.style.display = 'none';
-                        detailsContent.innerHTML = '<div style="text-align:center;padding:20px;"><span class="loading"></span> Loading details...</div>';
-                        detailsModal.style.display = 'flex';
+    // Hide dropdown when clicking outside
+    document.addEventListener('click', function (e) {
+        if (!bellIcon.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.style.display = 'none';
+        }
+    });
+}
 
-                        fetch(link)
-                            .then(r => r.json())
-                            .then(data => {
-                                if (data && data.success && data.data) {
+// Handle click on notification item
+document.querySelectorAll('.notification-item').forEach(item => {
+    item.addEventListener('click', function (e) {
+        e.stopPropagation();
+        const notificationId = this.getAttribute('data-notification-id');
+        const link = this.getAttribute('data-link');
+        
+        // Mark as read if not already read
+        if (this.classList.contains('unread')) {
+            this.classList.remove('unread');
+            
+            fetch('/mark_notification_as_read', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({ notification_id: notificationId })
+            })
+            .then(response => response.json())
+            .catch(error => console.error('Error marking notification as read:', error));
+        }
+        
+        // Handle navigation or modal display
+        if (link && /\/booking_details\//.test(link)) {
+            e.preventDefault();
+            const match = link.match(/\/booking_details\/([A-Za-z0-9-]+)/);
+            if (match && match[1]) {
+                const bookingId = match[1];
+                const detailsModal = document.getElementById('detailsModal');
+                const detailsContent = document.getElementById('bookingDetailsContent');
+                if (detailsModal && detailsContent) {
+                    detailsContent.innerHTML = '<div style="text-align:center;padding:20px;"><span class="loading"></span> Loading details...</div>';
+                    detailsModal.style.display = 'flex';
+                    const notifParam = notificationId ? `&notification_id=${encodeURIComponent(notificationId)}` : '';
+                    fetch(`/booking_details/${bookingId}?from_notification=1${notifParam}`)
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data && data.success && data.data) {
+                                // Use existing renderer
+                                if (typeof displayBookingDetails === 'function') {
+                                    displayBookingDetails(data.data);
+                                } else if (typeof renderBookingDetailsModal === 'function') {
                                     renderBookingDetailsModal(data.data);
-                                } else {
-                                    detailsContent.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Error loading booking details</p></div>';
                                 }
-                            })
-                            .catch(() => {
+                            } else {
                                 detailsContent.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Error loading booking details</p></div>';
-                            });
-                        return; // prevent immediate navigation
-                    }
-
-                    // Fallback: navigate to the link if it exists
-                    if (link) window.location.href = link;
-                });
-            });
+                            }
+                        })
+                        .catch(() => {
+                            detailsContent.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Error loading booking details</p></div>';
+                        });
+                } else {
+                    // Fallback navigate
+                    window.location.href = link;
+                }
+            } else {
+                // If we can't extract the ID, just navigate
+                window.location.href = link;
+            }
+        } else if (link) {
+            window.location.href = link;
+        }
+    });
+});
 
             // Minimal renderer to match your existing booking details modal style
             function renderBookingDetailsModal(booking) {
@@ -2307,7 +2308,7 @@
         </div>
         <div class="booking-detail">
             <span class="detail-label">Event Type:</span>
-            <span class="detail-value">${booking.event_type || ''}</span>
+            <span class="detail-value event-type">${booking.event_type || ''}</span>
         </div>
         <div class="booking-detail">
             <span class="detail-label">Event Date:</span>
@@ -2319,7 +2320,7 @@
         </div>
         <div class="booking-detail">
             <span class="detail-label">Status:</span>
-            <span class="detail-value"><span class="status-badge ${booking.status === 'Pending' ? 'status-pending' : booking.status === 'Approved' || booking.status === 'Completed' ? 'status-approved' : booking.status === 'Cancelled' ? 'status-cancelled' : ''}">${booking.status || ''}</span></span>
+            <span class="detail-value"><span class="status-badge ${booking.status === 'Pending' ? 'status-pending' : booking.status === 'Approved' ? 'status-approved' : booking.status === 'Completed' ? 'status-completed' : booking.status === 'Cancelled' ? 'status-cancelled' : booking.status === 'Borrowed' ? 'status-borrowed' : ''}">${booking.status || ''}</span></span>
         </div>
         <div class="booking-detail">
             <span class="detail-label">Contact Number:</span>
@@ -2598,26 +2599,27 @@
                                 },
                                 body: JSON.stringify({
                                     current_password: currentPassword.value,
-                                    new_password: newPassword.value
+                                    new_password: newPassword.value,
+                                    confirm_password: confirmPassword.value
                                 })
                             });
                             
                             const data = await response.json();
                             
                             if (data.success) {
-                                // Show success message
-                                this.showFlashMessage('Password updated successfully!', 'success');
+                                // Success handled by the other notification system to avoid duplicate popups
                                 form.reset();
                                 // Reset validation indicators
                                 lengthCheck.classList.remove('valid');
                                 uppercaseCheck.classList.remove('valid');
                                 numberCheck.classList.remove('valid');
                             } else {
-                                // Show error message
-                                if (data.message === 'Current password is incorrect') {
-                                    currentPasswordError.textContent = data.message;
+                                // Handle inline error for incorrect current password; suppress extra toast to avoid duplicates
+                                const msg = (data.message || '').toLowerCase();
+                                if (msg.startsWith('current password is incorrect')) {
+                                    currentPasswordError.textContent = 'Current password is incorrect!';
                                 } else {
-                                    this.showFlashMessage(data.message || 'Failed to update password', 'error');
+                                    // Rely on the other notification system to show any global error
                                 }
                             }
                         } catch (error) {
@@ -2704,7 +2706,7 @@
         </div>
         <div class="booking-detail">
             <span class="detail-label">Event Type:</span>
-            <span class="detail-value">${booking.event_type || 'N/A'}</span>
+            <span class="detail-value event-type">${booking.event_type || 'N/A'}</span>
         </div>
         <div class="booking-detail">
             <span class="detail-label">Event Date:</span>

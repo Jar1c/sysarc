@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from supabase import create_client, Client
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
+from dateutil import parser as date_parser
 import uuid
 import os
 import re  # Moved to top
@@ -578,11 +579,11 @@ def booking():
                     continue
         return items
 
-    # My Bookings: Pending or Approved only (sorted by created_at in descending order - newest first)
+    # My Bookings: Pending, Approved, or Borrowed (sorted by created_at in descending order - newest first)
     bookings_data = supabase.table("bookings") \
         .select("*") \
         .eq("user_id", user_id) \
-        .in_("status", ["Pending", "Approved"]) \
+        .in_("status", ["Pending", "Approved", "Borrowed"]) \
         .order("created_at", desc=True) \
         .execute()
     bookings = bookings_data.data if bookings_data.data else []
@@ -602,15 +603,19 @@ def booking():
     for booking in booking_history:
         booking["parsed_items"] = parse_other_items(booking.get("other_items", ""))
     
-    # ✅ GET UNREAD NOTIFICATIONS COUNT
-    unread_notif_data = supabase.table("notifications") \
-        .select("id") \
-        .eq("user_id", user_id) \
-        .eq("is_read", False) \
-        .execute()
-    unread_count = len(unread_notif_data.data) if unread_notif_data.data else 0
+    # ✅ FIXED: Simplified unread count - TANGGALIN ANG last_notif_read_at
+    try:
+        unread_notif_data = supabase.table("notifications") \
+            .select("id") \
+            .eq("user_id", user_id) \
+            .eq("is_read", False) \
+            .execute()
+        unread_count = len(unread_notif_data.data) if unread_notif_data.data else 0
+    except Exception as e:
+        print(f"Error getting unread count: {e}")
+        unread_count = 0
 
-    # ✅ GET RECENT NOTIFICATIONS LIST (e.g., last 10)
+    # ✅ FIXED: Get recent notifications list
     notifications_data = supabase.table("notifications") \
         .select("*") \
         .eq("user_id", user_id) \
@@ -625,7 +630,7 @@ def booking():
         bookings=bookings, 
         booking_history=booking_history,
         unread_count=unread_count,
-        notifications=notifications  # ✅ ITO ANG IDINAGDAG
+        notifications=notifications
     )
 
 @app.route("/booking_details/<booking_id>")
@@ -716,7 +721,12 @@ def get_unread_count():
 
     try:
         user_id = session["user"]["id"]
-        res = supabase.table("notifications").select("id").eq("user_id", user_id).eq("is_read", False).execute()
+        # ✅ SIMPLIFIED: Direct count without timestamp dependency
+        res = supabase.table("notifications") \
+            .select("id") \
+            .eq("user_id", user_id) \
+            .eq("is_read", False) \
+            .execute()
         count = len(res.data) if res.data else 0
         return jsonify({"success": True, "unread_count": count})
     except Exception as e:
@@ -732,7 +742,13 @@ def mark_notifications_as_read():
 
     try:
         user_id = session["user"]["id"]
-        supabase.table("notifications").update({"is_read": True}).eq("user_id", user_id).eq("is_read", False).execute()
+        # ✅ Mark unread notifications as read - TANGGALIN ANG last_notif_read_at
+        supabase.table("notifications") \
+            .update({"is_read": True}) \
+            .eq("user_id", user_id) \
+            .eq("is_read", False) \
+            .execute()
+        
         return jsonify({"success": True})
     except Exception as e:
         print(f"/mark_notifications_as_read error: {e}")
@@ -1261,8 +1277,9 @@ def book_event():
                 create_notification(
                     user_id=admin['id'],
                     message=f"New event booking from {user_first_name} {user_last_name} (Ticket: {ticket_number})",
+                    booking_id=booking_id,
                     admin_only=True,
-                    link=url_for('admin_portal') + "#pending-approvals"
+                    link=url_for('admin_booking_details', booking_id=booking_id)
                 )
 
         return redirect(url_for("booking2_page"))
@@ -1344,50 +1361,30 @@ def admin_portal():
             "total_equipment": len(equipment_items)
         }
         
-        # ✅ GET ADMIN NOTIFICATIONS
-        # First get admin notifications
-        admin_notifs = supabase.table("notifications") \
-            .select("*") \
-            .eq("admin_only", True) \
-            .eq("is_read", False) \
-            .order("created_at", desc=True) \
-            .limit(10) \
-            .execute()
-            
-        # Then get user-specific notifications
-        user_notifs = supabase.table("notifications") \
+        # ✅ GET ADMIN NOTIFICATIONS (show read and unread, only for current admin)
+        # Fetch notifications for the current admin user_id (covers both admin_only and user-targeted)
+        all_admin_notifs = supabase.table("notifications") \
             .select("*") \
             .eq("user_id", session['user']['id']) \
-            .eq("is_read", False) \
             .order("created_at", desc=True) \
-            .limit(10) \
+            .limit(20) \
             .execute()
-            
-        # Combine and deduplicate notifications
-        admin_notifications = []
-        seen_ids = set()
-        
-        # Add admin notifications first
-        if admin_notifs.data:
-            for notif in admin_notifs.data:
-                if notif['id'] not in seen_ids:
-                    admin_notifications.append(notif)
-                    seen_ids.add(notif['id'])
-        
-        # Add user notifications if they're not already in the list
-        if user_notifs.data:
-            for notif in user_notifs.data:
-                if notif['id'] not in seen_ids:
-                    admin_notifications.append(notif)
-                    seen_ids.add(notif['id'])
-        
-        # Sort by created_at in descending order and limit to 10
+
+        admin_notifications = all_admin_notifs.data if all_admin_notifs.data else []
+        # Sort and limit to 10 for display
         admin_notifications = sorted(
             admin_notifications,
             key=lambda x: x.get('created_at', ''),
             reverse=True
         )[:10]
-        unread_admin_count = len(admin_notifications)
+
+        # Compute unread count separately for accurate badge
+        unread_res = supabase.table("notifications") \
+            .select("id") \
+            .eq("user_id", session['user']['id']) \
+            .eq("is_read", False) \
+            .execute()
+        unread_admin_count = len(unread_res.data) if unread_res.data else 0
 
         return render_template(
             "admin_portal.html", 
@@ -1451,6 +1448,49 @@ def admin_booking_details(booking_id):
 
         return jsonify({"success": True, "data": booking})
     
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
+
+@app.route("/admin/booking_details_by_ticket/<ticket_number>")
+def admin_booking_details_by_ticket(ticket_number):
+    if "user" not in session or session["user"]["role"] != "admin":
+        return jsonify({"success": False, "message": "Unauthorized"})
+
+    try:
+        # Find booking by ticket_number
+        booking_data = supabase.table("bookings").select("*, users(first_name, last_name, barangay_id)") \
+            .eq("ticket_number", ticket_number).limit(1).execute()
+        if not booking_data.data:
+            return jsonify({"success": False, "message": "Booking not found"})
+
+        booking = booking_data.data[0]
+
+        # Map equipment names to category_id for rendering icons
+        try:
+            equipment_data = supabase.table("inventory").select("id, name, category_id").eq("is_active", True).execute()
+            name_to_category = {item['name']: item['category_id'] for item in equipment_data.data} if equipment_data.data else {}
+        except Exception:
+            name_to_category = {}
+
+        equipment_list = []
+        if booking.get("other_items"):
+            for item_str in booking["other_items"].split(", "):
+                if " x" in item_str:
+                    name_part, qty_str = item_str.rsplit(" x", 1)
+                    name = name_part.strip()
+                    try:
+                        qty = int(qty_str)
+                        category_id = name_to_category.get(name, "cat6")
+                        equipment_list.append({
+                            "name": name,
+                            "quantity": qty,
+                            "category_id": category_id
+                        })
+                    except ValueError:
+                        continue
+
+        booking["equipment_list"] = equipment_list
+        return jsonify({"success": True, "data": booking})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
 
@@ -1581,6 +1621,107 @@ def admin_reject_booking():
             )
 
         return jsonify({"success": True, "message": "Booking rejected successfully"})
+
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500
+
+# --- NEW: Mark booking as Borrowed ---
+@app.route("/admin/mark_borrowed", methods=["POST"])
+def admin_mark_borrowed():
+    if "user" not in session or session["user"].get("role") != "admin":
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
+
+    try:
+        data = request.get_json() or {}
+        booking_id = data.get("booking_id")
+        if not booking_id:
+            return jsonify({"success": False, "message": "No booking ID provided"}), 400
+
+        # Update status to Borrowed only if currently Approved
+        current = supabase.table("bookings").select("status, user_id, ticket_number, first_name, email").eq("id", booking_id).limit(1).execute()
+        if not current.data:
+            return jsonify({"success": False, "message": "Booking not found"}), 404
+        cur = current.data[0]
+        if cur.get("status") != "Approved":
+            return jsonify({"success": False, "message": "Only approved bookings can be marked as borrowed"}), 400
+
+        supabase.table("bookings").update({"status": "Borrowed"}).eq("id", booking_id).execute()
+
+        # Notify user
+        try:
+            create_notification(
+                user_id=cur.get("user_id"),
+                message=f"Your booking (Ticket: {cur.get('ticket_number')}) items have been released. Status: Borrowed.",
+                booking_id=booking_id,
+                link=url_for('booking_details', booking_id=booking_id)
+            )
+        except Exception as nerr:
+            print(f"notify borrowed err: {nerr}")
+
+        return jsonify({"success": True, "message": "Booking marked as Borrowed"})
+
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500
+
+# --- NEW: Mark booking as Completed (return). Also restore inventory ---
+@app.route("/admin/mark_completed", methods=["POST"])
+def admin_mark_completed():
+    if "user" not in session or session["user"].get("role") != "admin":
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
+
+    try:
+        data = request.get_json() or {}
+        booking_id = data.get("booking_id")
+        if not booking_id:
+            return jsonify({"success": False, "message": "No booking ID provided"}), 400
+
+        # Ensure booking exists and is Borrowed (or Approved -> allow force return?)
+        current = supabase.table("bookings").select("status, other_items, user_id, ticket_number, first_name").eq("id", booking_id).limit(1).execute()
+        if not current.data:
+            return jsonify({"success": False, "message": "Booking not found"}), 404
+        cur = current.data[0]
+        if cur.get("status") not in ("Borrowed", "Approved"):
+            return jsonify({"success": False, "message": "Only borrowed/approved bookings can be completed"}), 400
+
+        # Restore inventory quantities for reserved items
+        try:
+            other_items_str = cur.get("other_items") or ""
+            items = []
+            if other_items_str:
+                for item_str in other_items_str.split(", "):
+                    if " x" in item_str:
+                        name_part, qty_str = item_str.rsplit(" x", 1)
+                        try:
+                            items.append({"name": name_part.strip(), "quantity": int(qty_str)})
+                        except ValueError:
+                            continue
+
+            if items:
+                inv_data = supabase.table("inventory").select("id, name, quantity_available").execute()
+                name_to_item = {row["name"]: row for row in (inv_data.data or [])}
+                for it in items:
+                    inv_row = name_to_item.get(it["name"])  # restore only if exists
+                    if inv_row:
+                        new_av = int(inv_row.get("quantity_available", 0)) + int(it["quantity"])
+                        supabase.table("inventory").update({"quantity_available": new_av}).eq("id", inv_row["id"]).execute()
+        except Exception as inv_err:
+            print(f"Warning: Failed to restore inventory on completed: {inv_err}")
+
+        # Update status to Completed
+        supabase.table("bookings").update({"status": "Completed"}).eq("id", booking_id).execute()
+
+        # Notify user
+        try:
+            create_notification(
+                user_id=cur.get("user_id"),
+                message=f"Your booking (Ticket: {cur.get('ticket_number')}) has been completed. All items returned.",
+                booking_id=booking_id,
+                link=url_for('booking_details', booking_id=booking_id)
+            )
+        except Exception as nerr:
+            print(f"notify completed err: {nerr}")
+
+        return jsonify({"success": True, "message": "Booking marked as Completed"})
 
     except Exception as e:
         return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500
@@ -1911,20 +2052,20 @@ def forgot_password():
                 }), 404
             # If it's a different error, continue with reset attempt
         
-        # Generate reset link with redirect
-        reset_url = request.url_root.rstrip('/') + url_for('reset_password')
-        # Make sure to use the same domain as your Supabase site URL
-        if 'localhost' not in reset_url and '127.0.0.1' not in reset_url:
-            reset_url = reset_url.replace('http://', 'https://')
+        # Generate reset link with redirect, preserving the exact host used (127.0.0.1 vs localhost)
+        reset_url = request.host_url.rstrip('/') + url_for('reset_password')
+        # Make sure to use HTTPS in non-local environments
+        if ('localhost' not in reset_url and '127.0.0.1' not in reset_url) and reset_url.startswith('http://'):
+            reset_url = reset_url.replace('http://', 'https://', 1)
         
         # Log the reset URL for debugging
         print(f"Sending password reset to {email} with redirect to: {reset_url}")
         
         try:
-            # Send password reset email through Supabase
-            response = supabase.auth.reset_password_for_email(
+            # Send password reset email through Supabase (Python SDK uses reset_password_email)
+            response = supabase.auth.reset_password_email(
                 email,
-                {"redirect_to": reset_url}
+                options={"redirect_to": reset_url}
             )
             
             print(f"Password reset email sent to {email}")
@@ -2147,20 +2288,22 @@ def reset_password():
                 raise Exception(error_msg)
             
         except Exception as e:
-            print(f"Unexpected error in reset_password: {str(e)}")
-            print(f"Error in reset_password: {error_msg}")
+            # Ensure we don't reference an undefined variable when logging
+            error_text = str(e)
+            error_text_lower = error_text.lower()
+            print(f"Unexpected error in reset_password: {error_text}")
             import traceback
             traceback.print_exc()  # This will print the full traceback to console
-            
-            if "invalid" in error_msg or "expired" in error_msg:
+
+            if "invalid" in error_text_lower or "expired" in error_text_lower:
                 message = 'Invalid or expired reset link. Please request a new password reset.'
-            elif "auth session" in error_msg:
+            elif "auth session" in error_text_lower:
                 message = 'Your session has expired. Please request a new password reset link.'
-            elif "password" in error_msg and "weak" in error_msg:
+            elif "password" in error_text_lower and "weak" in error_text_lower:
                 message = 'Password is too weak. Please use a stronger password.'
             else:
-                message = f'An error occurred: {str(e)}'
-            
+                message = f'An error occurred: {error_text}'
+
             return jsonify({
                 'success': False,
                 'error': message

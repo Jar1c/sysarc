@@ -227,7 +227,6 @@
                 opacity: 0;
                 transform: translateY(20px);
             }
-
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -579,12 +578,12 @@
         }
 
         /* >>>> END OF ADDITION <<<< */
-        .btn-view {
-            background: linear-gradient(135deg, #3498db, #2980b9);
-        }
 
         /* Ensure Event Type starts with big letters visually */
         .event-type { text-transform: capitalize; }
+        .btn-view {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+        }
 
         .btn-action:hover {
             transform: translateY(-2px);
@@ -611,7 +610,6 @@
             color: #27ae60;
         }
 
-        /* Added: borrowed and completed styles for better visibility */
         .status-borrowed {
             background-color: #d6e4ff;
             color: #1e40af;
@@ -619,16 +617,17 @@
             font-weight: 700;
         }
 
+        .status-cancelled {
+            background-color: #ffcdd2;
+            color: #c0392b;
+        }
+
+        /* Highlighted style for Completed status */
         .status-completed {
             background-color: #d1f7c4;
             color: #1b5e20;
             box-shadow: 0 0 0 2px rgba(27, 94, 32, 0.25) inset, 0 2px 6px rgba(27, 94, 32, 0.2);
             font-weight: 700;
-        }
-
-        .status-cancelled {
-            background-color: #ffcdd2;
-            color: #c0392b;
         }
 
         /* Modal Styles */
@@ -1332,14 +1331,14 @@
         <ul class="sidebar-menu">
             <li><a href="#" class="active" data-target="dashboard"><i class="fas fa-home"></i> Dashboard</a></li>
             <li><a href="#" data-target="pending-approvals"><i class="fas fa-clock"></i> Pending Approvals</a></li>
-            <li><a href="#" data-target="all-bookings" data-status-filter="Approved"><i class="fas fa-check-circle"></i> Approved</a></li>
-            <li><a href="#" data-target="all-bookings" data-status-filter="Borrowed"><i class="fas fa-hand-holding"></i> Borrowed</a></li>
-            <li><a href="#" data-target="all-bookings" data-status-filter="Rejected"><i class="fas fa-times-circle"></i> Rejected</a></li>
-            <li><a href="#" data-target="all-bookings" data-status-filter="Cancelled"><i class="fas fa-ban"></i> Cancelled</a></li>
-            <li><a href="#" data-target="all-bookings" data-status-filter="Completed"><i class="fas fa-clipboard-check"></i> Return</a></li>
+            <li><a href="#" data-target="all-bookings"><i class="fas fa-check-circle"></i> Approved</a></li>
+            <li><a href="#" data-target="all-bookings"><i class="fas fa-hand-holding"></i> Borrowed</a></li>
+            <li><a href="#" data-target="all-bookings"><i class="fas fa-times-circle"></i> Rejected</a></li>
+            <li><a href="#" data-target="all-bookings"><i class="fas fa-ban"></i> Cancelled</a></li>
+            <li><a href="#" data-target="all-bookings"><i class="fas fa-clipboard-check"></i> Return</a></li>
             <li>
                 <form action="{{ url_for('admin_logout') }}" method="POST" id="logoutForm">
-                    <button type="submit" class="sidebar-logout"><i class="fas fa-sign-out-alt"></i> Sign Out</button>
+                <button type="submit" class="sidebar-logout"><i class="fas fa-sign-out-alt"></i> Sign Out</button>
                 </form>
             </li>
         </ul>
@@ -1375,7 +1374,7 @@
                 <div class="notification-item {% if not notif.is_read %}unread{% endif %}"
                     data-notification-id="{{ notif.id }}" data-link="{{ notif.link }}">
                     <div class="notif-message">{{ notif.message }}</div>
-                    <div class="notif-date" data-timestamp="{{ notif.created_at }}">{{ notif.created_at }}</div>
+                    <div class="notif-time" data-timestamp="{{ notif.created_at }}">{{ notif.created_at }}</div>
                 </div>
                 {% endfor %}
                 {% else %}
@@ -1400,17 +1399,13 @@
         <!-- Dashboard Content -->
         <div class="dashboard-content active" id="dashboard">
             <div class="admin-stats">
-                <div class="stat-card management-card" style="text-decoration: none; cursor: pointer;" onclick="document.dispatchEvent(new CustomEvent('showContent', { detail: 'equipment-management' }));">
+                <div class="stat-card management-card" style="text-decoration: none; cursor: pointer;" data-target="equipment-management" role="button" tabindex="0">
                     <div class="stat-icon"><i class="fas fa-tools"></i></div>
                     <div class="stat-label">Equipment Management</div>
                 </div>
-                <div class="stat-card management-card" style="text-decoration: none; cursor: pointer;" onclick="document.dispatchEvent(new CustomEvent('showContent', { detail: 'user-management' }));">
+                <div class="stat-card management-card" style="text-decoration: none; cursor: pointer;" data-target="user-management" role="button" tabindex="0">
                     <div class="stat-icon"><i class="fas fa-users-cog"></i></div>
                     <div class="stat-label">User Management</div>
-                </div>
-                <div class="stat-card management-card" style="text-decoration: none; cursor: pointer;" onclick="document.querySelector('.sidebar-menu a[data-target=\'all-bookings\'][data-status-filter=\'Completed\']')?.click();">
-                    <div class="stat-icon"><i class="fas fa-clipboard-check"></i></div>
-                    <div class="stat-label">Return</div>
                 </div>
             </div>
             <div class="booking-section">
@@ -1622,7 +1617,7 @@
         <!-- All Bookings Content -->
         <div class="dashboard-content" id="all-bookings">
             <div class="booking-section">
-                <h2>All Bookings</h2>
+                <h2 id="allBookingsTitle">Bookings</h2>
                 <!-- Search and Filter Controls -->
                 <div class="booking-controls">
                     <div class="search-box">
@@ -1790,7 +1785,7 @@
                         <input type="text" id="equipmentSearch" placeholder="Search equipment...">
                     </div>
                     <div class="filter-controls">
-                        <select class="filter-select" id="statusFilter">
+                        <select class="filter-select" id="equipmentStatusFilter">
                             <option value="">All Status</option>
                             <option value="active">Active</option>
                             <option value="inactive">Inactive</option>
@@ -1957,7 +1952,7 @@
                         </select>
                     </div>
                     <div class="form-group" style="margin: 0;">
-                        <select class="filter-select" id="statusFilter" style="min-width: 150px;">
+                        <select class="filter-select" id="userStatusFilter" style="min-width: 150px;">
                             <option value="">All Status</option>
                             <option value="active">Active</option>
                             <option value="inactive">Inactive</option>
@@ -2016,9 +2011,6 @@
                                 <td data-label="Actions" class="action-buttons">
                                     <button class="btn-action btn-view view-user" data-user-id="{{ user.id }}" title="View Details">
                                         <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button class="btn-action btn-edit edit-user" data-user-id="{{ user.id }}" title="Edit User">
-                                        <i class="fas fa-edit"></i>
                                     </button>
                                     {% if user.id != session.user.id %}
                                     <button class="btn-action btn-delete delete-user" data-user-id="{{ user.id }}" title="Delete User">
@@ -2206,7 +2198,7 @@
 
         // Update all notification timestamps
         function updateNotificationTimes() {
-            document.querySelectorAll('.notif-date').forEach(element => {
+            document.querySelectorAll('.notif-time').forEach(element => {
                 const timestamp = element.getAttribute('data-timestamp');
                 if (timestamp) {
                     element.textContent = formatRelativeTime(timestamp);
@@ -2320,19 +2312,16 @@
                         const dataLink = this.getAttribute('data-link');
                         if (dataLink) {
                             // If this is an admin booking details link, open modal and load details
-                            const match = dataLink.match(/\/admin\/booking_details\/([\w-]+)/);
+                            const match = dataLink.match(/\/admin\/booking_details\/([A-Za-z0-9-]+)/);
                             if (match && match[1]) {
                                 e.preventDefault();
-                                const idOrTicket = match[1];
+                                const bookingId = match[1];
                                 const detailsModal = document.getElementById('detailsModal');
                                 const detailsContent = document.getElementById('bookingDetailsContent');
                                 if (detailsModal && detailsContent) {
                                     detailsContent.innerHTML = '<div style="text-align:center;padding:20px;"><span class="loading"></span> Loading details...</div>';
                                     detailsModal.style.display = 'flex';
-                                    const detailsUrl = idOrTicket.startsWith('TKT-')
-                                        ? `/admin/booking_details_by_ticket/${idOrTicket}`
-                                        : `/admin/booking_details/${idOrTicket}`;
-                                    fetch(detailsUrl)
+                                    fetch(`/admin/booking_details/${bookingId}`)
                                         .then(r => r.json())
                                         .then(data => {
                                             if (data && data.success && data.data) {
@@ -2420,7 +2409,7 @@
                                                         detailsContent.innerHTML = `
                                                             <div class="booking-detail"><span class="detail-label">Ticket ID:</span><span class="detail-value">${booking.ticket_number || ''}</span></div>
                                                             <div class="booking-detail"><span class="detail-label">User:</span><span class="detail-value">${userName}</span></div>
-                                                            <div class="booking-detail"><span class="detail-label">Event Type:</span><span class="detail-value">${booking.event_type || ''}</span></div>
+                                                            <div class="booking-detail"><span class="detail-label">Event Type:</span><span class="detail-value event-type">${booking.event_type || ''}</span></div>
                                                             <div class="booking-detail"><span class="detail-label">Event Date:</span><span class="detail-value">${booking.event_date || ''}</span></div>
                                                             <div class="booking-detail"><span class="detail-label">Booking Date:</span><span class="detail-value">${booking.booking_date || ''}</span></div>
                                                             <div class="booking-detail"><span class="detail-label">Status:</span><span class="detail-value">${booking.status || ''}</span></div>
@@ -2466,7 +2455,7 @@
                                                         detailsContent.innerHTML = `
                                                             <div class=\"booking-detail\"><span class=\"detail-label\">Ticket ID:</span><span class=\"detail-value\">${booking.ticket_number || ''}</span></div>
                                                             <div class=\"booking-detail\"><span class=\"detail-label\">User:</span><span class=\"detail-value\">${userName}</span></div>
-                                                            <div class=\"booking-detail\"><span class=\"detail-label\">Event Type:</span><span class=\"detail-value\">${booking.event_type || ''}</span></div>
+                                                            <div class=\"booking-detail\"><span class=\"detail-label\">Event Type:</span><span class=\"detail-value event-type\">${booking.event_type || ''}</span></div>
                                                             <div class=\"booking-detail\"><span class=\"detail-label\">Event Date:</span><span class=\"detail-value\">${booking.event_date || ''}</span></div>
                                                             <div class=\"booking-detail\"><span class=\"detail-label\">Booking Date:</span><span class=\"detail-value\">${booking.booking_date || ''}</span></div>
                                                             <div class=\"booking-detail\"><span class=\"detail-label\">Status:</span><span class=\"detail-value\">${booking.status || ''}</span></div>
@@ -2592,6 +2581,32 @@
                 document.querySelectorAll('.sidebar-menu a[data-target]').forEach(link => {
                     link.addEventListener('click', (e) => this.handleNavigation(e));
                 });
+                // Handle dashboard management cards navigation
+                document.querySelectorAll('.management-card[data-target]').forEach(card => {
+                    const activate = (target) => {
+                        if (!target) return;
+                        this.showContent(target);
+                        // Update sidebar active state if a matching link exists
+                        const activeLink = document.querySelector(`.sidebar-menu a[data-target="${target}"]`);
+                        if (activeLink) {
+                            this.updateActiveStates(activeLink);
+                        }
+                        // Update URL hash
+                        window.location.hash = target;
+                    };
+                    card.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const target = card.getAttribute('data-target');
+                        activate(target);
+                    });
+                    card.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            const target = card.getAttribute('data-target');
+                            activate(target);
+                        }
+                    });
+                });
                 // Close sidebar on outside click (mobile)
                 document.addEventListener('click', (e) => {
                     if (window.innerWidth < 992 &&
@@ -2689,52 +2704,59 @@
                 });
             }
             initEquipmentManagement() {
-                // Add equipment button
-                document.getElementById('addEquipmentBtn')?.addEventListener('click', () => {
-                    this.openEquipmentModal();
-                });
-                
                 // Initialize user management
                 this.initUserManagement();
-                // Add first equipment button
-                const addFirstBtn = document.getElementById('addFirstEquipment');
-                if (addFirstBtn) {
-                    addFirstBtn.addEventListener('click', () => {
-                        this.openEquipmentModal();
+                // Use a single delegated listener so buttons work even when section is hidden/updated
+                const equipSection = document.getElementById('equipment-management');
+                if (equipSection && !this._equipmentDelegatedBound) {
+                    this._equipmentDelegatedBound = true; // guard to avoid duplicate bindings
+                    equipSection.addEventListener('click', (e) => {
+                        // Edit equipment
+                        const editBtn = e.target.closest('.edit-equipment');
+                        if (editBtn && equipSection.contains(editBtn)) {
+                            e.preventDefault();
+                            const itemId = editBtn.getAttribute('data-item-id');
+                            this.openEquipmentModal(itemId);
+                            return;
+                        }
+                        // Delete equipment
+                        const delBtn = e.target.closest('.delete-equipment');
+                        if (delBtn && equipSection.contains(delBtn)) {
+                            e.preventDefault();
+                            this.currentItemId = delBtn.getAttribute('data-item-id');
+                            this.deleteModal.style.display = 'flex';
+                            return;
+                        }
+                        // Add equipment (covers both Add buttons)
+                        const addBtn = e.target.closest('#addEquipmentBtn, #addFirstEquipment');
+                        if (addBtn && equipSection.contains(addBtn)) {
+                            e.preventDefault();
+                            this.openEquipmentModal();
+                            return;
+                        }
                     });
                 }
-                // Edit equipment buttons
-                document.querySelectorAll('.edit-equipment').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const itemId = e.target.closest('.edit-equipment').getAttribute('data-item-id');
-                        this.openEquipmentModal(itemId);
-                    });
-                });
-                // Delete equipment buttons
-                document.querySelectorAll('.delete-equipment').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        this.currentItemId = e.target.closest('.delete-equipment').getAttribute('data-item-id');
-                        this.deleteModal.style.display = 'flex';
-                    });
-                });
                 // Close modals
-                document.getElementById('closeEquipmentModal')?.addEventListener('click', () => {
-                    this.closeEquipmentModal();
-                });
-                document.getElementById('closeDeleteModal')?.addEventListener('click', () => {
-                    this.closeDeleteModal();
-                });
-                // Confirm delete
-                document.getElementById('confirmDeleteEquipment')?.addEventListener('click', () => {
-                    this.deleteEquipment(this.currentItemId);
-                });
+                if (!this._equipmentModalButtonsBound) {
+                    this._equipmentModalButtonsBound = true; // guard
+                    document.getElementById('closeEquipmentModal')?.addEventListener('click', () => {
+                        this.closeEquipmentModal();
+                    });
+                    document.getElementById('closeDeleteModal')?.addEventListener('click', () => {
+                        this.closeDeleteModal();
+                    });
+                    // Confirm delete
+                    document.getElementById('confirmDeleteEquipment')?.addEventListener('click', () => {
+                        this.deleteEquipment(this.currentItemId);
+                    });
+                }
                 // Category filter
                 document.querySelectorAll('.category-btn').forEach(btn => {
                     btn.addEventListener('click', (e) => {
-                        const category = e.target.getAttribute('data-category');
+                        const category = e.currentTarget.getAttribute('data-category');
                         // Update active state
                         document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
-                        e.target.classList.add('active');
+                        e.currentTarget.classList.add('active');
                         // Filter equipment
                         this.filterEquipment(category);
                     });
@@ -2746,11 +2768,11 @@
                         this.filterEquipmentBySearch(searchInput.value);
                     });
                 }
-                // Status filter
-                const statusFilter = document.getElementById('statusFilter');
-                if (statusFilter) {
-                    statusFilter.addEventListener('change', () => {
-                        this.filterEquipmentByStatus(statusFilter.value);
+                // Status filter (fixed ID to equipmentStatusFilter)
+                const equipmentStatusFilter = document.getElementById('equipmentStatusFilter');
+                if (equipmentStatusFilter) {
+                    equipmentStatusFilter.addEventListener('change', () => {
+                        this.filterEquipmentByStatus(equipmentStatusFilter.value);
                     });
                 }
                 // Equipment form submission
@@ -2826,10 +2848,14 @@
                             const matchesType = !typeValue || eventType.includes(typeValue);
                             row.style.display = (matchesSearch && matchesStatus && matchesType) ? '' : 'none';
                         });
+                        // Update dynamic section title based on status
+                        this.updateAllBookingsTitle(statusValue);
                     };
                     allBookingsSearch.addEventListener('input', filterAllBookings);
                     statusFilter.addEventListener('change', filterAllBookings);
                     bookingTypeFilter.addEventListener('change', filterAllBookings);
+                    // Initialize title on load
+                    this.updateAllBookingsTitle(statusFilter.value);
                 }
             }
             setupEquipmentCellExpansion() {
@@ -2864,14 +2890,19 @@
                 this.updateActiveStates(link);
                 // Show target content
                 this.showContent(target);
-                // If navigating to All Bookings with a status filter, apply it
-                const statusFilterValue = link.getAttribute('data-status-filter');
+                // If navigating to All Bookings via sidebar items APPROVED/REJECTED/CANCELLED/COMPLETED,
+                // set the status filter accordingly and trigger filtering (non-invasive)
                 if (target === 'all-bookings') {
-                    const statusSelect = document.getElementById('statusFilter');
-                    if (statusSelect) {
-                        statusSelect.value = statusFilterValue || '';
-                        // Trigger change to reuse existing filter logic
-                        statusSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                    const label = (link.textContent || '').trim().toLowerCase();
+                    const map = { approved: 'Approved', borrowed: 'Borrowed', rejected: 'Rejected', cancelled: 'Cancelled', completed: 'Completed', return: 'Completed' };
+                    const desired = map[label] || '';
+                    // Prefer the statusFilter inside #all-bookings to avoid duplicate IDs elsewhere
+                    const statusSel = document.querySelector('#all-bookings select#statusFilter') || document.getElementById('statusFilter');
+                    if (statusSel) {
+                        statusSel.value = desired;
+                        statusSel.dispatchEvent(new Event('change'));
+                        // Also update the section header immediately
+                        this.updateAllBookingsTitle(desired);
                     }
                 }
                 // Update page title
@@ -3005,7 +3036,7 @@
                 </div>
                 <div class="booking-detail">
                     <span class="detail-label">Event Type:</span>
-                    <span class="detail-value">${booking.event_type || 'N/A'}</span>
+                    <span class="detail-value event-type">${booking.event_type || 'N/A'}</span>
                 </div>
                 <div class="booking-detail">
                     <span class="detail-label">Event Date:</span>
@@ -3045,13 +3076,15 @@
                     <span class="detail-value">${booking.additional_notes}</span>
                 </div>
                 ` : ''}
-            `;
+                `;
             }
+
             getStatusClass(status) {
                 switch (status) {
                     case 'Pending': return 'status-pending';
                     case 'Approved': return 'status-approved';
-                    case 'Completed': return 'status-approved';
+                    case 'Borrowed': return 'status-borrowed';
+                    case 'Completed': return 'status-completed';
                     case 'Cancelled': return 'status-cancelled';
                     case 'Rejected': return 'status-cancelled';
                     default: return '';
@@ -3283,9 +3316,9 @@
                 }
 
                 // Status filter
-                const statusFilter = document.getElementById('statusFilter');
-                if (statusFilter) {
-                    statusFilter.addEventListener('change', (e) => {
+                const userStatusFilter = document.getElementById('userStatusFilter');
+                if (userStatusFilter) {
+                    userStatusFilter.addEventListener('change', (e) => {
                         this.filterUsers(e.target.value, 'status');
                     });
                 }
@@ -3623,6 +3656,8 @@
         // Initialize the application
         document.addEventListener('DOMContentLoaded', () => {
             const app = new AdminPortalUI();
+            // Ensure equipment functions are activated
+            app.initEquipmentManagement();
             
             // Listen for the showContent custom event
             document.addEventListener('showContent', (e) => {
