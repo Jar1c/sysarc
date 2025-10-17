@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Suspended</title>
+    <link rel="icon" type="image/png" href="/static/img/brgy_baritan_logo.png">
+    <style>
+        :root {
+            --primary: #023e8a;
+            --accent: #e74c3c;
+            --light: #f5f7fa;
+            --text: #2c3e50;
+        }
+        * { box-sizing: border-box; }
+        body { margin:0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--light); color: var(--text); }
+        .container {
+            min-height: 100vh; display:flex; align-items:center; justify-content:center; padding: 24px;
+        }
+        .card {
+            width: 100%; max-width: 640px; background:#fff; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,.08);
+            padding: 28px; text-align:center; animation: fadeIn .3s ease;
+        }
+        .icon {
+            font-size: 56px; margin-bottom: 10px; color: var(--accent);
+        }
+        h1 { margin: 6px 0 8px; font-size: 26px; color:#c0392b; }
+        p { margin: 0 0 10px; line-height:1.6; }
+        .reason {
+            margin-top: 14px; padding: 14px 16px; border-left: 4px solid var(--accent); background:#fff5f4; border-radius: 8px;
+            text-align:left; color:#a23b33;
+        }
+        .actions { margin-top: 18px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+        .btn { padding: 10px 16px; border-radius: 22px; border:none; cursor:pointer; font-weight:600; }
+        .btn-primary { background: var(--primary); color:#fff; }
+        .btn-outline { background: transparent; color: var(--primary); border:2px solid var(--primary); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px);} to { opacity: 1; transform: translateY(0);} }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="icon">🚫</div>
+            <h1>Your account is suspended</h1>
+            <p>Access to the site is currently disabled for your account.</p>
+            <div class="reason">
+                <strong>Reason:</strong>
+                <div style="margin-top:6px; white-space:pre-wrap;">{{ reason or 'No reason provided.' }}</div>
+            </div>
+            <div class="actions">
+                <form action="/signout" method="post">
+                    <button class="btn btn-outline" type="submit">Sign out</button>
+                </form>
+                <a class="btn btn-primary" href="mailto:Baritan.Malabonkmgs@gmail.com">Contact Support</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

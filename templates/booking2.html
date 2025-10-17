@@ -7,6 +7,7 @@
     <title>Event Booking Form</title>
     <link rel="icon" type="image/png" href="/static/img/brgy_baritan_logo.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <style>
         * {
             margin: 0;
@@ -425,6 +426,15 @@
             pointer-events: none;
             opacity: 0.7;
         }
+        /* Mark approved/unavailable days in red (inside picker) */
+        .flatpickr-day.unavailable {
+            background: #e74c3c !important;
+            color: #fff !important;
+            border-color: #e74c3c !important;
+        }
+        /* Make the date input same width as phone input */
+        #eventDate { width: 100%; }
+        
     </style>
 </head>
 
@@ -480,7 +490,7 @@
 
                         <div class="form-group">
                             <label for="eventDate">Date <span class="required">*</span></label>
-                            <input type="date" id="eventDate" name="event_date" required>
+                            <input type="text" id="eventDate" name="event_date" placeholder="Select date" required>
                         </div>
                     </div>
 
@@ -495,7 +505,7 @@
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="phone">Phone Number <span class="required">*</span> <small>(11 digits only)</small></label>
+                    <label for="phone">Phone Number <span class="required">*</span> <small></small></label>
                     <input type="tel" id="phone" name="phone" placeholder="Enter 11-digit phone number" 
                            pattern="\d{11}" title="Please enter exactly 11 digits" required>
                     <div id="phoneError" class="error-message" style="color: red; display: none;">
@@ -531,19 +541,17 @@
                         {% endfor %}
                     </div>
 
-                    <div class="form-section">
-                        <h2><i class="fas fa-sticky-note"></i> Additional Notes</h2>
-                        <div class="form-group">
-                            <textarea id="additionalNotes" name="additional_notes" rows="3"
-                                placeholder="Any special requests or additional information we should know?"></textarea>
-                        </div>
-                    </div>
+                    
 
+                    <div style="color:#6b7280; font-size:1rem; margin:8px 0 12px; text-align:center;">
+                        The equipment is subject to change with admin approval.
+                    </div>
                     <button type="submit" class="btn-submit">Submit Booking</button>
             </form>
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
         // Set minimum date to today
         // Set minimum date to 7 days from today (skip the current week)
@@ -552,6 +560,76 @@
         nextWeek.setDate(today.getDate() + 7); // Add 7 days
         const minDate = nextWeek.toISOString().split('T')[0];
         document.getElementById('eventDate').setAttribute('min', minDate);
+
+        // Fetch approved dates for COURT bookings and prevent selection (custom picker, default look)
+        const eventDateInput = document.getElementById('eventDate');
+        const formEl = document.getElementById('bookingForm');
+        let approvedDates = new Set(); // YYYY-MM-DD
+
+        // Add a warning message element under the date field
+        (function attachWarning(){
+            const parent = eventDateInput.closest('.form-group') || eventDateInput.parentElement;
+            if (!parent.querySelector('#dateWarning')) {
+                const warn = document.createElement('div');
+                warn.id = 'dateWarning';
+                warn.style.color = '#e74c3c';
+                warn.style.fontWeight = '600';
+                warn.style.marginTop = '6px';
+                warn.style.display = 'none';
+                warn.textContent = 'This date is already approved and unavailable.';
+                parent.appendChild(warn);
+            }
+        })();
+
+        const showDateWarning = (show) => {
+            const warn = document.getElementById('dateWarning');
+            if (!warn) return;
+            warn.style.display = show ? 'block' : 'none';
+            eventDateInput.style.borderColor = show ? '#e74c3c' : '#ddd';
+        };
+
+        fetch('/api/approved_dates?type=court')
+            .then(r => r.json())
+            .then(data => {
+                if (data && data.success && Array.isArray(data.dates)) {
+                    approvedDates = new Set(data.dates);
+                    flatpickr('#eventDate', {
+                        dateFormat: 'Y-m-d',
+                        minDate: minDate,
+                        disableMobile: true,
+                        disable: [...approvedDates],
+                        onDayCreate: function(dObj, dStr, fp, dayElem) {
+                            const d = dayElem.dateObj;
+                            const y = d.getFullYear();
+                            const m = String(d.getMonth() + 1).padStart(2, '0');
+                            const da = String(d.getDate()).padStart(2, '0');
+                            const key = `${y}-${m}-${da}`;
+                            if (approvedDates.has(key)) dayElem.classList.add('unavailable');
+                        }
+                    });
+                }
+            })
+            .catch(() => {});
+
+        eventDateInput.addEventListener('change', function(){
+            const val = this.value;
+            if (val && approvedDates.has(val)) {
+                showDateWarning(true);
+            } else {
+                showDateWarning(false);
+            }
+        });
+
+        // Prevent submit if chosen date is approved
+        formEl.addEventListener('submit', function(e){
+            const val = eventDateInput.value;
+            if (val && approvedDates.has(val)) {
+                e.preventDefault();
+                showDateWarning(true);
+                alert('Selected date is unavailable. Please choose another date.');
+                return;
+            }
+        });
 
         // Quantity adjustment function
         function adjustQty(itemId, change) {
@@ -678,12 +756,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             const flashMessages = document.getElementById('flash-messages');
             if (flashMessages) {
-                setTimeout(function() {
-                    flashMessages.style.opacity = '0';
-                    setTimeout(function() {
-                        flashMessages.style.display = 'none';
-                    }, 300);
-                }, 5000);
+                
             }
             
             // Show/hide custom event type field based on selection

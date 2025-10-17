@@ -226,6 +226,7 @@
         // Toggle password visibility
         const togglePassword = document.querySelector('#togglePassword');
         const passwordField = document.querySelector('#passwordField');
+        const emailField = document.querySelector('input[name="email"]');
 
         togglePassword.addEventListener('click', function () {
             const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
@@ -233,6 +234,17 @@
             this.classList.toggle('fa-eye');
             this.classList.toggle('fa-eye-slash');
         });
+
+        // Preserve email across errors (no backend changes)
+        if (emailField) {
+            const savedEmail = sessionStorage.getItem('signin_email');
+            if (savedEmail) {
+                emailField.value = savedEmail;
+            }
+            emailField.addEventListener('input', function() {
+                sessionStorage.setItem('signin_email', emailField.value);
+            });
+        }
 
         // Auto-hide error messages after 5 seconds
         document.querySelectorAll('.popup').forEach(popup => {
@@ -244,11 +256,32 @@
 
         // Loading effect for form submission
         document.getElementById('signinForm').addEventListener('submit', function(e) {
+            const emailInput = document.querySelector('input[name="email"]');
+            const emailVal = (emailInput && emailInput.value ? emailInput.value : '').trim().toLowerCase();
+            if (emailVal === 'admin@baritan.ph') {
+                e.preventDefault();
+                if (!document.querySelector('.popup')) {
+                    const popup = document.createElement('div');
+                    popup.className = 'popup error';
+                    popup.innerHTML = 'Please use the Admin login page.';
+                    const closeBtn = document.createElement('span');
+                    closeBtn.className = 'close-btn';
+                    closeBtn.innerHTML = '&times;';
+                    closeBtn.onclick = function(){ popup.remove(); };
+                    popup.appendChild(closeBtn);
+                    document.body.appendChild(popup);
+                    setTimeout(() => {
+                        popup.style.opacity = '0';
+                        setTimeout(() => popup.remove(), 300);
+                    }, 5000);
+                }
+                return;
+            }
+
             const submitBtn = document.getElementById('submitBtn');
             const loadingOverlay = document.getElementById('loadingOverlay');
             const formContainer = document.getElementById('formContainer');
-            
-            // Show loading state
+
             submitBtn.classList.add('btn-loading');
             loadingOverlay.classList.add('active');
             formContainer.classList.add('blur');

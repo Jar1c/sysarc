@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from dateutil import parser as date_parser
 import uuid
 import os
-import re  # Moved to top
+import re 
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -13,8 +13,31 @@ from email.mime.multipart import MIMEMultipart
 # Email Configuration
 EMAIL_HOST = "smtp.gmail.com"  # o kung ano ang SMTP mo
 EMAIL_PORT = 587
-EMAIL_USER = "brgybaritan1@gmail.com"  # palitan mo
-EMAIL_PASSWORD = "ogqkndywpqznqout"  # gamitin ang App Password, hindi yung regular password
+EMAIL_USER = "brgybaritan1@gmail.com"  
+EMAIL_PASSWORD = "dszmuxiixxlhmhns" 
+
+# Base URL for emails (fallback to local). When running behind a domain, request.host_url will be used automatically.
+BASE_URL = os.getenv("BASE_URL", "http://127.0.0.1:5000/")
+
+def build_external_url(path: str) -> str:
+    """Return an absolute URL for emails. Prefers Flask request.host_url when available.
+    path: e.g. 'signin' or '/signin'
+    """
+    try:
+        from flask import request
+        host = getattr(request, 'host_url', None)
+        if host:
+            base = host
+        else:
+            base = BASE_URL
+    except Exception:
+        base = BASE_URL
+    # normalize slashes
+    if not base.endswith('/'):
+        base += '/'
+    if path.startswith('/'):
+        path = path[1:]
+    return base + path
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24) 
@@ -23,6 +46,44 @@ app.secret_key = os.urandom(24)
 SUPABASE_URL = "https://vehpeqlxmucsgasedcuh.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZlaHBlcWx4bXVjc2dhc2VkY3VoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjYxNjIyMiwiZXhwIjoyMDcyMTkyMjIyfQ.Xp5JiKtJVPMfZR1ethvOwguVBwjbIYKapi-1STLLfd8"
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# --- Helper functions: defective stored in inventory.description ---
+def _to_int(val, default=0):
+    try:
+        if val is None:
+            return default
+        if isinstance(val, str):
+            s = val.strip()
+            if s == "":
+                return default
+            return int(s)
+        return int(val)
+    except Exception:
+        return default
+def parse_defective_from_description(desc: str) -> int:
+    try:
+        if not desc:
+            return 0
+        # Look for patterns like 'defective:10' or '[DEFECTIVE=10]'
+        m = re.search(r"(?:defective\s*[:=]\s*)(\d+)", desc, flags=re.IGNORECASE)
+        if m:
+            return int(m.group(1))
+        return 0
+    except Exception:
+        return 0
+
+def set_defective_in_description(desc: str, value: int) -> str:
+    try:
+        value = max(int(value), 0)
+        if not desc:
+            return f"defective:{value}"
+        if re.search(r"defective\s*[:=]\s*\d+", desc, flags=re.IGNORECASE):
+            return re.sub(r"defective\s*[:=]\s*\d+", f"defective:{value}", desc, flags=re.IGNORECASE)
+        # If description exists but has no defective tag, append neatly
+        joiner = "\n" if not desc.endswith("\n") else ""
+        return f"{desc}{joiner}defective:{value}"
+    except Exception:
+        return desc or f"defective:{value}"
 
 
 
@@ -46,6 +107,11 @@ def get_user_by_email(email):
 
 def get_user_by_barangay_id(bid):
     return supabase.table("users").select("*").eq("barangay_id", bid).execute()
+def get_user_by_id(user_id):
+    return supabase.table("users").select("*").eq("id", user_id).limit(1).execute()
+
+# Ticket numbering reset start (fixed)
+RESET_FROM_ISO = "2025-10-12T00:00:00"
 
 # Lightweight API: check if email exists (for realtime validation)
 @app.get('/api/check_email')
@@ -88,7 +154,26 @@ def create_notification(user_id, message, booking_id=None, borrowed_item_id=None
         print(f"Error creating notification: {e}")
         return False
     
-def get_email_template(status, user_first_name, ticket_number, event_date=None, event_type=None, reason=None):
+def get_email_template(
+    status,
+    user_first_name,
+    ticket_number,
+    event_date=None,
+    event_type=None,
+    reason=None,
+    link=None,
+    booking_date=None,
+    equipment=None,
+    contact_number=None,
+    email_address=None,
+    status_override=None,
+    notes=None,
+    full_name=None,
+    barangay_id=None,
+    address_text=None,
+    date_joined=None,
+    suspended_since=None,
+):
     """
     Returns a beautiful, email-compatible HTML template using inline styles only.
     All variables preserved as-is: {user_first_name}, {ticket_number}, {event_date}, etc.
@@ -115,6 +200,15 @@ def get_email_template(status, user_first_name, ticket_number, event_date=None, 
             'message': "Great news! Your booking request has been <strong>approved</strong>.",
             'footer': "You may now proceed with your plans. Thank you for using our booking system!"
         },
+        'borrowed': {
+            'gradient': '#023e8a',
+            'emoji': '🚚',
+            'title': 'In Progress',
+            'badge_bg': '#e0f2fe',
+            'badge_color': '#0284c7',
+            'message': "Your booking is now <strong>In Progress</strong>. Items have been released.",
+            'footer': "Please return the items on time and in good condition."
+        },
         'rejected': {
             'gradient': '#023e8a',
             'emoji': '❌',
@@ -132,6 +226,33 @@ def get_email_template(status, user_first_name, ticket_number, event_date=None, 
             'badge_color': '#d35400',
             'message': "Your booking has been successfully <strong>cancelled</strong>.",
             'footer': "If this was a mistake, please create a new booking."
+        },
+        'suspended': {
+            'gradient': '#023e8a',
+            'emoji': '🚫',
+            'title': 'Account Suspended',
+            'badge_bg': '#ffe4e6',
+            'badge_color': '#dc2626',
+            'message': "Your account has been <strong>suspended</strong> by an administrator.",
+            'footer': "If you believe this is a mistake, please contact support."
+        },
+        'completed': {
+            'gradient': '#023e8a',
+            'emoji': '✔️',
+            'title': 'Booking Completed',
+            'badge_bg': '#dcfce7',
+            'badge_color': '#16a34a',
+            'message': "Your booking has been <strong>completed</strong>. Thank you!",
+            'footer': "We appreciate your cooperation."
+        },
+        'unsuspended': {
+            'gradient': '#023e8a',
+            'emoji': '✅',
+            'title': 'Your account is unsuspended',
+            'badge_bg': '#d1f7c4',
+            'badge_color': '#27ae60',
+            'message': "Your account has been <strong>unsuspended</strong>. You may now sign in again.",
+            'footer': "If you encounter issues, please contact support."
         }
     }
     
@@ -147,6 +268,9 @@ def get_email_template(status, user_first_name, ticket_number, event_date=None, 
     })
     
     # Build optional rows
+    details_title = 'Booking Details'
+    if status in ('suspended', 'unsuspended'):
+        details_title = 'Account Details'
     event_type_row = ""
     if event_type is not None:
         event_type_row = f'''
@@ -162,14 +286,120 @@ def get_email_template(status, user_first_name, ticket_number, event_date=None, 
             <td style="padding: 10px 0; font-weight: 600; color: #555; width: 140px; text-align: left;">Event Date:</td>
             <td style="padding: 10px 0; text-align: left; font-weight: 500;">{event_date or "N/A"}</td>
         </tr>'''
+    booking_date_row = ""
+    if booking_date is not None:
+        booking_date_row = f'''
+        <tr>
+            <td style="padding: 10px 0; font-weight: 600; color: #555; width: 140px; text-align: left;">Booking Date:</td>
+            <td style="padding: 10px 0; text-align: left; font-weight: 500;">{booking_date or "N/A"}</td>
+        </tr>'''
+    equipment_row = ""
+    if equipment is not None:
+        equipment_row = f'''
+        <tr>
+            <td style="padding: 10px 0; font-weight: 600; color: #555; width: 140px; text-align: left; vertical-align: top;">Equipment:</td>
+            <td style="padding: 10px 0; text-align: left; font-weight: 500; white-space: pre-wrap;">{equipment or "N/A"}</td>
+        </tr>'''
+    contact_row = ""
+    if contact_number is not None:
+        contact_row = f'''
+        <tr>
+            <td style="padding: 10px 0; font-weight: 600; color: #555; width: 140px; text-align: left;">Contact Number:</td>
+            <td style="padding: 10px 0; text-align: left; font-weight: 500;">{contact_number or "N/A"}</td>
+        </tr>'''
+    email_row = ""
+    if email_address is not None:
+        email_row = f'''
+        <tr>
+            <td style="padding: 10px 0; font-weight: 600; color: #555; width: 140px; text-align: left;">Email:</td>
+            <td style="padding: 10px 0; text-align: left; font-weight: 500;">{email_address or "N/A"}</td>
+        </tr>'''
+    status_row = ""
+    if status_override is not None:
+        status_row = f'''
+        <tr>
+            <td style="padding: 10px 0; font-weight: 600; color: #555; width: 140px; text-align: left;">Status:</td>
+            <td style="padding: 10px 0; text-align: left; font-weight: 500;">{status_override or (status.upper())}</td>
+        </tr>'''
     
     reason_row = ""
-    if status == "rejected":
+    if status in ("rejected", "suspended", "cancelled"):
         reason_row = f'''
         <tr>
             <td style="padding: 10px 0; font-weight: 600; color: #555; width: 140px; text-align: left;">Reason:</td>
             <td style="padding: 10px 0; text-align: left; font-weight: 500;">{reason or "Please contact the administrator for more information."}</td>
         </tr>'''
+    notes_row = ""
+    if status == "suspended" and (notes is not None):
+        notes_row = f'''
+        <tr>
+            <td style="padding: 10px 0; font-weight: 600; color: #555; width: 140px; text-align: left;">Notes:</td>
+            <td style="padding: 10px 0; text-align: left; font-weight: 500; white-space: pre-wrap;">{notes or ""}</td>
+        </tr>'''
+
+    # Account-specific optional rows
+    full_name_row = ""
+    if full_name is not None:
+        full_name_row = f'''
+        <tr>
+            <td style="padding: 10px 0; font-weight: 600; color: #555; width: 140px; text-align: left;">Name:</td>
+            <td style="padding: 10px 0; text-align: left; font-weight: 500;">{full_name or "N/A"}</td>
+        </tr>'''
+    barangay_row = ""
+    if barangay_id is not None:
+        barangay_row = f'''
+        <tr>
+            <td style="padding: 10px 0; font-weight: 600; color: #555; width: 140px; text-align: left;">Barangay ID:</td>
+            <td style="padding: 10px 0; text-align: left; font-weight: 500;">{barangay_id or "N/A"}</td>
+        </tr>'''
+    address_row = ""
+    if address_text is not None:
+        address_row = f'''
+        <tr>
+            <td style="padding: 10px 0; font-weight: 600; color: #555; width: 140px; text-align: left;">Address:</td>
+            <td style="padding: 10px 0; text-align: left; font-weight: 500; white-space: pre-wrap;">{address_text or "N/A"}</td>
+        </tr>'''
+    joined_row = ""
+    if date_joined is not None:
+        joined_row = f'''
+        <tr>
+            <td style="padding: 10px 0; font-weight: 600; color: #555; width: 140px; text-align: left;">Date Joined:</td>
+            <td style="padding: 10px 0; text-align: left; font-weight: 500;">{date_joined or "N/A"}</td>
+        </tr>'''
+    suspended_since_row = ""
+    if suspended_since is not None:
+        suspended_since_row = f'''
+        <tr>
+            <td style="padding: 10px 0; font-weight: 600; color: #555; width: 140px; text-align: left;">Suspended Since:</td>
+            <td style="padding: 10px 0; text-align: left; font-weight: 500;">{suspended_since or "N/A"}</td>
+        </tr>'''
+
+    # Optional Ticket row (hide for non-booking emails)
+    ticket_row = ""
+    if ticket_number is not None and str(ticket_number).strip() != "":
+        ticket_row = f'''
+        <tr>
+            <td style="padding: 10px 0; font-weight: 600; color: #555; width: 140px; text-align: left;">Ticket ID:</td>
+            <td style="padding: 10px 0; text-align: left; font-weight: 500;">{ticket_number}</td>
+        </tr>'''
+
+    # Build button only for non-account notices
+    show_button = status not in ('suspended', 'unsuspended')
+    if show_button:
+        button_html = f'''
+                <!-- Action Button (Bulletproof) -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 30px auto; max-width: 220px;">
+                    <tr>
+                        <td align="center" style="background-color: #023e8a; border-radius: 6px; text-align: center; border: 2px solid #023e8a;">
+                            <a href="{build_external_url(link or 'signin')}" 
+                               style="display: block; padding: 14px 20px; color: white; text-decoration: none; font-weight: 600; font-size: 16px; letter-spacing: 0.5px; border-radius: 50px;">
+                                View Booking Details
+                            </a>
+                        </td>
+                    </tr>
+                </table>'''
+    else:
+        button_html = ''
 
     html = f"""
 <!DOCTYPE html>
@@ -215,32 +445,30 @@ def get_email_template(status, user_first_name, ticket_number, event_date=None, 
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f8f9fa; border-radius: 8px; overflow: hidden; margin: 25px auto; border: 1px solid #e9ecef; max-width: 500px;">
                     <tr>
                         <td style="padding: 20px; text-align: left;">
-                            <h3 style="color: #023e8a; margin: 0 0 15px 0; font-size: 18px; text-align: center;">Booking Details</h3>
+                            <h3 style="color: #023e8a; margin: 0 0 15px 0; font-size: 18px; text-align: center;">{details_title}</h3>
                             
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                                <tr>
-                                    <td style="padding: 10px 0; font-weight: 600; color: #555; width: 140px; text-align: left;">Ticket ID:</td>
-                                    <td style="padding: 10px 0; text-align: left; font-weight: 500;">{ticket_number}</td>
-                                </tr>
+                                {ticket_row}
                                 {event_type_row}
                                 {event_date_row}
+                                {booking_date_row}
+                                {equipment_row}
+                                {contact_row}
+                                {email_row}
+                                {status_row}
                                 {reason_row}
+                                {notes_row}
+                                {full_name_row}
+                                {barangay_row}
+                                {address_row}
+                                {joined_row}
+                                {suspended_since_row}
                             </table>
                         </td>
                     </tr>
                 </table>
 
-                <!-- Action Button (Bulletproof) -->
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 30px auto; max-width: 220px;">
-                    <tr>
-                        <td align="center" style="background-color: #023e8a; border-radius: 6px; text-align: center; border: 2px solid #023e8a;">
-                            <a href="https://brgybaritan.onrender.com/signin" 
-                               style="display: block; padding: 14px 20px; color: white; text-decoration: none; font-weight: 600; font-size: 16px; letter-spacing: 0.5px; border-radius: 50px;">
-                                View Booking Details
-                            </a>
-                        </td>
-                    </tr>
-                </table>
+                {button_html}
 
                 <!-- Footer Text -->
                 <p style="margin: 30px 0 15px 0; font-size: 15px; color: #666; line-height: 1.6;">
@@ -497,6 +725,33 @@ def signin():
             if user_query.data:
                 user_data = user_query.data[0]
             
+            # Determine Supabase verification state and sync to custom table if needed
+            supa_user = getattr(auth_response, 'user', None)
+            supa_verified = False
+            try:
+                # Supabase user may have email_confirmed_at or confirmed_at
+                if supa_user is not None:
+                    supa_verified = bool(getattr(supa_user, 'email_confirmed_at', None) or getattr(supa_user, 'confirmed_at', None))
+            except Exception:
+                supa_verified = False
+            
+            # If Supabase says verified but our table says not, update our table to verified
+            if supa_verified and user_data and not user_data.get('is_verified', False):
+                try:
+                    supabase.table("users").update({"is_verified": True}).eq("email", email).execute()
+                    user_data['is_verified'] = True
+                except Exception:
+                    pass
+            
+            # Block login if neither Supabase nor our table indicates verification
+            if (not supa_verified) and user_data and not user_data.get('is_verified', False):
+                try:
+                    supabase.auth.sign_out()
+                except Exception:
+                    pass
+                flash("Please verify your email first before signing in.", "error")
+                return redirect(url_for("signin"))
+            
             # If user exists in custom table, update their password hash
             if user_data:
                 hashed_password = generate_password_hash(password)
@@ -509,7 +764,9 @@ def signin():
                 'first_name': user_data['first_name'] if user_data else 'User',
                 'role': user_data['role'] if user_data else 'user'
             }
-            
+
+            # If account is suspended (non-admin), continue login; booking page will display suspended notice
+
             flash("Login successful!", "success")
             if user_data and user_data.get('role') == 'admin':
                 return redirect(url_for('admin_portal'))
@@ -530,6 +787,11 @@ def signin():
                 flash("Incorrect password!", "error")
                 return redirect(url_for("signin"))
 
+            # Block login if email not verified in our users table (fallback path)
+            if not user_data.get('is_verified', False):
+                flash("Please verify your email first before signing in.", "error")
+                return redirect(url_for("signin"))
+
             # Set session
             session['user'] = {
                 'id': user_data['id'],
@@ -537,6 +799,8 @@ def signin():
                 'first_name': user_data['first_name'],
                 'role': user_data['role']
             }
+
+            # If account is suspended (non-admin), continue login; booking page will display suspended notice
 
             flash("Login successful!", "success")
             if user_data['role'] == 'admin':
@@ -560,6 +824,12 @@ def booking():
     # Get user info
     user_data = supabase.table("users").select("*").eq("id", user_id).execute()
     user = user_data.data[0] if user_data.data else None
+
+    # If suspended (non-admin), render booking page with suspension context
+    suspended = bool(user and user.get('role') != 'admin' and user.get('is_suspended', False))
+    # Prefer new column suspend_notes, fallback to legacy suspend_reason
+    suspend_notes = (user.get('suspend_notes') or None) if user else None
+    suspend_reason = (user.get('suspend_reason') or suspend_notes or 'No reason provided') if user else None
 
     # Helper function to parse other_items string
     def parse_other_items(items_str):
@@ -595,7 +865,7 @@ def booking():
     history_data = supabase.table("bookings") \
         .select("*") \
         .eq("user_id", user_id) \
-        .in_("status", ["Completed", "Cancelled"]) \
+        .in_("status", ["Completed", "Cancelled", "Rejected"]) \
         .order("created_at", desc=True) \
         .execute()
     booking_history = history_data.data if history_data.data else []
@@ -630,7 +900,10 @@ def booking():
         bookings=bookings, 
         booking_history=booking_history,
         unread_count=unread_count,
-        notifications=notifications
+        notifications=notifications,
+        suspended=suspended,
+        suspend_reason=suspend_reason,
+        suspend_notes=suspend_notes
     )
 
 @app.route("/booking_details/<booking_id>")
@@ -693,6 +966,17 @@ def booking_details(booking_id):
         # I-override ang booking data para isama ang decoded equipment (kasama category_id)
         booking["equipment_list"] = equipment_list
         
+        # If snapshot query params are present (from notification link), include them in the response
+        try:
+            status_at_time = request.args.get('status_at_time')
+            cancel_reason_qs = request.args.get('cancel_reason')
+            if status_at_time:
+                booking["status_snapshot"] = status_at_time
+            if cancel_reason_qs:
+                booking["cancel_reason_snapshot"] = cancel_reason_qs
+        except Exception:
+            pass
+
         # Mark notification as read if coming from notification
         if request.args.get('from_notification'):
             try:
@@ -755,6 +1039,26 @@ def mark_notifications_as_read():
         return jsonify({"success": False}), 500
 
 
+@app.get('/api/approved_dates')
+def api_approved_dates():
+    """Return list of dates (YYYY-MM-DD) that already have Approved bookings.
+    Filter by type: type=equipment -> event_type == 'Equipment Booking';
+    type=court -> event_type != 'Equipment Booking'.
+    """
+    try:
+        btype = (request.args.get('type') or 'court').strip().lower()
+        base = supabase.table("bookings").select("event_date").eq("status", "Approved")
+        if btype == 'equipment':
+            query = base.eq("event_type", "Equipment Booking")
+        else:
+            query = base.neq("event_type", "Equipment Booking")
+        res = query.execute()
+        dates = sorted({row.get('event_date') for row in (res.data or []) if row.get('event_date')})
+        return jsonify({"success": True, "dates": dates})
+    except Exception as e:
+        print(f"/api/approved_dates error: {e}")
+        return jsonify({"success": False, "dates": []}), 500
+
 @app.post('/mark_notification_as_read')
 def mark_notification_as_read():
     """Mark a single notification as read for the logged-in user."""
@@ -782,78 +1086,126 @@ def cancel_booking():
     try:
         data = request.get_json()
         booking_id = data.get('booking_id')
+        cancel_reason = (data.get('cancel_reason') or '').strip()
         
         if not booking_id:
             return jsonify({"success": False, "message": "No booking ID provided"})
+        if not cancel_reason:
+            return jsonify({"success": False, "message": "Cancellation reason is required"}), 400
         
+        # Get previous status and items BEFORE updating
+        prev_info = supabase.table("bookings").select("status, other_items").eq("id", booking_id).eq("user_id", session["user"]["id"]).limit(1).execute()
+        prev_status = (prev_info.data or [{}])[0].get("status") if prev_info.data else None
+        other_items_before = (prev_info.data or [{}])[0].get("other_items", "") if prev_info.data else ""
+
         # Update status to Cancelled instead of deleting
         supabase.table("bookings") \
-            .update({"status": "Cancelled"}) \
+            .update({
+                "status": "Cancelled",
+                "cancel_reason": cancel_reason,
+                "cancelled_at": datetime.now().isoformat(),
+                "cancelled_by": session["user"]["id"]
+            }) \
             .eq("id", booking_id) \
             .eq("user_id", session["user"]["id"]) \
             .execute()
         
-        # --- NEW: Restore inventory for reserved items ---
+        # --- UPDATED: Restore inventory ONLY if previously Approved or Borrowed ---
         try:
-            # Kunin ang items mula sa booking
-            booking_info = supabase.table("bookings").select("other_items").eq("id", booking_id).execute()
-            other_items_str = booking_info.data[0].get("other_items", "") if booking_info.data else ""
+            if prev_status in ("Approved", "Borrowed"):
+                other_items_str = other_items_before
 
-            # Parse items: Format "Name xQTY, Name2 xQTY2"
-            items = []
-            if other_items_str:
-                for item_str in other_items_str.split(", "):
-                    if " x" in item_str:
-                        name_part, qty_str = item_str.rsplit(" x", 1)
-                        try:
-                            items.append({"name": name_part.strip(), "quantity": int(qty_str)})
-                        except ValueError:
-                            continue
+                # Parse items: Format "Name xQTY, Name2 xQTY2"
+                items = []
+                if other_items_str:
+                    for item_str in other_items_str.split(", "):
+                        if " x" in item_str:
+                            name_part, qty_str = item_str.rsplit(" x", 1)
+                            try:
+                                items.append({"name": name_part.strip(), "quantity": int(qty_str)})
+                            except ValueError:
+                                continue
 
-            if items:
-                # Map inventory by name
-                inv_data = supabase.table("inventory").select("id, name, quantity_available").execute()
-                name_to_item = {row["name"]: row for row in (inv_data.data or [])}
+                if items:
+                    # Map inventory by name
+                    inv_data = supabase.table("inventory").select("id, name, quantity_available").execute()
+                    name_to_item = {row["name"]: row for row in (inv_data.data or [])}
 
-                for it in items:
-                    inv_row = name_to_item.get(it["name"])  # Only restore if the name exists in inventory
-                    if inv_row:
-                        new_av = int(inv_row.get("quantity_available", 0)) + int(it["quantity"])
-                        supabase.table("inventory").update({"quantity_available": new_av}).eq("id", inv_row["id"]).execute()
+                    for it in items:
+                        inv_row = name_to_item.get(it["name"])  # Only restore if the name exists in inventory
+                        if inv_row:
+                            new_av = int(inv_row.get("quantity_available", 0)) + int(it["quantity"])
+                            supabase.table("inventory").update({"quantity_available": new_av}).eq("id", inv_row["id"]).execute()
         except Exception as inv_restore_err:
             print(f"Warning: Failed to restore inventory on cancel: {inv_restore_err}")
-        
-        # --- NEW: Create Notification for User ---
-        create_notification(
-            user_id=session["user"]["id"],
-            message=f"Your booking (ID: {booking_id}) has been cancelled.",
-            booking_id=booking_id,
-            link=url_for('booking_details', booking_id=booking_id)
-        )
 
         # Kunin ang email at name ng user
-        user_data = supabase.table("users").select("email, first_name").eq("id", session["user"]["id"]).execute()
+        user_data = supabase.table("users").select("email, first_name, last_name").eq("id", session["user"]["id"]).execute()
         if user_data.data:
             user_email = user_data.data[0]['email']
             user_first_name = user_data.data[0]['first_name']
+            user_last_name = user_data.data[0].get('last_name') or ''
+            user_full_name = f"{user_first_name} {user_last_name}".strip()
 
-        # Kunin ang event_date at ticket_number mula sa booking
-        booking_data = supabase.table("bookings").select("event_date, ticket_number").eq("id", booking_id).execute()
+        # Kunin ang event_date, ticket_number at iba pang detalye mula sa booking
+        booking_data = supabase.table("bookings").select("event_date, ticket_number, other_items, contact_number, email, created_at").eq("id", booking_id).execute()
+        event_date = None
+        ticket_number = None
+        other_items_str = None
+        booking_contact = None
+        booking_email = None
+        booking_created_at = None
         if booking_data.data:
-            event_date = booking_data.data[0]['event_date']
-            ticket_number = booking_data.data[0]['ticket_number']  # ← TAMA na ito
+            row = booking_data.data[0]
+            event_date = row.get('event_date')
+            ticket_number = row.get('ticket_number')
+            other_items_str = row.get('other_items')
+            booking_contact = row.get('contact_number')
+            booking_email = row.get('email')
+            booking_created_at = row.get('created_at')
 
-        # Magpadala ng tamang datos sa email
+        # --- Create Notification for User (use Ticket Number in message) ---
+        cancel_link = url_for('booking_details', booking_id=booking_id)
+        create_notification(
+            user_id=session["user"]["id"],
+            message=f"Your booking (Ticket: {ticket_number}) has been cancelled. Reason: {cancel_reason}",
+            booking_id=booking_id,
+            link=cancel_link
+        )
+
+        # Magpadala ng tamang datos sa email (with reason and more details)
         send_email_notification(
             to_email=user_email,
             subject="⚠️ Booking Cancelled",
             message=get_email_template(
                 status="cancelled",
                 user_first_name=user_first_name,
-                ticket_number=ticket_number,  # ← Tama na
-                event_date=event_date  # ← Tama na
+                ticket_number=ticket_number,
+                event_date=event_date,
+                reason=cancel_reason,
+                link=f"booking_details/{booking_id}",
+                booking_date=booking_created_at,
+                equipment=other_items_str,
+                contact_number=booking_contact,
+                email_address=user_email,
+                status_override="Cancelled"
             )
         )
+        
+        # Notify all admins with the cancel reason and link to admin booking details
+        try:
+            admins = supabase.table("users").select("id").eq("role", "admin").execute()
+            if admins.data:
+                for adm in admins.data:
+                    create_notification(
+                        user_id=adm["id"],
+                        message=f"{user_full_name or 'A user'} cancelled booking {ticket_number}. Reason: {cancel_reason}",
+                        booking_id=booking_id,
+                        admin_only=True,
+                        link=url_for('admin_booking_details', booking_id=booking_id)
+                    )
+        except Exception as anerr:
+            print(f"Warning: admin cancel notifications failed: {anerr}")
         
         return jsonify({"success": True, "message": "Booking cancelled successfully"})
     
@@ -997,8 +1349,26 @@ def booking3():
 
     # Generate IDs with appropriate ticket number format (4 digits)
     booking_id = str(uuid.uuid4())
-    # For equipment bookings (from booking3), use TKT-E{4-digit-number}
-    ticket_number = "TKT-E" + str(uuid.uuid4().int % 10000).zfill(4)
+    # For equipment bookings (from booking3), use sequential TKT-E{4-digit-number}
+    try:
+        reset_from = RESET_FROM_ISO
+        res = (
+            supabase
+            .table("bookings")
+            .select("ticket_number, created_at")
+            .eq("event_type", "Equipment Booking")
+            .gte("created_at", reset_from)
+            .like("ticket_number", "TKT-E%")
+            .order("ticket_number", desc=True)
+            .limit(1)
+            .execute()
+        )
+        last_ticket = (res.data[0]["ticket_number"] if res.data else "")
+        m = re.match(r"^TKT-E(\d{4})$", last_ticket or "")
+        next_num = (int(m.group(1)) + 1) if m else 1
+        ticket_number = f"TKT-E{str(next_num).zfill(4)}"
+    except Exception:
+        ticket_number = "TKT-E0001"
 
     # ✅ KUNIN ANG USER'S FIRST_NAME AT LAST_NAME MULA SA DATABASE
     try:
@@ -1031,7 +1401,7 @@ def booking3():
     }
 
     try:
-        # --- NEW: Server-side validation and inventory deduction ---
+        # --- UPDATED: Validate availability only (no deduction on submission) ---
         if equipment_quantities:
             # Kunin ang current availability para sa lahat ng items na may quantity > 0
             item_ids = list(equipment_quantities.keys())
@@ -1049,33 +1419,46 @@ def booking3():
                 flash("Not enough stock for: " + ", ".join(insufficient), "error")
                 return redirect(url_for("booking3"))
 
-            # Deduct quantities with simple rollback strategy if any update fails
-            updated_items = []
-            for iid, info in equipment_quantities.items():
-                new_available = availability_map[iid] - info["quantity"]
+        # Insert booking with retry on unique ticket_number conflict
+        for _ in range(5):
+            try:
+                # Recompute next ticket just in case of race/conflict
                 try:
-                    supabase.table("inventory").update({"quantity_available": new_available}).eq("id", iid).execute()
-                    updated_items.append((iid, info["quantity"]))
-                except Exception as upd_err:
-                    # Rollback previously updated items
-                    for rb_iid, rb_qty in updated_items:
-                        # Get current value to avoid negative; add back quantity
-                        cur_resp = supabase.table("inventory").select("quantity_available").eq("id", rb_iid).execute()
-                        cur_av = (cur_resp.data or [{}])[0].get("quantity_available", 0)
-                        supabase.table("inventory").update({"quantity_available": cur_av + rb_qty}).eq("id", rb_iid).execute()
-                    flash(f"Failed to update inventory. Please try again.", "error")
-                    return redirect(url_for("booking3"))
-
-        # Insert booking
-        supabase.table("bookings").insert(booking_data).execute()
+                    res = (
+                        supabase
+                        .table("bookings")
+                        .select("ticket_number, created_at")
+                        .eq("event_type", "Equipment Booking")
+                        .gte("created_at", RESET_FROM_ISO)
+                        .like("ticket_number", "TKT-E%")
+                        .order("ticket_number", desc=True)
+                        .limit(1)
+                        .execute()
+                    )
+                    last_ticket = (res.data[0]["ticket_number"] if res.data else "")
+                    m = re.match(r"^TKT-E(\d{4})$", last_ticket or "")
+                    next_num = (int(m.group(1)) + 1) if m else 1
+                    ticket_number = f"TKT-E{str(next_num).zfill(4)}"
+                    booking_data["ticket_number"] = ticket_number
+                except Exception:
+                    # keep existing ticket_number if recompute fails
+                    pass
+                supabase.table("bookings").insert(booking_data).execute()
+                break
+            except Exception as insert_err:
+                if "bookings_ticket_number_key" in str(insert_err):
+                    continue
+                raise
         flash(f"Booking submitted successfully! Ticket: {ticket_number}", "success")
         
         # --- NEW: Create Notification for User ---
+        # Include snapshot so notification details modal shows Pending even if status changes later
+        pending_link = url_for('booking_details', booking_id=booking_id) + "?status_at_time=Pending"
         create_notification(
             user_id=user_id,
             message=f"Your booking request (Ticket: {ticket_number}) has been submitted and is now pending approval.",
             booking_id=booking_id,
-            link=url_for('booking_details', booking_id=booking_id)
+            link=pending_link,
         )
 
         send_email_notification(
@@ -1086,7 +1469,13 @@ def booking3():
                 user_first_name=user_first_name,
                 ticket_number=ticket_number,
                 event_date=event_date,
-                event_type="Equipment Booking"  # Dahil sa booking3, wala naman event type
+                event_type="Equipment Booking",
+                link=f"booking_details/{booking_id}",
+                booking_date=booking_data["created_at"],
+                equipment=all_other_items,
+                contact_number=contact_number,
+                email_address=email,
+                status_override="Pending"
             )
         )
         
@@ -1183,8 +1572,27 @@ def book_event():
 
         # Generate IDs with appropriate ticket number format (4 digits)
         booking_id = str(uuid.uuid4())
-        # For court bookings (from booking2), use TKT-C{4-digit-number}
-        ticket_number = "TKT-C" + str(uuid.uuid4().int % 10000).zfill(4)
+        # For court bookings (from booking2), use sequential TKT-C{4-digit-number}
+        # Determine next ticket by the highest ticket_number within the reset window
+        try:
+            reset_from = RESET_FROM_ISO
+            res = (
+                supabase
+                .table("bookings")
+                .select("ticket_number, created_at")
+                .neq("event_type", "Equipment Booking")
+                .gte("created_at", reset_from)
+                .like("ticket_number", "TKT-C%")
+                .order("ticket_number", desc=True)
+                .limit(1)
+                .execute()
+            )
+            last_ticket = (res.data[0]["ticket_number"] if res.data else "")
+            m = re.match(r"^TKT-C(\d{4})$", last_ticket or "")
+            next_num = (int(m.group(1)) + 1) if m else 1
+            ticket_number = f"TKT-C{str(next_num).zfill(4)}"
+        except Exception:
+            ticket_number = "TKT-C0001"
 
         # ✅ KUNIN ANG USER'S FIRST_NAME AT LAST_NAME MULA SA DATABASE
         try:
@@ -1216,7 +1624,7 @@ def book_event():
             "created_at": datetime.now().isoformat()
         }
 
-        # --- NEW: Server-side validation and inventory deduction ---
+        # --- UPDATED: Validate availability only (no deduction on submission) ---
         if equipment_quantities:
             item_ids = list(equipment_quantities.keys())
             inv_resp = supabase.table("inventory").select("id, quantity_available").in_("id", item_ids).execute()
@@ -1232,42 +1640,64 @@ def book_event():
                 flash("Not enough stock for: " + ", ".join(insufficient), "error")
                 return redirect(url_for("booking2_page"))
 
-            updated_items = []
-            for iid, info in equipment_quantities.items():
-                new_available = availability_map[iid] - info["quantity"]
+        # Insert into Supabase with retry on unique ticket_number conflict
+        for _ in range(5):
+            try:
+                # Recompute next ticket just in case of race/conflict
                 try:
-                    supabase.table("inventory").update({"quantity_available": new_available}).eq("id", iid).execute()
-                    updated_items.append((iid, info["quantity"]))
-                except Exception as upd_err:
-                    for rb_iid, rb_qty in updated_items:
-                        cur_resp = supabase.table("inventory").select("quantity_available").eq("id", rb_iid).execute()
-                        cur_av = (cur_resp.data or [{}])[0].get("quantity_available", 0)
-                        supabase.table("inventory").update({"quantity_available": cur_av + rb_qty}).eq("id", rb_iid).execute()
-                    flash("Failed to update inventory. Please try again.", "error")
-                    return redirect(url_for("booking2_page"))
-
-        # Insert into Supabase
-        supabase.table("bookings").insert(booking_data).execute()
+                    res = (
+                        supabase
+                        .table("bookings")
+                        .select("ticket_number, created_at")
+                        .neq("event_type", "Equipment Booking")
+                        .gte("created_at", RESET_FROM_ISO)
+                        .like("ticket_number", "TKT-C%")
+                        .order("ticket_number", desc=True)
+                        .limit(1)
+                        .execute()
+                    )
+                    last_ticket = (res.data[0]["ticket_number"] if res.data else "")
+                    m = re.match(r"^TKT-C(\d{4})$", last_ticket or "")
+                    next_num = (int(m.group(1)) + 1) if m else 1
+                    ticket_number = f"TKT-C{str(next_num).zfill(4)}"
+                    booking_data["ticket_number"] = ticket_number
+                except Exception:
+                    # keep existing ticket_number if recompute fails
+                    pass
+                supabase.table("bookings").insert(booking_data).execute()
+                break
+            except Exception as insert_err:
+                if "bookings_ticket_number_key" in str(insert_err):
+                    continue
+                raise
 
         flash(f"Booking submitted successfully! Ticket: {ticket_number}", "success")
 
         # --- NEW: Create Notification for User ---
+        # Include snapshot so notification details modal shows Pending even if status changes later
+        pending_link2 = url_for('booking_details', booking_id=booking_id) + "?status_at_time=Pending"
         create_notification(
             user_id=user_id,
             message=f"Your event booking request (Ticket: {ticket_number}) has been submitted and is now pending approval.",
             booking_id=booking_id,
-            link=url_for('booking_details', booking_id=booking_id)
+            link=pending_link2,
         )
 
         send_email_notification(
             to_email=email,
-            subject="Event Booking Submitted - Pending Approval",
+            subject="⏳ Booking Pending Approval",
             message=get_email_template(
                 status="pending",
                 user_first_name=user_first_name,
                 ticket_number=ticket_number,
                 event_date=event_date,
-                event_type=event_type
+                event_type=event_type,
+                link=f"booking_details/{booking_id}",
+                booking_date=booking_data["created_at"],
+                equipment=all_other_items,
+                contact_number=contact_number,
+                email_address=email,
+                status_override="Pending"
             )
         )
 
@@ -1345,9 +1775,12 @@ def admin_portal():
                 booking["parsed_items"] = parse_other_items(booking.get("other_items", ""))
                 all_bookings.append(booking)
 
-        # Kunin ang lahat ng equipment
-        equipment_data = supabase.table("inventory").select("*").execute()
+        # Kunin ang lahat ng equipment (alphabetical by name)
+        equipment_data = supabase.table("inventory").select("*").order("name", desc=False).execute()
         equipment_items = equipment_data.data if equipment_data.data else []
+        # Inject computed quantity_defective (from description)
+        for it in equipment_items:
+            it["quantity_defective"] = parse_defective_from_description(it.get("description", ""))
         
         # Get all users for user management
         users_data = supabase.table("users").select("*").order("created_at", desc=True).execute()
@@ -1502,29 +1935,73 @@ def admin_approve_booking():
     try:
         data = request.get_json()
         booking_id = data.get('booking_id')
+        items_override = data.get('items')  # Optional: [{name, quantity}]
         
         if not booking_id:
             return jsonify({"success": False, "message": "No booking ID provided"})
         
-        # I-update ang status ng booking
-        supabase.table("bookings") \
-            .update({"status": "Approved"}) \
-            .eq("id", booking_id) \
-            .execute()
-        
-        # --- NEW: Fetch user_id and notify user ---
-        booking_data = supabase.table("bookings").select("user_id, ticket_number, email, first_name, event_type, event_date").eq("id", booking_id).execute()
+        # Fetch booking details including items to validate/deduct inventory
+        booking_data = supabase.table("bookings").select("user_id, ticket_number, email, first_name, event_type, event_date, other_items, contact_number, created_at").eq("id", booking_id).execute()
         if booking_data.data:
             user_id = booking_data.data[0]['user_id']
             ticket_number = booking_data.data[0]['ticket_number']
             user_email = booking_data.data[0]['email']
             user_first_name = booking_data.data[0]['first_name']
+            other_items_str = booking_data.data[0].get('other_items') or ""
 
+            # Build items from override if provided; else parse other_items
+            items = []
+            if items_override and isinstance(items_override, list):
+                for it in items_override:
+                    try:
+                        nm = str(it.get('name', '')).strip()
+                        qt = int(it.get('quantity', 0))
+                        if nm and qt >= 0:
+                            items.append({"name": nm, "quantity": qt})
+                    except Exception:
+                        continue
+            else:
+                if other_items_str:
+                    for item_str in other_items_str.split(", "):
+                        if " x" in item_str:
+                            name_part, qty_str = item_str.rsplit(" x", 1)
+                            try:
+                                items.append({"name": name_part.strip(), "quantity": int(qty_str)})
+                            except ValueError:
+                                continue
+
+            # Validate inventory on approval (no deduction at this stage)
+            if items:
+                inv_data = supabase.table("inventory").select("id, name, quantity_available").in_("name", [it["name"] for it in items]).execute()
+                name_to_item = {row["name"]: row for row in (inv_data.data or [])}
+
+                insufficient = []
+                for it in items:
+                    inv_row = name_to_item.get(it["name"]) or {}
+                    available = int(inv_row.get("quantity_available", 0)) if inv_row else 0
+                    if it["quantity"] > available:
+                        insufficient.append(f"{it['name']} (requested {it['quantity']}, available {available})")
+
+                if insufficient:
+                    return jsonify({"success": False, "message": "Not enough stock for: " + ", ".join(insufficient)}), 400
+
+            # If override provided, store the final approved quantities back to other_items
+            try:
+                if items_override and items:
+                    new_other = ", ".join([f"{it['name']} x{int(it['quantity'])}" for it in items if int(it['quantity']) > 0])
+                    supabase.table("bookings").update({"other_items": new_other}).eq("id", booking_id).execute()
+            except Exception:
+                pass
+
+            # Update booking status to Approved AFTER successful deduction
+            supabase.table("bookings").update({"status": "Approved"}).eq("id", booking_id).execute()
+
+            approved_link = url_for('booking_details', booking_id=booking_id) + "?status_at_time=Approved"
             create_notification(
                 user_id=user_id,
                 message=f"Great news! Your booking request (Ticket: {ticket_number}) has been approved.",
                 booking_id=booking_id,
-                link=url_for('booking_details', booking_id=booking_id)
+                link=approved_link,
             )
 
             # --- NEW: Send Email Notification ---
@@ -1535,8 +2012,14 @@ def admin_approve_booking():
                     status="approved",
                     user_first_name=user_first_name,
                     ticket_number=ticket_number,
-                    event_date=booking_data.data[0].get('event_date', 'N/A'),
-                    event_type=booking_data.data[0].get('event_type', 'N/A')
+                    event_date=booking_data.data[0].get('event_date'),
+                    event_type=booking_data.data[0].get('event_type'),
+                    link=f"booking_details/{booking_id}",
+                    booking_date=booking_data.data[0].get('created_at'),
+                    equipment=other_items_str,
+                    contact_number=booking_data.data[0].get('contact_number'),
+                    email_address=user_email,
+                    status_override="Approved"
                 )
             )
         
@@ -1551,57 +2034,68 @@ def admin_reject_booking():
         return jsonify({"success": False, "message": "Unauthorized"}), 403
 
     try:
-        data = request.get_json()
+        data = request.get_json() or {}
         booking_id = data.get("booking_id")
+        reject_reason = (data.get("reject_reason") or "").strip()
+        reject_notes = (data.get("reject_notes") or "").strip()
 
         if not booking_id:
             return jsonify({"success": False, "message": "No booking ID provided"}), 400
+        if not reject_reason:
+            return jsonify({"success": False, "message": "Reject reason is required"}), 400
+
+        # Fetch previous status and items BEFORE updating
+        prev_info = supabase.table("bookings").select("status, other_items").eq("id", booking_id).limit(1).execute()
+        prev_status = (prev_info.data or [{}])[0].get("status") if prev_info.data else None
+        other_items_before = (prev_info.data or [{}])[0].get("other_items", "") if prev_info.data else ""
 
         response = supabase.table("bookings") \
-            .update({"status": "Rejected"}) \
+            .update({"status": "Rejected", "reject_reason": reject_reason}) \
             .eq("id", booking_id) \
             .execute()
 
         if not response.data:
             return jsonify({"success": False, "message": "Booking not found"}), 404
 
-        # --- NEW: Restore inventory for reserved items ---
+        # --- UPDATED: Restore inventory ONLY if previously Approved or Borrowed ---
         try:
-            booking_info = supabase.table("bookings").select("other_items").eq("id", booking_id).execute()
-            other_items_str = booking_info.data[0].get("other_items", "") if booking_info.data else ""
+            if prev_status in ("Approved", "Borrowed"):
+                other_items_str = other_items_before
+                items = []
+                if other_items_str:
+                    for item_str in other_items_str.split(", "):
+                        if " x" in item_str:
+                            name_part, qty_str = item_str.rsplit(" x", 1)
+                            try:
+                                items.append({"name": name_part.strip(), "quantity": int(qty_str)})
+                            except ValueError:
+                                continue
 
-            items = []
-            if other_items_str:
-                for item_str in other_items_str.split(", "):
-                    if " x" in item_str:
-                        name_part, qty_str = item_str.rsplit(" x", 1)
-                        try:
-                            items.append({"name": name_part.strip(), "quantity": int(qty_str)})
-                        except ValueError:
-                            continue
-
-            if items:
-                inv_data = supabase.table("inventory").select("id, name, quantity_available").execute()
-                name_to_item = {row["name"]: row for row in (inv_data.data or [])}
-                for it in items:
-                    inv_row = name_to_item.get(it["name"])  # Only restore if the name exists in inventory
-                    if inv_row:
-                        new_av = int(inv_row.get("quantity_available", 0)) + int(it["quantity"])
-                        supabase.table("inventory").update({"quantity_available": new_av}).eq("id", inv_row["id"]).execute()
+                if items:
+                    inv_data = supabase.table("inventory").select("id, name, quantity_available").execute()
+                    name_to_item = {row["name"]: row for row in (inv_data.data or [])}
+                    for it in items:
+                        inv_row = name_to_item.get(it["name"])  # Only restore if the name exists in inventory
+                        if inv_row:
+                            new_av = int(inv_row.get("quantity_available", 0)) + int(it["quantity"])
+                            supabase.table("inventory").update({"quantity_available": new_av}).eq("id", inv_row["id"]).execute()
         except Exception as inv_restore_err:
             print(f"Warning: Failed to restore inventory on reject: {inv_restore_err}")
 
         # --- NEW: Fetch user_id and notify user ---
-        booking_data = supabase.table("bookings").select("user_id, ticket_number, email, first_name, event_type, event_date").eq("id", booking_id).execute()
+        booking_data = supabase.table("bookings").select("user_id, ticket_number, email, first_name, event_type, event_date, other_items, contact_number, created_at").eq("id", booking_id).execute()
         if booking_data.data:
             user_id = booking_data.data[0]['user_id']
             ticket_number = booking_data.data[0]['ticket_number']
             user_email = booking_data.data[0]['email']
             user_first_name = booking_data.data[0]['first_name']
 
+            # Build combined text for message output only
+            reason_text = reject_reason + (f" | Notes: {reject_notes}" if reject_notes else "")
+
             create_notification(
                 user_id=user_id,
-                message=f"We're sorry, your booking request (Ticket: {ticket_number}) has been rejected.",
+                message=f"We're sorry, your booking request (Ticket: {ticket_number}) has been rejected. Reason: {reason_text}",
                 booking_id=booking_id,
                 link=url_for('booking_details', booking_id=booking_id)
             )
@@ -1614,9 +2108,15 @@ def admin_reject_booking():
                     status="rejected",
                     user_first_name=user_first_name,
                     ticket_number=ticket_number,
-                    event_date=booking_data.data[0].get('event_date', 'N/A'),
-                    event_type=booking_data.data[0].get('event_type', 'N/A'),
-                    reason="The requested date is no longer available."  # Optional: Kunin mo sa form kung may reason field
+                    event_date=booking_data.data[0].get('event_date'),
+                    event_type=booking_data.data[0].get('event_type'),
+                    reason=reason_text,
+                    link=f"booking_details/{booking_id}",
+                    booking_date=booking_data.data[0].get('created_at'),
+                    equipment=booking_data.data[0].get('other_items'),
+                    contact_number=booking_data.data[0].get('contact_number'),
+                    email_address=user_email,
+                    status_override="Rejected"
                 )
             )
 
@@ -1624,6 +2124,160 @@ def admin_reject_booking():
 
     except Exception as e:
         return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500
+
+# --- NEW: Equipment management endpoints (used by Admin UI) ---
+@app.get('/admin/equipment/<item_id>')
+def get_equipment_item(item_id):
+    try:
+        if "user" not in session or session["user"].get("role") != "admin":
+            return jsonify({"success": False, "message": "Unauthorized"}), 403
+        item_id = (item_id or '').strip()
+        if not item_id:
+            return jsonify({"success": False, "message": "Missing item_id"}), 400
+        res = supabase.table("inventory").select("*").eq("id", item_id).limit(1).execute()
+        if not res.data:
+            return jsonify({"success": False, "message": "Not Found"}), 404
+        item = res.data[0]
+        item["quantity_defective"] = parse_defective_from_description(item.get("description", ""))
+        return jsonify({"success": True, "item": item})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.post('/admin/equipment/add')
+def add_equipment():
+    try:
+        if "user" not in session or session["user"].get("role") != "admin":
+            return jsonify({"success": False, "message": "Unauthorized"}), 403
+        data = request.get_json(force=True) or {}
+        name = (data.get('name') or '').strip()
+        category_id = (data.get('category_id') or 'cat6').strip()
+        qty_total = _to_int(data.get('quantity_total'), 0)
+        qty_avail = _to_int(data.get('quantity_available'), 0)
+        qty_def = _to_int(data.get('quantity_defective'), 0)
+        is_active = str(data.get('is_active')).lower() != 'false'
+        if not name:
+            return jsonify({"success": False, "message": "Name is required"}), 400
+        qty_total = max(qty_total, 0)
+        qty_avail = max(min(qty_avail, qty_total), 0)
+        qty_def = max(qty_def, 0)
+        desc = set_defective_in_description(data.get('description') or '', qty_def)
+        new_item = {
+            "id": str(uuid.uuid4()),
+            "name": name,
+            "category_id": category_id,
+            "description": desc,
+            "quantity_total": qty_total,
+            "quantity_available": qty_avail,
+            "is_active": is_active,
+            "created_at": datetime.now().isoformat()
+        }
+        supabase.table("inventory").insert(new_item).execute()
+        new_item["quantity_defective"] = qty_def
+        return jsonify({"success": True, "item": new_item})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.post('/admin/equipment/update')
+def update_equipment():
+    try:
+        if "user" not in session or session["user"].get("role") != "admin":
+            return jsonify({"success": False, "message": "Unauthorized"}), 403
+        data = request.get_json(force=True) or {}
+        item_id = (data.get('id') or '').strip()
+        if not item_id:
+            return jsonify({"success": False, "message": "Missing id"}), 400
+        # Fetch existing to merge description/defective
+        cur = supabase.table("inventory").select("*").eq("id", item_id).limit(1).execute()
+        if not cur.data:
+            return jsonify({"success": False, "message": "Not Found"}), 404
+        cur_item = cur.data[0]
+        # Parse inputs (blank strings fallback to current values)
+        name_in = data.get('name')
+        name = (name_in if (isinstance(name_in, str) and name_in.strip() != "") else cur_item.get('name') or '').strip()
+        cat_in = data.get('category_id')
+        category_id = (cat_in if (isinstance(cat_in, str) and cat_in.strip() != "") else cur_item.get('category_id') or 'cat6').strip()
+        qt_in = data.get('quantity_total')
+        qa_in = data.get('quantity_available')
+        qd_in = data.get('quantity_defective')
+        qty_total = _to_int(qt_in, cur_item.get('quantity_total') or 0)
+        qty_avail = _to_int(qa_in, cur_item.get('quantity_available') or 0)
+        qty_def = _to_int(qd_in, parse_defective_from_description(cur_item.get('description') or ''))
+        is_active = cur_item.get('is_active', True)
+        if 'is_active' in data:
+            is_active = str(data.get('is_active')).lower() != 'false'
+        # Clamp
+        qty_total = max(qty_total, 0)
+        qty_avail = max(min(qty_avail, qty_total), 0)
+        qty_def = max(qty_def, 0)
+        # Merge description with defective
+        desc = set_defective_in_description(cur_item.get('description') or '', qty_def)
+        update = {
+            "name": name,
+            "category_id": category_id,
+            "description": desc,
+            "quantity_total": qty_total,
+            "quantity_available": qty_avail,
+            "is_active": is_active,
+        }
+        supabase.table("inventory").update(update).eq("id", item_id).execute()
+        update_out = {**cur_item, **update, "id": item_id, "quantity_defective": qty_def}
+        return jsonify({"success": True, "item": update_out})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.post('/admin/inventory/by_names')
+def inventory_by_names():
+    try:
+        if "user" not in session or session["user"].get("role") != "admin":
+            return jsonify({"success": False, "message": "Unauthorized"}), 403
+        payload = request.get_json(force=True) or {}
+        names = payload.get('names') or []
+        if not isinstance(names, list) or not names:
+            return jsonify({"success": True, "items": []})
+        res = supabase.table("inventory").select("*").in_("name", names).execute()
+        items = []
+        for r in (res.data or []):
+            r["quantity_defective"] = parse_defective_from_description(r.get("description", ""))
+            items.append(r)
+        return jsonify({"success": True, "items": items})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# --- Admin: Update booking items (quantities) prior to approval ---
+@app.route("/admin/booking_items/update", methods=["POST"])
+def admin_update_booking_items():
+    if "user" not in session or session["user"].get("role") != "admin":
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
+    try:
+        data = request.get_json() or {}
+        booking_id = data.get("booking_id")
+        items = data.get("items") or []  # [{name, quantity}]
+        if not booking_id:
+            return jsonify({"success": False, "message": "No booking ID provided"}), 400
+        # Ensure booking is Pending before editing requested quantities
+        bq = supabase.table("bookings").select("status").eq("id", booking_id).limit(1).execute()
+        status = (bq.data or [{}])[0].get("status") if bq.data else None
+        if status != "Pending":
+            return jsonify({"success": False, "message": "Only Pending bookings can be edited"}), 400
+
+        # Build new other_items string from provided items
+        normalized = []
+        if isinstance(items, list):
+            for it in items:
+                try:
+                    nm = str(it.get("name", "")).strip()
+                    qt = int(it.get("quantity", 0))
+                    if nm and qt >= 0:
+                        normalized.append({"name": nm, "quantity": qt})
+                except Exception:
+                    continue
+        # Keep only >0 in display string; 0 means remove
+        other_str = ", ".join([f"{it['name']} x{int(it['quantity'])}" for it in normalized if int(it['quantity']) > 0])
+
+        supabase.table("bookings").update({"other_items": other_str}).eq("id", booking_id).execute()
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
 
 # --- NEW: Mark booking as Borrowed ---
 @app.route("/admin/mark_borrowed", methods=["POST"])
@@ -1638,16 +2292,56 @@ def admin_mark_borrowed():
             return jsonify({"success": False, "message": "No booking ID provided"}), 400
 
         # Update status to Borrowed only if currently Approved
-        current = supabase.table("bookings").select("status, user_id, ticket_number, first_name, email").eq("id", booking_id).limit(1).execute()
+        current = supabase.table("bookings").select("status, user_id, ticket_number, first_name, email, event_type, event_date, other_items, contact_number, created_at").eq("id", booking_id).limit(1).execute()
         if not current.data:
             return jsonify({"success": False, "message": "Booking not found"}), 404
         cur = current.data[0]
         if cur.get("status") != "Approved":
             return jsonify({"success": False, "message": "Only approved bookings can be marked as borrowed"}), 400
 
+        # Parse requested items from other_items string: "Name xQty, Name2 xQty2"
+        items = []
+        other_items_str = cur.get("other_items") or ""
+        if other_items_str:
+            for item_str in other_items_str.split(", "):
+                if " x" in item_str:
+                    name_part, qty_str = item_str.rsplit(" x", 1)
+                    try:
+                        qty = int(qty_str)
+                    except ValueError:
+                        continue
+                    if qty > 0:
+                        items.append({"name": name_part.strip(), "quantity": qty})
+
+        # If there are equipment items, verify availability and subtract
+        if items:
+            inv_data = supabase.table("inventory").select("id, name, quantity_available").execute()
+            name_to_item = {row["name"]: row for row in (inv_data.data or [])}
+
+            # Check availability first
+            for it in items:
+                inv_row = name_to_item.get(it["name"])  # skip if not found in inventory
+                if inv_row:
+                    available = int(inv_row.get("quantity_available", 0))
+                    if available < int(it["quantity"]):
+                        return jsonify({
+                            "success": False,
+                            "message": f"Insufficient stock for '{it['name']}'. Available: {available}, required: {it['quantity']}"
+                        }), 400
+
+            # All good; subtract quantities
+            for it in items:
+                inv_row = name_to_item.get(it["name"])  # subtract only if exists
+                if inv_row:
+                    new_av = int(inv_row.get("quantity_available", 0)) - int(it["quantity"])
+                    if new_av < 0:
+                        new_av = 0  # safety clamp; should not happen due to check above
+                    supabase.table("inventory").update({"quantity_available": new_av}).eq("id", inv_row["id"]).execute()
+
+        # Finally update booking status
         supabase.table("bookings").update({"status": "Borrowed"}).eq("id", booking_id).execute()
 
-        # Notify user
+        # Notify user (app notification)
         try:
             create_notification(
                 user_id=cur.get("user_id"),
@@ -1657,6 +2351,28 @@ def admin_mark_borrowed():
             )
         except Exception as nerr:
             print(f"notify borrowed err: {nerr}")
+
+        # Email user (In Progress)
+        try:
+            send_email_notification(
+                to_email=cur.get("email"),
+                subject="🚚 In Progress",
+                message=get_email_template(
+                    status="borrowed",
+                    user_first_name=cur.get("first_name") or "",
+                    ticket_number=cur.get("ticket_number") or "",
+                    event_date=cur.get("event_date"),
+                    event_type=cur.get("event_type"),
+                    link=f"booking_details/{booking_id}",
+                    booking_date=cur.get("created_at"),
+                    equipment=cur.get("other_items"),
+                    contact_number=cur.get("contact_number"),
+                    email_address=cur.get("email"),
+                    status_override="In Progress"
+                )
+            )
+        except Exception as e:
+            print(f"borrowed email send err: {e}")
 
         return jsonify({"success": True, "message": "Booking marked as Borrowed"})
 
@@ -1676,7 +2392,7 @@ def admin_mark_completed():
             return jsonify({"success": False, "message": "No booking ID provided"}), 400
 
         # Ensure booking exists and is Borrowed (or Approved -> allow force return?)
-        current = supabase.table("bookings").select("status, other_items, user_id, ticket_number, first_name").eq("id", booking_id).limit(1).execute()
+        current = supabase.table("bookings").select("status, other_items, user_id, ticket_number, first_name, email, event_date, event_type, contact_number, created_at").eq("id", booking_id).limit(1).execute()
         if not current.data:
             return jsonify({"success": False, "message": "Booking not found"}), 404
         cur = current.data[0]
@@ -1710,7 +2426,7 @@ def admin_mark_completed():
         # Update status to Completed
         supabase.table("bookings").update({"status": "Completed"}).eq("id", booking_id).execute()
 
-        # Notify user
+        # Notify user (app notification)
         try:
             create_notification(
                 user_id=cur.get("user_id"),
@@ -1721,133 +2437,143 @@ def admin_mark_completed():
         except Exception as nerr:
             print(f"notify completed err: {nerr}")
 
+        # Email user (Completed)
+        try:
+            send_email_notification(
+                to_email=cur.get("email"),
+                subject="✔️ Booking Completed",
+                message=get_email_template(
+                    status="completed",
+                    user_first_name=cur.get("first_name") or "",
+                    ticket_number=cur.get("ticket_number") or "",
+                    event_date=cur.get("event_date"),
+                    event_type=cur.get("event_type"),
+                    link=f"booking_details/{booking_id}",
+                    booking_date=cur.get("created_at"),
+                    equipment=cur.get("other_items"),
+                    contact_number=cur.get("contact_number"),
+                    email_address=cur.get("email"),
+                    status_override="Completed"
+                )
+            )
+        except Exception as e:
+            print(f"completed email send err: {e}")
+
         return jsonify({"success": True, "message": "Booking marked as Completed"})
 
     except Exception as e:
         return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500
 
-# Equipment Management Routes
-@app.route("/admin/equipment")
-def admin_equipment_management():
-    if "user" not in session or session["user"]["role"] != "admin":
-        flash("Admins only!", "error")
-        return redirect(url_for("admin_login"))
-    
+# --- NEW: Mark booking as Completed (return). Also restore inventory ---
+@app.route("/admin/complete_with_adjustments", methods=["POST"])
+def admin_complete_with_adjustments():
+    if "user" not in session or session["user"].get("role") != "admin":
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
     try:
-        # Kunin ang lahat ng equipment
-        equipment_data = supabase.table("inventory").select("*").execute()
-        equipment_items = equipment_data.data if equipment_data.data else []
-        
-        return render_template(
-            "admin_portal.html",  # Dapat naka-set na ito sa iyong admin portal
-            equipment_items=equipment_items,
-            active_tab="equipment-management"  # Para ma-highlight ang tamang tab
-        )
-    
-    except Exception as e:
-        flash(f"Error loading equipment: {str(e)}", "error")
-        return redirect(url_for("admin_portal"))
+        data = request.get_json() or {}
+        booking_id = data.get("booking_id")
+        adj_items = data.get("items") or []  # [{name, quantity_total, quantity_defective, return_qty}]
+        if not booking_id:
+            return jsonify({"success": False, "message": "No booking ID provided"}), 400
 
-@app.route("/admin/equipment/<item_id>")
-def get_equipment_item(item_id):
-    if "user" not in session or session["user"]["role"] != "admin":
-        return jsonify({"success": False, "message": "Unauthorized"})
-    
-    try:
-        equipment_data = supabase.table("inventory").select("*").eq("id", item_id).execute()
-        
-        if not equipment_data.data:
-            return jsonify({"success": False, "message": "Equipment not found"})
-        
-        return jsonify({"success": True, "item": equipment_data.data[0]})
-    
-    except Exception as e:
-        return jsonify({"success": False, "message": str(e)})
+        # Validate booking exists and is Borrowed or Approved
+        current = supabase.table("bookings").select("status, other_items, user_id, ticket_number, first_name, email, event_date, event_type, contact_number, created_at").eq("id", booking_id).limit(1).execute()
+        if not current.data:
+            return jsonify({"success": False, "message": "Booking not found"}), 404
+        cur = current.data[0]
+        if cur.get("status") not in ("Borrowed", "Approved"):
+            return jsonify({"success": False, "message": "Only borrowed/approved bookings can be completed"}), 400
 
-@app.route("/admin/equipment/add", methods=["POST"])
-def add_equipment():
-    if "user" not in session or session["user"]["role"] != "admin":
-        return jsonify({"success": False, "message": "Unauthorized"})
-    
-    try:
-        data = request.get_json()
-        
-        # Validation
-        required_fields = ["name", "category_id", "quantity_total", "quantity_available"]
-        for field in required_fields:
-            if not data.get(field):
-                return jsonify({"success": False, "message": f"Missing required field: {field}"})
-        
-        # Create equipment data
-        equipment_data = {
-            "id": str(uuid.uuid4()),
-            "name": data["name"],
-            "category_id": data["category_id"],
-            "description": data.get("description", ""),
-            "quantity_total": int(data["quantity_total"]),
-            "quantity_available": int(data["quantity_available"]),
-            "is_active": data.get("is_active", True),
-            "created_at": datetime.now().isoformat()
-        }
-        
-        # Insert into database
-        supabase.table("inventory").insert(equipment_data).execute()
-        
-        return jsonify({"success": True, "message": "Equipment added successfully"})
-    
-    except Exception as e:
-        return jsonify({"success": False, "message": f"Error: {str(e)}"})
+        # Build requested quantities map from booking.other_items (e.g., "Tent x2, Chair x3")
+        requested_map = {}
+        try:
+            items_list = parse_other_items(cur.get("other_items", ""))
+            for it in items_list:
+                # it expected like {"name": str, "quantity": int}
+                nm = (it.get("name") or "").strip()
+                if nm:
+                    requested_map[nm] = int(it.get("quantity", 0) or 0)
+        except Exception:
+            requested_map = {}
 
-@app.route("/admin/equipment/update", methods=["POST"])
-def update_equipment():
-    if "user" not in session or session["user"]["role"] != "admin":
-        return jsonify({"success": False, "message": "Unauthorized"})
-    
-    try:
-        data = request.get_json()
-        item_id = data.get("id")
-        
-        if not item_id:
-            return jsonify({"success": False, "message": "No equipment ID provided"})
-        
-        # Prepare update data
-        update_data = {
-            "name": data["name"],
-            "category_id": data["category_id"],
-            "description": data.get("description", ""),
-            "quantity_total": int(data["quantity_total"]),
-            "quantity_available": int(data["quantity_available"]),
-            "is_active": data.get("is_active", True)
-        }
-        
-        # Update database
-        supabase.table("inventory").update(update_data).eq("id", item_id).execute()
-        
-        return jsonify({"success": True, "message": "Equipment updated successfully"})
-    
-    except Exception as e:
-        return jsonify({"success": False, "message": f"Error: {str(e)}"})
+        # Apply adjustments to inventory
+        updated_names = []
+        for it in adj_items:
+            name = (it.get("name") or "").strip()
+            if not name:
+                continue
+            # Fetch current row by name
+            inv_q = supabase.table("inventory").select("id, quantity_total, quantity_available, description").eq("name", name).limit(1).execute()
+            if not inv_q.data:
+                continue
+            row = inv_q.data[0]
+            total = int(row.get("quantity_total", 0) or 0)
+            defective = int(it.get("quantity_defective", parse_defective_from_description(row.get("description", ""))) or 0)
+            return_qty = int(it.get("return_qty", 0) or 0)
+            # Prefer explicit in_progress from client if provided; else infer from requested
+            if it.get("in_progress") is not None:
+                try:
+                    inprog = max(int(it.get("in_progress") or 0), 0)
+                except Exception:
+                    inprog = 0
+            else:
+                requested_qty = int(requested_map.get(name, 0) or 0)
+                inprog = requested_qty - max(int(defective), 0) - max(return_qty, 0)
+                if inprog < 0:
+                    inprog = 0
+            # Set availability so that: in_progress (table) = total - available - defective = inprog
+            # => available = total - defective - inprog
+            max_avail = max(total - max(defective, 0), 0)
+            avail_target = max(total - max(int(defective), 0) - inprog, 0)
+            # Clamp to valid range [0, total - defective]
+            avail = min(max(avail_target, 0), max_avail)
+            new_desc = set_defective_in_description(row.get("description", ""), defective)
+            supabase.table("inventory").update({
+                "quantity_total": total,
+                "description": new_desc,
+                "quantity_available": avail
+            }).eq("id", row["id"]).execute()
+            updated_names.append(name)
 
-@app.route("/admin/equipment/delete", methods=["POST"])
-def delete_equipment():
-    if "user" not in session or session["user"]["role"] != "admin":
-        return jsonify({"success": False, "message": "Unauthorized"})
-    
-    try:
-        data = request.get_json()
-        item_id = data.get("id")
-        
-        if not item_id:
-            return jsonify({"success": False, "message": "No equipment ID provided"})
-        
-        # Delete from database
-        supabase.table("inventory").delete().eq("id", item_id).execute()
-        
-        return jsonify({"success": True, "message": "Equipment deleted successfully"})
-    
-    except Exception as e:
-        return jsonify({"success": False, "message": f"Error: {str(e)}"})
+        # Mark booking as Completed
+        supabase.table("bookings").update({"status": "Completed"}).eq("id", booking_id).execute()
 
+        # Notify user (app notification)
+        try:
+            create_notification(
+                user_id=cur.get("user_id"),
+                message=f"Your booking (Ticket: {cur.get('ticket_number')}) has been completed. Items processed.",
+                booking_id=booking_id,
+                link=url_for('booking_details', booking_id=booking_id)
+            )
+        except Exception as nerr:
+            print(f"notify completed with adjustments err: {nerr}")
+
+        # Email user (Completed)
+        try:
+            send_email_notification(
+                to_email=cur.get("email"),
+                subject="✔️ Booking Completed",
+                message=get_email_template(
+                    status="completed",
+                    user_first_name=cur.get("first_name") or "",
+                    ticket_number=cur.get("ticket_number") or "",
+                    event_date=cur.get("event_date"),
+                    event_type=cur.get("event_type"),
+                    link=f"booking_details/{booking_id}",
+                    booking_date=cur.get("created_at"),
+                    equipment=cur.get("other_items"),
+                    contact_number=cur.get("contact_number"),
+                    email_address=cur.get("email"),
+                    status_override="Completed"
+                )
+            )
+        except Exception as e:
+            print(f"completed (adjust) email send err: {e}")
+
+        return jsonify({"success": True, "updated": updated_names})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
 
 @app.route("/admin_login", methods=["GET", "POST"])
 def admin_login():
@@ -1892,20 +2618,44 @@ def admin_login():
 
 @app.route('/adminlogout', methods=['POST'])
 def admin_logout():
-    session.clear()
+    try:
+        uid = session.get("user", {}).get("id")
+        if uid:
+            try:
+                supabase.table('users').update({'last_seen': None}).eq('id', uid).execute()
+            except Exception:
+                pass
+    finally:
+        session.clear()
     flash("You have been logged out.", "success")
     return redirect(url_for('admin_login'))
 
 @app.route('/logout', methods=['POST'])
 def logout():
-    session.pop("user", None)
+    try:
+        uid = session.get("user", {}).get("id")
+        if uid:
+            try:
+                supabase.table('users').update({'last_seen': None}).eq('id', uid).execute()
+            except Exception:
+                pass
+    finally:
+        session.pop("user", None)
     flash("You have been logged out.", "success")
     return redirect(url_for('home'))
 
 @app.route("/signout", methods=["POST"])
 def signout():
-    session.pop("user", None)
-    return redirect(url_for("admin_login"))
+    try:
+        uid = session.get("user", {}).get("id")
+        if uid:
+            try:
+                supabase.table('users').update({'last_seen': None}).eq('id', uid).execute()
+            except Exception:
+                pass
+    finally:
+        session.pop("user", None)
+    return redirect(url_for("home"))
 
 def get_unread_notification_count(user_id):
     try:
@@ -1984,6 +2734,228 @@ def change_password():
         
     except Exception as e:
         return jsonify({"success": False, "message": f"Error changing password: {str(e)}"})
+
+# --- Suspended account page ---
+@app.route('/suspended')
+def suspended():
+    try:
+        user_id = session.get('user', {}).get('id')
+        reason = None
+        if user_id:
+            res = get_user_by_id(user_id)
+            if res.data:
+                user = res.data[0]
+                # Only non-admin suspended users should land here
+                if user.get('role') != 'admin' and user.get('is_suspended', False):
+                    reason = user.get('suspend_notes') or user.get('suspend_reason')
+        return render_template('suspended.html', reason=reason or 'Your account has been suspended by an administrator.')
+    except Exception:
+        return render_template('suspended.html', reason='Your account has been suspended by an administrator.')
+
+# --- Admin: User CRUD minimal endpoints used by UI ---
+@app.get('/admin/users/<user_id>')
+def admin_get_user(user_id):
+    if "user" not in session or session["user"].get("role") != "admin":
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
+    res = get_user_by_id(user_id)
+    if not res.data:
+        return jsonify({"success": False, "message": "User not found"}), 404
+    user = res.data[0]
+    # Return plain JSON object (not wrapped) to match existing frontend usage
+    return jsonify(user)
+
+@app.post('/admin/users/<user_id>/update')
+def admin_update_user(user_id):
+    if "user" not in session or session["user"].get("role") != "admin":
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
+    try:
+        data = request.get_json() or {}
+        update_data = {
+            "first_name": data.get("first_name"),
+            "last_name": data.get("last_name"),
+            "email": data.get("email"),
+            "barangay_id": data.get("barangay_id"),
+            "role": data.get("role", "user"),
+            "address": data.get("address", "")
+        }
+        # Remove None values
+        update_data = {k: v for k, v in update_data.items() if v is not None}
+        supabase.table("users").update(update_data).eq("id", user_id).execute()
+        return jsonify({"success": True, "message": "User updated"})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.post('/admin/users/add')
+def admin_add_user():
+    if "user" not in session or session["user"].get("role") != "admin":
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
+    try:
+        data = request.get_json() or {}
+        required = ["first_name", "last_name", "email", "password", "role"]
+        for f in required:
+            if not data.get(f):
+                return jsonify({"success": False, "message": f"Missing field: {f}"}), 400
+        # Create in Supabase Auth
+        try:
+            supabase.auth.sign_up({
+                "email": data["email"],
+                "password": data["password"]
+            })
+        except Exception:
+            pass
+        user_row = {
+            "id": str(uuid.uuid4()),
+            "first_name": data["first_name"],
+            "last_name": data["last_name"],
+            "email": data["email"],
+            "password": generate_password_hash(data["password"]),
+            "barangay_id": data.get("barangay_id"),
+            "address": data.get("address", ""),
+            "role": data.get("role", "user"),
+            "is_verified": True,
+            "is_active": True,
+            "created_at": datetime.now().isoformat()
+        }
+        supabase.table("users").insert(user_row).execute()
+        return jsonify({"success": True, "message": "User added"})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# --- Admin: Suspend/Unsuspend ---
+@app.post('/admin/users/<user_id>/suspend')
+def admin_suspend_user(user_id):
+    if "user" not in session or session["user"].get("role") != "admin":
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
+    try:
+        payload = request.get_json() or {}
+        reason = (payload.get('reason') or '').strip()
+        notes = (payload.get('notes') or '').strip()
+        if not reason:
+            return jsonify({"success": False, "message": "Reason is required"}), 400
+        # Prevent self-suspension
+        if user_id == session['user']['id']:
+            return jsonify({"success": False, "message": "You cannot suspend your own account"}), 400
+        supabase.table('users').update({
+            'is_suspended': True,
+            # Keep legacy field for compatibility
+            'suspend_reason': reason,
+            # New notes field (optional)
+            'suspend_notes': notes if notes else None,
+            'suspended_at': datetime.now().isoformat()
+        }).eq('id', user_id).execute()
+        # Send suspension email notification (with full account details)
+        try:
+            user_q = supabase.table('users').select('email, first_name, last_name, barangay_id, address, created_at, suspended_at').eq('id', user_id).limit(1).execute()
+            if user_q.data:
+                u = user_q.data[0]
+                to_email = u.get('email')
+                first_name = (u.get('first_name') or '').strip()
+                last_name = (u.get('last_name') or '').strip()
+                full_name = (f"{first_name} {last_name}".strip()) or first_name or last_name or ''
+                barangay_id = u.get('barangay_id') or ''
+                address_text = u.get('address') or ''
+                date_joined = u.get('created_at') or ''
+                suspended_since = u.get('suspended_at') or ''
+                if to_email:
+                    send_email_notification(
+                        to_email=to_email,
+                        subject='🚫 Account Suspended',
+                        message=get_email_template(
+                            status='suspended',
+                            user_first_name=first_name,
+                            ticket_number=None,
+                            reason=reason,
+                            notes=notes,
+                            link='suspended',
+                            email_address=to_email,
+                            status_override='Suspended',
+                            full_name=full_name,
+                            barangay_id=barangay_id,
+                            address_text=address_text,
+                            date_joined=date_joined,
+                            suspended_since=suspended_since
+                        )
+                    )
+        except Exception as e2:
+            print(f"suspend email send err: {e2}")
+        return jsonify({"success": True, "message": "User suspended"})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.post('/admin/users/<user_id>/unsuspend')
+def admin_unsuspend_user(user_id):
+    if "user" not in session or session["user"].get("role") != "admin":
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
+    try:
+        # Prevent self-unsuspending logic is not necessary, but keep symmetry with suspend
+        supabase.table('users').update({
+            'is_suspended': False,
+            'suspend_reason': None,
+            'suspend_notes': None,
+            'suspended_at': None
+        }).eq('id', user_id).execute()
+        # Send unsuspended email notification (with account details)
+        try:
+            user_q = supabase.table('users').select('email, first_name, last_name, barangay_id, address, created_at').eq('id', user_id).limit(1).execute()
+            if user_q.data:
+                u = user_q.data[0]
+                to_email = u.get('email')
+                first_name = (u.get('first_name') or '').strip()
+                last_name = (u.get('last_name') or '').strip()
+                full_name = (f"{first_name} {last_name}".strip()) or first_name or last_name or ''
+                barangay_id = u.get('barangay_id') or ''
+                address_text = u.get('address') or ''
+                date_joined = u.get('created_at') or ''
+                if to_email:
+                    send_email_notification(
+                        to_email=to_email,
+                        subject='✅ Your account is unsuspended',
+                        message=get_email_template(
+                            status='unsuspended',
+                            user_first_name=first_name,
+                            ticket_number=None,
+                            link='signin',
+                            email_address=to_email,
+                            status_override='Unsuspended',
+                            full_name=full_name,
+                            barangay_id=barangay_id,
+                            address_text=address_text,
+                            date_joined=date_joined
+                        )
+                    )
+        except Exception as e2:
+            print(f"unsuspend email send err: {e2}")
+        return jsonify({"success": True, "message": "User unsuspended"})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+# --- Presence / Heartbeat ---
+@app.post('/presence/heartbeat')
+def presence_heartbeat():
+    """Client heartbeat to mark user as online by updating last_seen."""
+    if "user" not in session:
+        return jsonify({"success": False, "message": "Please login first"}), 401
+    try:
+        uid = session["user"]["id"]
+        supabase.table('users').update({
+            'last_seen': datetime.now().isoformat()
+        }).eq('id', uid).execute()
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.get('/admin/users/online_status')
+def admin_users_online_status():
+    """Return {id, last_seen} for all users for presence display. Admin-only."""
+    if "user" not in session or session["user"].get("role") != "admin":
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
+    try:
+        res = supabase.table('users').select('id, last_seen, is_suspended').execute()
+        data = res.data or []
+        return jsonify({"success": True, "data": data})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
 
 @app.route('/test_email_config', methods=['GET'])
 def test_email_config():

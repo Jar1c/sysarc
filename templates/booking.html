@@ -269,7 +269,7 @@
         }
 
         .card p {
-            color: #7f8c8d;
+            color: #374151;
             font-size: 1.1rem;
         }
 
@@ -358,7 +358,7 @@
         }
 
         .booking-option p {
-            color: #7f8c8d;
+            color: #374151;
             margin-bottom: 20px;
         }
 
@@ -621,6 +621,102 @@
             text-align: center;
         }
 
+        /* Suspended Overlay */
+        .suspend-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.96);
+            z-index: 20000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .suspend-card {
+            width: 100%;
+            max-width: 640px;
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,.08);
+            padding: 28px;
+            text-align: center;
+            animation: fadeIn .3s ease;
+        }
+        .suspend-icon { font-size: 56px; margin-bottom: 10px; color: var(--accent); }
+        .suspend-title { margin: 6px 0 8px; font-size: 26px; color:#c0392b; }
+        .suspend-desc { margin: 0 0 10px; line-height:1.6; }
+        .suspend-reason { margin-top: 14px; padding: 14px 16px; border-left: 4px solid var(--accent); background:#fff5f4; border-radius: 8px; text-align:left; color:#a23b33; }
+        .suspend-actions { margin-top: 18px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+        .suspend-actions .btn, .suspend-actions .btn-outline, .suspend-actions button, .suspend-actions a {
+            min-width: 180px;
+            height: 44px;
+            padding: 0 18px;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .suspend-actions .btn-outline { 
+            background: #1d72b8; 
+            color: #fff; 
+            border: none; 
+        }
+        .suspend-actions .btn { 
+            background: var(--primary); 
+            color: #fff; 
+            border: none; 
+        }
+
+        /* Terms & Conditions Modal */
+        .terms-modal .modal-content {
+            max-width: 760px;
+            text-align: left;
+        }
+        .terms-title {
+            margin: 0 0 12px 0;
+            color: var(--dark);
+            text-align: center;
+        }
+        /* Sign out confirm modal */
+        .confirm-modal { position: fixed; inset:0; background: rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; z-index:22000; }
+        .confirm-modal .box { background:#fff; border-radius:14px; padding:20px; width:90%; max-width:420px; text-align:center; box-shadow:0 12px 30px rgba(0,0,0,.12); animation: fadeIn .2s ease; }
+        .confirm-modal .title { font-weight:800; font-size:1.2rem; color: var(--primary); margin-bottom:6px; }
+        .confirm-modal .desc { color:#6b7280; margin-bottom:14px; }
+        .confirm-modal .actions { display:flex; gap:10px; justify-content:center; }
+        .confirm-modal .actions .btn { min-width:140px; height:42px; border-radius:999px; border:none; font-weight:700; }
+        .confirm-modal .btn-confirm { background:#dc2626; color:#fff; }
+        .confirm-modal .btn-cancel { background: var(--primary); color:#fff; }
+        .terms-body {
+            max-height: 60vh;
+            overflow: auto;
+            padding-right: 6px;
+            color: #263238;
+        }
+        .terms-section-title {
+            font-weight: 700;
+            margin: 16px 0 6px;
+            color: #111827;
+        }
+        .terms-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .terms-ack {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+            color: #374151;
+        }
+        .terms-actions .btn {
+            margin-left: auto;
+        }
+
         .modal h3 {
             color: var(--dark);
             margin-bottom: 20px;
@@ -629,7 +725,7 @@
 
         .modal p {
             margin-bottom: 25px;
-            color: #7f8c8d;
+            color: #374151;
         }
 
         .modal-buttons {
@@ -702,6 +798,18 @@
         .booking-details-modal .modal-content {
             max-width: 600px;
             text-align: left;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Scrollable details body */
+        #bookingDetailsContent {
+            overflow-y: auto;
+            flex: 1 1 auto;
+            min-height: 0;
+            padding-right: 6px;
         }
 
         .booking-detail {
@@ -1212,10 +1320,11 @@
     </style>
 
 <body>
+    <div id="suspendData" data-suspended="{{ 'true' if suspended else 'false' }}" data-reason="{{ (suspend_reason or '')|e }}" data-notes="{{ (suspend_notes or '')|e }}" style="display:none"></div>
     <!-- Sidebar Dashboard -->
     <div class="sidebar">
         <div class="sidebar-header">
-            <h2>Booking System</h2>
+            <h2>Barangay Baritan</h2>
             <span class="sidebar-close"><i class="fas fa-times"></i></span>
         </div>
 
@@ -1311,16 +1420,16 @@
                 <div class="booking-options">
                     <div class="booking-option">
                         <i class="fa-solid fa-calendar"></i>
-                        <h3>COURT AND EQUIPMENT BOOKING</h3>
-                        <p>COURT AND EVENT NEEDS BOOKING</p>
-                        <a href="{{ url_for('booking2_page') }}" class="btn">Book Now</a>
+                        <h3>COURT WITH SUPPLY AND EQUIPMENT BOOKING</h3>
+                        <p>Court and Event needs</p>
+                        <a href="{{ url_for('booking2_page') }}" class="btn terms-required">Book Now</a>
                     </div>
 
                     <div class="booking-option">
                         <i class="fas fa-basketball-ball"></i>
-                        <h3>BOOK EQUIPMENT ONLY</h3>
-                        <p>SUPPLIES AND EQUIPMENT BOOKING</p>
-                        <a href="{{ url_for('booking3') }}" class="btn">Book Now</a>
+                        <h3>SUPPLY AND EQUIPMENT BOOKING</h3>
+                        <p>Equipment and Supply reservation</p>
+                        <a href="{{ url_for('booking3') }}" class="btn terms-required">Book Now</a>
                     </div>
                 </div>
             </div>
@@ -1340,6 +1449,7 @@
                                 <th>Ticket ID</th>
                                 <th>Event Type</th>
                                 <th>Event Date</th>
+                                <th>Booking Date</th>
                                 <th>Equipment</th>
                                 <th>Status</th>
                                 <th>Action</th>
@@ -1352,6 +1462,7 @@
                                 <td data-label="Ticket ID">{{ booking.ticket_number }}</td>
                                 <td data-label="Event Type"><span class="event-type">{{ booking.event_type }}</span></td>
                                 <td data-label="Event Date">{{ booking.event_date }}</td>
+                                <td data-label="Booking Date">{{ booking.booking_date or booking.created_at }}</td>
                                 <td data-label="Equipment" class="equipment-cell expandable"
                                     title="Click to view full details">
                                     {% if booking.parsed_items %}
@@ -1374,7 +1485,7 @@
                                     {% if not loop.last %}<br>{% endif %}
                                     {% endfor %}
                                     {% else %}
-                                    ❌ Walang ibang kagamitan
+                                    No equipment
                                     {% endif %}
                                 </td>
                                 <td data-label="Status">
@@ -1469,15 +1580,14 @@
                                     {% if not loop.last %}<br>{% endif %}
                                     {% endfor %}
                                     {% else %}
-                                    ❌ Walang ibang kagamitan
+                                    No equipment
                                     {% endif %}
-                                </td>
                                 </td>
                                 <td data-label="Status">
                                     <span class="status-badge 
                                 {% if booking.status == 'Completed' %}status-completed
                                 {% elif booking.status == 'Borrowed' %}status-borrowed
-                                {% elif booking.status == 'Cancelled' %}status-cancelled
+                                {% elif booking.status == 'Cancelled' or booking.status == 'Rejected' %}status-cancelled
                                 {% else %}status-pending
                                 {% endif %}">
                                         {{ booking.status }}
@@ -1760,6 +1870,10 @@
         <div class="modal-content">
             <h3>Cancel Booking</h3>
             <p>Are you sure you want to cancel this booking? This action cannot be undone.</p>
+            <div style="text-align:left; margin: 10px 0 18px;">
+                <label for="cancelReasonInput" style="font-weight:600; color:#023e8a; display:block; margin-bottom:6px;">Reason for cancellation<span style="color:#c0392b;"> *</span></label>
+                <textarea id="cancelReasonInput" rows="3" placeholder="Type your reason..." style="width:100%; padding:10px; border:1px solid #e0e0e0; border-radius:8px; resize:vertical;"></textarea>
+            </div>
             <div class="modal-buttons">
                 <button class="btn" id="confirmCancel">Yes, Cancel Booking</button>
                 <button class="btn-cancel" id="closeModal">No, Keep Booking</button>
@@ -1776,6 +1890,66 @@
             </div>
             <div class="modal-buttons" style="margin-top: 20px;">
                 <button class="btn" id="closeDetailsModal">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Terms & Conditions Modal -->
+    <div class="modal terms-modal" id="termsModal">
+        <div class="modal-content">
+            <h3 class="terms-title">Barangay Baritan Online Booking System<br/>Terms and Conditions</h3>
+            <div class="terms-body">
+                <div class="terms-section">
+                    <div class="terms-section-title">I. Introduction</div>
+                    <p>This document sets forth the Terms and Conditions governing the use of the Barangay Baritan Online Booking System, an official web-based service owned and managed by Barangay Baritan. The system allows residents to book appointments, facilities, or equipment free of charge, subject to barangay approval and compliance with the policies herein.</p>
+                </div>
+                <div class="terms-section">
+                    <div class="terms-section-title">II. Eligibility</div>
+                    <p>Only verified residents of Barangay Baritan are permitted to register and use the system. Users must provide accurate, up-to-date, and verifiable information when creating an account.</p>
+                </div>
+                <div class="terms-section">
+                    <div class="terms-section-title">III. Booking Guidelines</div>
+                    <p>All bookings are processed on a first-come, first-served basis and must be made through the official online platform. A booking is deemed confirmed only after barangay approval or confirmation notice. Borrowed barangay items, equipment, or facilities must be handled responsibly and returned in complete and good condition. Bookings are free of charge, but users must adhere to all barangay regulations.</p>
+                </div>
+                <div class="terms-section">
+                    <div class="terms-section-title">IV. Sanctions and Penalties</div>
+                    <p>Failure to return borrowed items, or causing damage, may result in: Account for temporary suspension or permanent suspension from the booking system; Restriction from future bookings for a period determined by barangay officials; Administrative sanctions in accordance with barangay policies; or Financial responsibility for lost or damaged barangay property.</p>
+                </div>
+                <div class="terms-section">
+                    <div class="terms-section-title">V. Barangay Rights and Cancellations</div>
+                    <p>Barangay Baritan reserves the right to cancel or modify any booking in the event of: Emergencies such as funerals or urgent community needs; Unplanned government or barangay events; or Natural calamities, including typhoons, earthquakes, or fires. In such cases, the Barangay shall make reasonable efforts to inform affected users promptly.</p>
+                </div>
+                <div class="terms-section">
+                    <div class="terms-section-title">VI. User Obligations</div>
+                    <p>Users agree to: Comply with barangay rules and regulations; Use barangay facilities and equipment responsibly; Avoid sharing their booking account with others; Ensure all activities are legal and community appropriate.</p>
+                </div>
+                <div class="terms-section">
+                    <div class="terms-section-title">VII. Data Privacy</div>
+                    <p>Barangay ensures that all personal data collected through the system will be used solely for booking verification, recordkeeping, and communication purposes, consistent with the Data Privacy Act of 2012 (R.A. 10173).</p>
+                </div>
+                <div class="terms-section">
+                    <div class="terms-section-title">VIII. Limitation of Liability</div>
+                    <p>Barangay Baritan shall not be held liable for any loss, inconvenience, or damage resulting from booking cancellations, system errors, or user misconduct.</p>
+                </div>
+                <div class="terms-section">
+                    <div class="terms-section-title">IX. Amendments</div>
+                    <p>The Barangay Baritan reserves the right to amend or revise these Terms and Conditions as necessary to improve service delivery or comply with government policies.</p>
+                </div>
+                <div class="terms-section">
+                    <div class="terms-section-title">X. Acceptance</div>
+                    <p>By using the Barangay Baritan Online Booking System, you acknowledge that you have read, understood, and agreed to abide by these Terms and Conditions.</p>
+                </div>
+                <div class="terms-section">
+                    <div class="terms-section-title">Approved by:</div>
+                    <p>Barangay Baritan Officials<br/>Date: October 2025</p>
+                </div>
+            </div>
+            <div class="terms-actions">
+                <label class="terms-ack">
+                    <input type="checkbox" id="termsCheckbox">
+                    I have read and agree to the Terms and Conditions
+                </label>
+                <button class="btn" id="termsAcceptBtn" disabled>Accept</button>
             </div>
         </div>
     </div>
@@ -2287,7 +2461,7 @@ document.querySelectorAll('.notification-item').forEach(item => {
                         equipmentHTML += `<li>${emoji} ${item.name}: ${item.quantity} pcs</li>`;
                     });
                 } else {
-                    equipmentHTML = '<li>No equipment specified</li>';
+                    equipmentHTML = '<li>No equipment</li>';
                 }
 
                 let userName = 'User #' + booking.user_id;
@@ -2295,6 +2469,26 @@ document.querySelectorAll('.notification-item').forEach(item => {
                     userName = `${booking.users.first_name} ${booking.users.last_name}`;
                 } else if (booking.first_name && booking.last_name) {
                     userName = `${booking.first_name} ${booking.last_name}`;
+                }
+                const barangayId = (booking.users && booking.users.barangay_id) || booking.barangay_id || '';
+
+                // Build optional cancel/reject reason rows from booking data
+                let reasonHTML = '';
+                const cancelReason = (booking.cancel_reason || '').trim();
+                const rejectReason = (booking.reject_reason || '').trim();
+                if (booking.status === 'Cancelled' && cancelReason) {
+                    reasonHTML += `
+        <div class="booking-detail">
+            <span class="detail-label">Cancel Reason:</span>
+            <span class="detail-value">${cancelReason}</span>
+        </div>`;
+                }
+                if (booking.status === 'Rejected' && rejectReason) {
+                    reasonHTML += `
+        <div class="booking-detail">
+            <span class="detail-label">Reject Reason:</span>
+            <span class="detail-value">${rejectReason}</span>
+        </div>`;
                 }
 
                 detailsContent.innerHTML = `
@@ -2305,6 +2499,10 @@ document.querySelectorAll('.notification-item').forEach(item => {
         <div class="booking-detail">
             <span class="detail-label">User:</span>
             <span class="detail-value">${userName}</span>
+        </div>
+        <div class="booking-detail">
+            <span class="detail-label">Barangay ID:</span>
+            <span class="detail-value">${barangayId}</span>
         </div>
         <div class="booking-detail">
             <span class="detail-label">Event Type:</span>
@@ -2320,8 +2518,9 @@ document.querySelectorAll('.notification-item').forEach(item => {
         </div>
         <div class="booking-detail">
             <span class="detail-label">Status:</span>
-            <span class="detail-value"><span class="status-badge ${booking.status === 'Pending' ? 'status-pending' : booking.status === 'Approved' ? 'status-approved' : booking.status === 'Completed' ? 'status-completed' : booking.status === 'Cancelled' ? 'status-cancelled' : booking.status === 'Borrowed' ? 'status-borrowed' : ''}">${booking.status || ''}</span></span>
+            <span class="detail-value"><span class="status-badge ${booking.status === 'Pending' ? 'status-pending' : booking.status === 'Approved' ? 'status-approved' : booking.status === 'Completed' ? 'status-completed' : (booking.status === 'Cancelled' || booking.status === 'Rejected') ? 'status-cancelled' : booking.status === 'Borrowed' ? 'status-borrowed' : ''}">${booking.status || ''}</span></span>
         </div>
+        ${reasonHTML}
         <div class="booking-detail">
             <span class="detail-label">Contact Number:</span>
             <span class="detail-value">${booking.contact_number || ''}</span>
@@ -2684,7 +2883,7 @@ document.querySelectorAll('.notification-item').forEach(item => {
                         equipmentHTML += `<li>${emoji} ${item.name}: ${item.quantity} pcs</li>`;
                     });
                 } else {
-                    equipmentHTML = '<li>No equipment specified</li>';
+                    equipmentHTML = '<li>No equipment</li>';
                 }
 
                 // Get user name from user data or users relation
@@ -2694,6 +2893,7 @@ document.querySelectorAll('.notification-item').forEach(item => {
                 } else if (booking.first_name && booking.last_name) {
                     userName = `${booking.first_name} ${booking.last_name}`;
                 }
+                const barangayId = (booking.users && booking.users.barangay_id) || booking.barangay_id || 'N/A';
 
                 detailsContent.innerHTML = `
         <div class="booking-detail">
@@ -2703,6 +2903,10 @@ document.querySelectorAll('.notification-item').forEach(item => {
         <div class="booking-detail">
             <span class="detail-label">User:</span>
             <span class="detail-value">${userName}</span>
+        </div>
+        <div class="booking-detail">
+            <span class="detail-label">Barangay ID:</span>
+            <span class="detail-value">${barangayId}</span>
         </div>
         <div class="booking-detail">
             <span class="detail-label">Event Type:</span>
@@ -2724,6 +2928,18 @@ document.querySelectorAll('.notification-item').forEach(item => {
                 </span>
             </span>
         </div>
+        ${(booking.status === 'Cancelled' && booking.cancel_reason) ? `
+        <div class="booking-detail">
+            <span class="detail-label">Cancel Reason:</span>
+            <span class="detail-value">${booking.cancel_reason}</span>
+        </div>
+        ` : ''}
+        ${(booking.status === 'Rejected' && booking.reject_reason) ? `
+        <div class="booking-detail">
+            <span class="detail-label">Reject Reason:</span>
+            <span class="detail-value">${booking.reject_reason}</span>
+        </div>
+        ` : ''}
         <div class="booking-detail">
             <span class="detail-label">Contact Number:</span>
             <span class="detail-value">${booking.contact_number || 'N/A'}</span>
@@ -2755,6 +2971,7 @@ document.querySelectorAll('.notification-item').forEach(item => {
                     case 'Approved': return 'status-approved';
                     case 'Completed': return 'status-approved';
                     case 'Cancelled': return 'status-cancelled';
+                    case 'Rejected': return 'status-cancelled';
                     default: return '';
                 }
             }
@@ -2767,6 +2984,13 @@ document.querySelectorAll('.notification-item').forEach(item => {
                 if (!this.currentBookingId) return;
 
                 try {
+                    // Require a reason typed in the modal textarea
+                    const reasonEl = document.getElementById('cancelReasonInput');
+                    const reason = (reasonEl && reasonEl.value ? reasonEl.value : '').trim();
+                    if (!reason) {
+                        this.showFlashMessage('Please provide a cancellation reason.', 'error');
+                        return;
+                    }
                     // Show loading state
                     const confirmButton = document.getElementById('confirmCancel');
                     const originalText = confirmButton.textContent;
@@ -2780,7 +3004,8 @@ document.querySelectorAll('.notification-item').forEach(item => {
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({
-                            booking_id: this.currentBookingId
+                            booking_id: this.currentBookingId,
+                            cancel_reason: reason
                         })
                     });
 
@@ -2826,17 +3051,146 @@ document.querySelectorAll('.notification-item').forEach(item => {
                                 flashContainer.parentNode.removeChild(flashContainer);
                             }
                         }, 500);
-                    }, 3000);
+                    }, 6000);
                 }
             }
         }
 
         // Initialize the application
         document.addEventListener('DOMContentLoaded', () => {
+            // --- Presence: user heartbeat so admin sees Online status ---
+            const sendHeartbeat = () => {
+                fetch('/presence/heartbeat', { method: 'POST', credentials: 'same-origin' }).catch(()=>{});
+            };
+            sendHeartbeat();
+            setInterval(sendHeartbeat, 30000);
+            let isSuspended = false;
+            let suspendReason = null;
+            let suspendNotes = null;
+            try {
+                const dataEl = document.getElementById('suspendData');
+                if (dataEl) {
+                    isSuspended = (dataEl.dataset.suspended === 'true');
+                    suspendReason = dataEl.dataset.reason || null;
+                    suspendNotes = dataEl.dataset.notes || null;
+                }
+            } catch (_) {}
+
+            if (isSuspended) {
+                const overlay = document.createElement('div');
+                overlay.className = 'suspend-overlay';
+                overlay.innerHTML = `
+                  <div class="suspend-card">
+                    <div class="suspend-icon">🚫</div>
+                    <div class="suspend-title">Your account is suspended</div>
+                    <div class="suspend-desc">Access to the site is currently disabled for your account.</div>
+                    <div class="suspend-reason">
+                      <strong>Reason:</strong>
+                      <div style="margin-top:6px; white-space:pre-wrap;">${suspendReason || 'No reason provided.'}</div>
+                    </div>
+                    ${ suspendNotes ? `
+                    <div class="suspend-reason" style="margin-top:10px;">
+                      <strong>Notes:</strong>
+                      <div style="margin-top:6px; white-space:pre-wrap;">${suspendNotes}</div>
+                    </div>
+                    ` : '' }
+                    <div class="suspend-actions" style="margin-top:14px;">
+                        <form action="/signout" method="post" id="suspendSignoutForm">
+                            <button class="btn btn-outline" type="submit">Sign out</button>
+                        </form>
+                        <a class="btn" style="background: var(--primary); color:#fff;" href="https://www.facebook.com/barangaybaritankmgs/" target="_blank" rel="noopener noreferrer">Contact Support</a>
+                    </div>
+                  </div>`;
+                document.body.appendChild(overlay);
+                // Attach confirm to suspended signout form
+                try {
+                    const ssf = document.getElementById('suspendSignoutForm');
+                    ssf?.addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        openSignoutConfirm(() => ssf.submit());
+                    });
+                } catch (_) {}
+                // Do not initialize interactive UI
+                return;
+            }
+
             new BookingSystemUI();
             updateNotificationTimes();
             // Update timestamps every minute
             setInterval(updateNotificationTimes, 60000);
+
+            // Terms & Conditions gating for booking links
+            const termsModal = document.getElementById('termsModal');
+            const termsAcceptBtn = document.getElementById('termsAcceptBtn');
+            const termsCheckbox = document.getElementById('termsCheckbox');
+            let pendingNavigateHref = null;
+            // session-only flag persisted across reloads within same login
+            let termsAccepted = false;
+            try { termsAccepted = sessionStorage.getItem('termsAccepted') === 'true'; } catch (_) {}
+
+            // Enable/disable accept button based on checkbox
+            if (termsCheckbox && termsAcceptBtn) {
+                termsCheckbox.addEventListener('change', () => {
+                    termsAcceptBtn.disabled = !termsCheckbox.checked;
+                });
+            }
+
+            function openTerms(href) {
+                pendingNavigateHref = href;
+                termsCheckbox.checked = false;
+                termsAcceptBtn.disabled = true;
+                termsModal.style.display = 'flex';
+                // lock background scroll while modal is open
+                try { document.body.style.overflow = 'hidden'; } catch (_) {}
+            }
+
+            function closeTerms() {
+                termsModal.style.display = 'none';
+                try { document.body.style.overflow = ''; } catch (_) {}
+            }
+
+            if (termsAcceptBtn) {
+                termsAcceptBtn.addEventListener('click', () => {
+                    if (!termsCheckbox.checked) return;
+                    termsAccepted = true;
+                    try { sessionStorage.setItem('termsAccepted', 'true'); } catch (_) {}
+                    closeTerms();
+                    if (pendingNavigateHref) {
+                        window.location.href = pendingNavigateHref;
+                        pendingNavigateHref = null;
+                    }
+                });
+            }
+
+            // No close/dismiss without acceptance
+
+            document.querySelectorAll('.booking-options .terms-required').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    // Allow navigation only if accepted in this session
+                    if (termsAccepted) return;
+                    e.preventDefault();
+                    openTerms(link.getAttribute('href'));
+                });
+            });
+
+            // Auto-show Terms once per login (until session ends). Reloads won't show again.
+            if (!termsAccepted) {
+                openTerms(null);
+            }
+
+            // Clear session acceptance on logout so next login shows Terms again (even in same tab)
+            try {
+                const logoutForm = document.getElementById('logoutForm');
+                if (logoutForm) {
+                    logoutForm.addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        openSignoutConfirm(() => {
+                            try { sessionStorage.removeItem('termsAccepted'); } catch (_) {}
+                            logoutForm.submit();
+                        });
+                    });
+                }
+            } catch (_) {}
         });
 
         // Add smooth scrolling for better UX
@@ -2846,7 +3200,92 @@ document.querySelectorAll('.notification-item').forEach(item => {
         document.querySelectorAll('img').forEach(img => {
             img.loading = 'lazy';
         });
+
+        // --- Signout confirm modal helpers ---
+        function openSignoutConfirm(onConfirm) {
+            let modal = document.getElementById('signoutConfirmModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'signoutConfirmModal';
+                modal.className = 'confirm-modal';
+                modal.innerHTML = `
+                  <div class="box">
+                    <div class="title">Sign out?</div>
+                    <div class="desc">Are you sure you want to sign out?</div>
+                    <div class="actions">
+                      <button class="btn btn-confirm" id="signoutConfirmBtn" type="button">Yes, sign out</button>
+                      <button class="btn btn-cancel" id="signoutCancelBtn" type="button">Cancel</button>
+                    </div>
+                  </div>`;
+                document.body.appendChild(modal);
+            }
+            modal.style.display = 'flex';
+            const cancelBtn = document.getElementById('signoutCancelBtn');
+            const confirmBtn = document.getElementById('signoutConfirmBtn');
+            const close = () => { modal.style.display = 'none'; };
+            cancelBtn.onclick = close;
+            confirmBtn.onclick = () => { close(); if (typeof onConfirm === 'function') onConfirm(); };
+            modal.addEventListener('click', (e) => { if (e.target === modal) close(); }, { once: true });
+        }
     </script>
+    <div class="modal terms-modal" id="termsModal">
+        <div class="modal-content">
+            <h3 class="terms-title">Barangay Baritan Online Booking System<br/>Terms and Conditions</h3>
+            <div class="terms-body">
+                <div class="terms-section">
+                    <div class="terms-section-title">I. Introduction</div>
+                    <p>This document sets forth the Terms and Conditions governing the use of the Barangay Baritan Online Booking System, an official web-based service owned and managed by Barangay Baritan. The system allows residents to book appointments, facilities, or equipment free of charge, subject to barangay approval and compliance with the policies herein.</p>
+                </div>
+                <div class="terms-section">
+                    <div class="terms-section-title">II. Eligibility</div>
+                    <p>Only verified residents of Barangay Baritan are permitted to register and use the system. Users must provide accurate, up-to-date, and verifiable information when creating an account.</p>
+                </div>
+                <div class="terms-section">
+                    <div class="terms-section-title">III. Booking Guidelines</div>
+                    <p>All bookings are processed on a first-come, first-served basis and must be made through the official online platform. A booking is deemed confirmed only after barangay approval or confirmation notice. Borrowed barangay items, equipment, or facilities must be handled responsibly and returned in complete and good condition. Bookings are free of charge, but users must adhere to all barangay regulations.</p>
+                </div>
+                <div class="terms-section">
+                    <div class="terms-section-title">IV. Sanctions and Penalties</div>
+                    <p>Failure to return borrowed items, or causing damage, may result in: Account for temporary suspension or permanent suspension from the booking system; Restriction from future bookings for a period determined by barangay officials; Administrative sanctions in accordance with barangay policies; or Financial responsibility for lost or damaged barangay property.</p>
+                </div>
+                <div class="terms-section">
+                    <div class="terms-section-title">V. Barangay Rights and Cancellations</div>
+                    <p>Barangay Baritan reserves the right to cancel or modify any booking in the event of: Emergencies such as funerals or urgent community needs; Unplanned government or barangay events; or Natural calamities, including typhoons, earthquakes, or fires. In such cases, the Barangay shall make reasonable efforts to inform affected users promptly.</p>
+                </div>
+                <div class="terms-section">
+                    <div class="terms-section-title">VI. User Obligations</div>
+                    <p>Users agree to: Comply with barangay rules and regulations; Use barangay facilities and equipment responsibly; Avoid sharing their booking account with others; Ensure all activities are legal and community appropriate.</p>
+                </div>
+                <div class="terms-section">
+                    <div class="terms-section-title">VII. Data Privacy</div>
+                    <p>Barangay ensures that all personal data collected through the system will be used solely for booking verification, recordkeeping, and communication purposes, consistent with the Data Privacy Act of 2012 (R.A. 10173).</p>
+                </div>
+                <div class="terms-section">
+                    <div class="terms-section-title">VIII. Limitation of Liability</div>
+                    <p>Barangay Baritan shall not be held liable for any loss, inconvenience, or damage resulting from booking cancellations, system errors, or user misconduct.</p>
+                </div>
+                <div class="terms-section">
+                    <div class="terms-section-title">IX. Amendments</div>
+                    <p>The Barangay Baritan reserves the right to amend or revise these Terms and Conditions as necessary to improve service delivery or comply with government policies.</p>
+                </div>
+                <div class="terms-section">
+                    <div class="terms-section-title">X. Acceptance</div>
+                    <p>By using the Barangay Baritan Online Booking System, you acknowledge that you have read, understood, and agreed to abide by these Terms and Conditions.</p>
+                </div>
+                <div class="terms-section">
+                    <div class="terms-section-title">Approved by:</div>
+                    <p>Barangay Baritan Officials<br/>Date: October 2025</p>
+                </div>
+            </div>
+            <div class="terms-actions">
+                <label class="terms-ack">
+                    <input type="checkbox" id="termsCheckbox" />
+                    <span>I have read and agree to the Terms and Conditions.</span>
+                </label>
+                <button class="btn" id="termsAcceptBtn" disabled>Accept and Continue</button>
+            </div>
+        </div>
+    </div>
 </body>
 
 

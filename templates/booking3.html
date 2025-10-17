@@ -7,6 +7,7 @@
     <title>Equipment Booking Form</title>
     <link rel="icon" type="image/png" href="/static/img/brgy_baritan_logo.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <style>
         * {
             margin: 0;
@@ -426,6 +427,12 @@
             pointer-events: none;
             opacity: 0.7;
         }
+        /* Match date field width to phone input */
+        #eventDate {
+            width: 100%;
+            max-width: 410px;
+        }
+        
     </style>
 </head>
 
@@ -466,7 +473,7 @@
 
                     <div class="form-group">
                         <label for="eventDate">Date <span class="required">*</span></label>
-                        <input type="date" id="eventDate" name="event_date" required>
+                        <input type="text" id="eventDate" name="event_date" placeholder="Select date" required>
                     </div>
                 </div>
 
@@ -475,7 +482,7 @@
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="phone">Phone Number <span class="required">*</span> <small>(11 digits only)</small></label>
+                            <label for="phone">Phone Number <span class="required">*</span> <small></small></label>
                             <input type="tel" id="phone" name="phone" placeholder="Enter 11-digit phone number" 
                                    pattern="\d{11}" title="Please enter exactly 11 digits" required>
                             <div id="phoneError" class="error-message" style="color: red; display: none;">
@@ -514,28 +521,27 @@
                             </div>
                         </div>
                         {% endfor %}
+                    <div style="color:#6b7280; font-size:1rem; margin:8px 0 12px; text-align:center;">
+                        The equipment is subject to change with admin approval.
                     </div>
-
-                    <div class="form-section">
-                        <h2><i class="fas fa-sticky-note"></i> Additional Notes</h2>
-                        <div class="form-group">
-                            <textarea id="additionalNotes" name="additional_notes" rows="3"
-                                placeholder="Any special requests or additional information we should know?"></textarea>
-                        </div>
-                    </div>
-
                     <button type="submit" class="btn-submit">Submit Booking</button>
             </form>
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
         // Set minimum date to today
         const today = new Date();
         const nextWeek = new Date(today);
-        nextWeek.setDate(today.getDate() + 7); // Add 7 days
+        nextWeek.setDate(today.getDate() + 7);
         const minDate = nextWeek.toISOString().split('T')[0];
-        document.getElementById('eventDate').setAttribute('min', minDate);
+        // Initialize Flatpickr with default look (no red disable logic here)
+        flatpickr('#eventDate', {
+            dateFormat: 'Y-m-d',
+            minDate: minDate,
+            disableMobile: true
+        });
 
         function adjustQty(itemId, change) {
             const input = document.getElementById(`${itemId}-qty`);

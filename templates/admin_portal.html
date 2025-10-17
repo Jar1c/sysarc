@@ -35,6 +35,16 @@
             min-height: 100vh;
         }
 
+        /* Sign out confirm modal */
+        .confirm-modal { position: fixed; inset:0; background: rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; z-index:22000; }
+        .confirm-modal .box { background:#fff; border-radius:14px; padding:20px; width:90%; max-width:420px; text-align:center; box-shadow:0 12px 30px rgba(0,0,0,.12); animation: fadeIn .2s ease; }
+        .confirm-modal .title { font-weight:800; font-size:1.2rem; color: var(--primary); margin-bottom:6px; }
+        .confirm-modal .desc { color:#6b7280; margin-bottom:14px; }
+        .confirm-modal .actions { display:flex; gap:10px; justify-content:center; }
+        .confirm-modal .actions .btn { min-width:140px; height:42px; border-radius:999px; border:none; font-weight:700; }
+        .confirm-modal .btn-confirm { background:#dc2626; color:#fff; }
+        .confirm-modal .btn-cancel { background: var(--primary); color:#fff; }
+
         /* Scrollbar styling */
         ::-webkit-scrollbar {
             width: 8px;
@@ -227,18 +237,10 @@
                 opacity: 0;
                 transform: translateY(20px);
             }
-
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
-        }
-
-        .info-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 25px;
-            margin-bottom: 40px;
         }
 
         .card {
@@ -599,6 +601,10 @@
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            background-color: #d6e4ff;
+            color: #1e40af;
+            box-shadow: 0 0 0 2px rgba(30, 64, 175, 0.25) inset, 0 2px 6px rgba(30, 64, 175, 0.2);
+            font-weight: 700;
         }
 
         .status-pending {
@@ -629,6 +635,19 @@
         .status-cancelled {
             background-color: #ffcdd2;
             color: #c0392b;
+        }
+
+        .in-progress-banner {
+            background: #e8f0ff;
+            border-left: 4px solid #1e40af;
+            padding: 10px 12px;
+            border-radius: 8px;
+            color: #1e3a8a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            font-weight: 600;
         }
 
         /* Modal Styles */
@@ -736,6 +755,17 @@
         .booking-details-modal .modal-content {
             max-width: 600px;
             text-align: left;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        /* Scrollable details body */
+        #bookingDetailsContent {
+            overflow-y: auto;
+            flex: 1 1 auto;
+            min-height: 0;
+            padding-right: 6px;
         }
 
         .booking-detail {
@@ -1324,6 +1354,38 @@
             <h2>Admin Portal</h2>
             <span class="sidebar-close"><i class="fas fa-times"></i></span>
         </div>
+
+        <!-- Suspend User Modal -->
+        <div class="modal" id="suspendUserModal">
+            <div class="modal-content" style="max-width: 500px; text-align:left;">
+                <h3>Suspend User</h3>
+                <p>Please enter the reason for suspending this account.</p>
+                <div class="form-group">
+                    <label for="suspendReasonInput" style="font-weight:600; color:#023e8a;">Reason</label>
+                    <textarea id="suspendReasonInput" rows="3" placeholder="Enter reason..." style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; resize: vertical;"></textarea>
+                    <div id="suspendReasonError" style="color:#c0392b; font-size:0.9rem; margin-top:6px;"></div>
+                </div>
+                <div class="form-group">
+                    <label for="suspendNotesInput" style="font-weight:600; color:#023e8a;">Notes (optional)</label>
+                    <textarea id="suspendNotesInput" rows="3" placeholder="Additional notes..." style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; resize: vertical;"></textarea>
+                </div>
+                <div class="modal-buttons">
+                    <button class="btn-action btn-delete" id="confirmSuspendUser">Suspend</button>
+                    <button class="btn" id="closeSuspendModal">Cancel</button>
+                </div>
+            </div>
+        </div>
+        <!-- Unsuspend Confirmation Modal -->
+        <div class="modal" id="unsuspendConfirmModal">
+            <div class="modal-content" style="max-width: 420px; text-align:left;">
+                <h3>Unsuspend User</h3>
+                <p>Are you sure you want to unsuspend this account?</p>
+                <div class="modal-buttons">
+                    <button class="btn-action btn-view" id="confirmUnsuspendUser">Unsuspend</button>
+                    <button class="btn" id="closeUnsuspendModal">Cancel</button>
+                </div>
+            </div>
+        </div>
         <div class="user-info">
             <img src="https://ui-avatars.com/api/?name={{ session.user.first_name }}+{{ session.user.last_name }}&background=3498db&color=fff"
                 alt="Admin Avatar" class="user-avatar">
@@ -1333,10 +1395,10 @@
             <li><a href="#" class="active" data-target="dashboard"><i class="fas fa-home"></i> Dashboard</a></li>
             <li><a href="#" data-target="pending-approvals"><i class="fas fa-clock"></i> Pending Approvals</a></li>
             <li><a href="#" data-target="all-bookings" data-status-filter="Approved"><i class="fas fa-check-circle"></i> Approved</a></li>
-            <li><a href="#" data-target="all-bookings" data-status-filter="Borrowed"><i class="fas fa-hand-holding"></i> Borrowed</a></li>
+            <li><a href="#" data-target="all-bookings" data-status-filter="Borrowed"><i class="fas fa-hand-holding"></i> In Progress</a></li>
             <li><a href="#" data-target="all-bookings" data-status-filter="Rejected"><i class="fas fa-times-circle"></i> Rejected</a></li>
             <li><a href="#" data-target="all-bookings" data-status-filter="Cancelled"><i class="fas fa-ban"></i> Cancelled</a></li>
-            <li><a href="#" data-target="all-bookings" data-status-filter="Completed"><i class="fas fa-clipboard-check"></i> Return</a></li>
+            <li><a href="#" data-target="all-bookings" data-status-filter="Completed"><i class="fas fa-clipboard-check"></i> Completed</a></li>
             <li>
                 <form action="{{ url_for('admin_logout') }}" method="POST" id="logoutForm">
                     <button type="submit" class="sidebar-logout"><i class="fas fa-sign-out-alt"></i> Sign Out</button>
@@ -1368,6 +1430,9 @@
         <div id="adminNotificationDropdown" class="notification-dropdown">
             <div class="notification-header">
                 Admin Notifications
+                <button id="markAllAdminRead" style="float:right; font-size: 0.85rem; padding: 6px 10px; border:none; border-radius:6px; background:#023e8a; color:#fff; cursor:pointer;">
+                    Mark all as read
+                </button>
             </div>
             <div class="notification-list">
                 {% if admin_notifications and admin_notifications|length > 0 %}
@@ -1408,13 +1473,27 @@
                     <div class="stat-icon"><i class="fas fa-users-cog"></i></div>
                     <div class="stat-label">User Management</div>
                 </div>
-                <div class="stat-card management-card" style="text-decoration: none; cursor: pointer;" onclick="document.querySelector('.sidebar-menu a[data-target=\'all-bookings\'][data-status-filter=\'Completed\']')?.click();">
-                    <div class="stat-icon"><i class="fas fa-clipboard-check"></i></div>
-                    <div class="stat-label">Return</div>
+                <div class="stat-card management-card" style="text-decoration: none; cursor: pointer;" onclick="document.dispatchEvent(new CustomEvent('showContent', { detail: 'reports' }));">
+                    <div class="stat-icon"><i class="fas fa-chart-bar"></i></div>
+                    <div class="stat-label">Reports</div>
                 </div>
             </div>
             <div class="booking-section">
                 <h2>Recent Pending Approvals</h2>
+                <!-- Added: quick search and type filter for dashboard recent approvals -->
+                <div class="booking-controls" style="margin-bottom: 10px;">
+                    <div class="search-box" style="max-width: 320px;">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="dashboardPendingSearch" placeholder="Search pending approvals...">
+                    </div>
+                    <div class="filter-controls" style="gap: 8px;">
+                        <select class="filter-select" id="dashboardPendingTypeFilter">
+                            <option value="">All Types</option>
+                            <option value="Court">Court and Equipment</option>
+                            <option value="Equipment">Equipment Only</option>
+                        </select>
+                    </div>
+                </div>
                 <div class="booking-table-container">
                     <table class="booking-table">
                         <thead>
@@ -1428,7 +1507,7 @@
                                 <th>Action</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="dashboardPendingTbody">
                             {% if pending_approvals %}
                             {% for booking in pending_approvals[:5] %}
                             <tr>
@@ -1477,7 +1556,7 @@
                                     {% if not loop.last %}<br>{% endif %}
                                     {% endfor %}
                                     {% else %}
-                                    No equipment
+                                    Court Only Booking
                                     {% endif %}
                                 </td>
                                 <td data-label="Action">
@@ -1587,7 +1666,7 @@
                                     {% if not loop.last %}<br>{% endif %}
                                     {% endfor %}
                                     {% else %}
-                                    No equipment
+                                    Court Only Booking
                                     {% endif %}
                                 </td>
                                 <td data-label="Action">
@@ -1622,7 +1701,7 @@
         <!-- All Bookings Content -->
         <div class="dashboard-content" id="all-bookings">
             <div class="booking-section">
-                <h2>All Bookings</h2>
+                <h2>Bookings</h2>
                 <!-- Search and Filter Controls -->
                 <div class="booking-controls">
                     <div class="search-box">
@@ -1634,7 +1713,7 @@
                             <option value="">All Status</option>
                             <option value="Pending">Pending</option>
                             <option value="Approved">Approved</option>
-                            <option value="Borrowed">Borrowed</option>
+                            <option value="Borrowed">In Progress</option>
                             <option value="Completed">Completed</option>
                             <option value="Cancelled">Cancelled</option>
                             <option value="Rejected">Rejected</option>
@@ -1709,7 +1788,7 @@
                                     {% if not loop.last %}<br>{% endif %}
                                     {% endfor %}
                                     {% else %}
-                                    No equipment
+                                    Court Only Booking
                                     {% endif %}
                                 </td>
                                 <td data-label="Status">
@@ -1720,7 +1799,7 @@
                                         {% elif booking.status == 'Completed' %}status-completed
                                         {% elif booking.status == 'Cancelled' or booking.status == 'Rejected' %}status-cancelled
                                         {% endif %}">
-                                        {{ booking.status }}
+                                        {% if booking.status == 'Borrowed' %}In Progress{% else %}{{ booking.status }}{% endif %}
                                     </span>
                                 </td>
                                 <td data-label="Action">
@@ -1736,7 +1815,10 @@
                                     </button>
                                     {% elif booking.status == 'Approved' %}
                                     <button class="btn-action btn-borrowed" data-booking-id="{{ booking.id }}">
-                                        <i class="fas fa-hand-holding"></i> Mark as Borrowed
+                                        <i class="fas fa-hand-holding"></i> Mark as In Progress
+                                    </button>
+                                    <button class="btn-action btn-reject" data-booking-id="{{ booking.id }}">
+                                        <i class="fas fa-times"></i> Reject
                                     </button>
                                     {% elif booking.status == 'Borrowed' %}
                                     <button class="btn-action btn-completed" data-booking-id="{{ booking.id }}">
@@ -1746,9 +1828,18 @@
                                 </td>
                             </tr>
                             {% endfor %}
+                            <tr id="allBookingsEmpty" style="display:none;">
+                                <td colspan="8" style="text-align:center; padding: 30px;">
+                                    <div class="empty-state">
+                                        <i class="fas fa-calendar-times"></i>
+                                        <h3 id="allBookingsEmptyTitle"></h3>
+                                        <p></p>
+                                    </div>
+                                </td>
+                            </tr>
                             {% else %}
                             <tr>
-                                <td colspan="7" style="text-align:center; padding: 30px;">
+                                <td colspan="8" style="text-align:center; padding: 30px;">
                                     <div class="empty-state">
                                         <i class="fas fa-calendar-times"></i>
                                         <h3>No Bookings Found</h3>
@@ -1806,6 +1897,7 @@
                                     <th>Equipment Name</th>
                                     <th>Category</th>
                                     <th>Available</th>
+                                    <th>In Progress</th>
                                     <th>Defective</th>
                                     <th>Total</th>
                                     <th>Status</th>
@@ -1830,7 +1922,8 @@
                                         {% endif %}
                                     </td>
                                     <td data-label="Available">{{ item.quantity_available }}</td>
-                                    <td data-label="Defective">{{ (item.quantity_total or 0) - (item.quantity_available or 0) }}</td>
+                                    <td data-label="In Progress">{{ ((item.quantity_total or 0) - (item.quantity_available or 0) - (item.quantity_defective or 0)) if ((item.quantity_total or 0) - (item.quantity_available or 0) - (item.quantity_defective or 0)) > 0 else 0 }}</td>
+                                    <td data-label="Defective">{{ item.quantity_defective or 0 }}</td>
                                     <td data-label="Total">{{ item.quantity_total }}</td>
                                     <td data-label="Status">
                                         <span
@@ -1902,8 +1995,12 @@
                                 placeholder="0">
                         </div>
                         <div class="form-group">
+                            <label for="quantityInProgress">In Progress</label>
+                            <input type="number" id="quantityInProgress" readonly placeholder="0" title="Computed as Total - Available">
+                        </div>
+                        <div class="form-group">
                             <label for="quantityDefective">Defective</label>
-                            <input type="number" id="quantityDefective" min="0" placeholder="0" title="Defective = Total - Available. Editing this will adjust Available.">
+                            <input type="number" id="quantityDefective" name="quantity_defective" min="0" placeholder="0">
                         </div>
                     </div>
                     <div class="form-group">
@@ -1959,13 +2056,11 @@
                     <div class="form-group" style="margin: 0;">
                         <select class="filter-select" id="statusFilter" style="min-width: 150px;">
                             <option value="">All Status</option>
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
+                            <option value="online">Online</option>
+                            <option value="offline">Offline</option>
+                            <option value="suspended">Suspended</option>
                         </select>
                     </div>
-                    <button class="btn" id="addUserBtn" style="margin-left: auto;">
-                        <i class="fas fa-plus"></i> Add New User
-                    </button>
                 </div>
 
                 <!-- Users Table -->
@@ -1984,7 +2079,7 @@
                         </thead>
                         <tbody id="usersTableBody">
                             {% for user in users %}
-                            <tr data-role="{{ user.role }}" data-status="{{ 'active' if user.is_active else 'inactive' }}">
+                            <tr data-role="{{ user.role }}" data-status="{{ 'suspended' if user.is_suspended else 'offline' }}" data-user-id="{{ user.id }}">
                                 <td data-label="Name">
                                     <div style="display: flex; align-items: center; gap: 10px;">
                                         <div class="user-avatar" style="width: 36px; height: 36px; border-radius: 50%; background-color: #3498db; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">
@@ -2006,9 +2101,11 @@
                                     </span>
                                 </td>
                                 <td data-label="Status">
-                                    <span class="status-badge {{ 'status-approved' if user.is_active else 'status-cancelled' }}">
-                                        {{ 'Active' if user.is_active else 'Inactive' }}
-                                    </span>
+                                    {% if user.is_suspended %}
+                                    <span class="status-badge status-cancelled">Suspended</span>
+                                    {% else %}
+                                    <span class="status-badge status-cancelled user-presence">Offline</span>
+                                    {% endif %}
                                 </td>
                                 <td data-label="Date Joined">
                                     {{ user.created_at.split('T')[0] }}
@@ -2017,16 +2114,20 @@
                                     <button class="btn-action btn-view view-user" data-user-id="{{ user.id }}" title="View Details">
                                         <i class="fas fa-eye"></i>
                                     </button>
-                                    <button class="btn-action btn-edit edit-user" data-user-id="{{ user.id }}" title="Edit User">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
+                                    
                                     {% if user.id != session.user.id %}
-                                    <button class="btn-action btn-delete delete-user" data-user-id="{{ user.id }}" title="Delete User">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
+                                        {% if user.is_suspended %}
+                                        <button type="button" class="btn-action btn-view user-unsuspend-action" data-user-id="{{ user.id }}" title="Unsuspend User">
+                                            <i class="fas fa-unlock"></i>
+                                        </button>
+                                        {% else %}
+                                        <button type="button" class="btn-action btn-delete user-suspend-action" data-user-id="{{ user.id }}" title="Suspend User">
+                                            <i class="fas fa-ban"></i>
+                                        </button>
+                                        {% endif %}
                                     {% else %}
-                                    <button class="btn-action" disabled style="opacity: 0.5; cursor: not-allowed;" title="Cannot delete your own account">
-                                        <i class="fas fa-trash"></i>
+                                    <button class="btn-action" disabled style="opacity: 0.5; cursor: not-allowed;" title="Cannot suspend your own account">
+                                        <i class="fas fa-ban"></i>
                                     </button>
                                     {% endif %}
                                 </td>
@@ -2038,9 +2139,6 @@
                                         <i class="fas fa-users" style="font-size: 48px; color: #95a5a6; margin-bottom: 15px;"></i>
                                         <h3>No Users Found</h3>
                                         <p>No users have been registered yet.</p>
-                                        <button class="btn" id="addFirstUser" style="margin-top: 15px;">
-                                            <i class="fas fa-plus"></i> Add Your First User
-                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -2080,7 +2178,7 @@
         <!-- Add/Edit User Modal -->
         <div class="modal" id="userFormModal">
             <div class="modal-content" style="max-width: 600px;">
-                <h3 id="userFormTitle">Add New User</h3>
+                <h3 id="userFormTitle">Edit User</h3>
                 <form id="userForm">
                     <div class="form-row">
                         <div class="form-group">
@@ -2132,13 +2230,85 @@
         <!-- Reports Content -->
         <div class="dashboard-content" id="reports">
             <div class="booking-section">
-                <h2>Return</h2>
-                <div class="empty-state">
-                    <i class="fas fa-chart-bar"></i>
-                    <h3>Reports & Analytics</h3>
-                    <p>View booking reports and system analytics</p>
-                    <p class="text-muted">This feature is coming soon.</p>
+                <h2>Reports</h2>
+                <div class="card" style="padding:14px; border:1px solid #e5e7eb; border-radius:10px;">
+                    <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; margin-bottom:10px;">
+                        <div style="flex:1 1 220px;">
+                            <label style="display:block; font-weight:600; color:#023e8a; margin-bottom:6px;">Search</label>
+                            <input id="reportSearch" type="text" placeholder="Search ticket, name, notes..." style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;" />
+                        </div>
+                        <div style="flex:0 0 200px;">
+                            <label style="display:block; font-weight:600; color:#023e8a; margin-bottom:6px;">Status</label>
+                            <select id="reportStatus" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+                                <option value="all">All</option>
+                                <option value="Pending">Pending</option>
+                                <option value="Approved">Approved</option>
+                                <option value="Borrowed">In Progress</option>
+                                <option value="Completed">Completed</option>
+                                <option value="Cancelled">Cancelled</option>
+                                <option value="Rejected">Rejected</option>
+                            </select>
+                        </div>
+                        <div style="flex:0 0 180px;">
+                            <label style="display:block; font-weight:600; color:#023e8a; margin-bottom:6px;">From</label>
+                            <input id="reportFrom" type="date" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;" />
+                        </div>
+                        <div style="flex:0 0 180px;">
+                            <label style="display:block; font-weight:600; color:#023e8a; margin-bottom:6px;">To</label>
+                            <input id="reportTo" type="date" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;" />
+                        </div>
+                        <div style="flex:0 0 auto; margin-left:auto; display:flex; align-items:center; gap:10px;">
+                            <button id="reportExportBtn" class="btn-action btn-view" type="button" title="Download current results as Excel">
+                              <i class="fas fa-file-excel"></i> Export
+                            </button>
+                            <span id="reportCount" style="color:#6b7280; font-weight:600;"></span>
+                        </div>
+                    </div>
+                    <div style="overflow:auto; border:1px solid #e5e7eb; border-radius:8px;">
+                        <table class="booking-table" style="min-width:900px;">
+                            <thead>
+                                <tr>
+                                    <th>Ticket ID</th>
+                                    <th>User</th>
+                                    <th>Event Type</th>
+                                    <th>Booking Date</th>
+                                    <th>Event Date</th>
+                                    <th>Equipment</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reportTableBody">
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
+                <script id="reportsData" type="application/json">{{ all_bookings | tojson }}</script>
+                <style>
+                  /* Reports: compact pill Details button */
+                  #reports .btn-action.btn-view {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 4px; /* tighter spacing between icon and text */
+                    padding: 6px 14px;
+                    border-radius: 9999px;
+                    font-size: 0.82rem;
+                    font-weight: 700;
+                    line-height: 1; /* keep icon and text aligned horizontally */
+                    white-space: nowrap;
+                    background: linear-gradient(135deg, #3498db, #2980b9);
+                    color: #fff;
+                    box-shadow: 0 1px 2px rgba(0,0,0,.06), 0 2px 6px rgba(41,128,185,.18);
+                  }
+                  #reports .btn-action.btn-view i {
+                    font-size: .95em;
+                    line-height: 1;
+                    margin: 0; /* remove any default spacing */
+                    vertical-align: middle;
+                  }
+                  #reports .btn-action.btn-view:hover { filter: brightness(1.06); transform: translateY(-1px); }
+                  #reports .btn-action.btn-view:active { transform: translateY(0); }
+                </style>
             </div>
         </div>
     </div>
@@ -2147,6 +2317,11 @@
         <div class="modal-content">
             <h3 id="approvalModalTitle">Approve Booking</h3>
             <p id="approvalModalMessage">Are you sure you want to approve this booking?</p>
+            <div id="approvalItemsWrapper" style="display:none; text-align:left; margin:12px 0;">
+                <div style="font-weight:600;color:#023e8a;margin-bottom:8px;">Adjust Equipment Quantities</div>
+                <div id="approvalItemsContainer" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;"></div>
+                <div id="approvalItemsHint" style="font-size:.85rem;color:#6b7280;margin-top:6px;">Leave as-is to keep requested quantities. Set to 0 to remove an item.</div>
+            </div>
             <div class="modal-buttons">
                 <button class="btn" id="confirmApproval">Yes, Confirm</button>
                 <!-- >>>> FIXED: Cancel button now uses btn-cancel <<<< -->
@@ -2159,7 +2334,13 @@
     <div class="modal" id="rejectionModal">
         <div class="modal-content">
             <h3>Reject Booking</h3>
-            <p>Are you sure you want to reject this booking?</p>
+            <p>Please provide a reason for rejecting this booking.</p>
+            <div class="form-group" style="text-align: left; margin-bottom: 16px;">
+                <label for="rejectReasonInput" style="font-weight:600; color:#023e8a;">Reject Reason</label>
+                <textarea id="rejectReasonInput" rows="3" placeholder="Enter reason..." style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; resize: vertical;"></textarea>
+                <div id="rejectReasonError" style="color:#c0392b; font-size:0.9rem; margin-top:6px;"></div>
+            </div>
+            
             <div class="modal-buttons">
                 <!-- FIXED: Button ID changed to 'confirmReject' to match JavaScript -->
                 <button class="btn-action btn-confirm-reject" id="confirmReject">Yes, Reject</button>
@@ -2268,6 +2449,7 @@
             setInterval(updateAdminNotificationCount, 30000);
             const bellIcon = document.querySelector('.notification-bell');
             const dropdown = document.getElementById('adminNotificationDropdown');
+            const markAllBtn = document.getElementById('markAllAdminRead');
 
             if (!bellIcon || !dropdown) return;
 
@@ -2285,6 +2467,98 @@
                     dropdown.style.display = 'none';
                 }
             });
+
+            // Mark all as read handler
+            if (markAllBtn) {
+                markAllBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    fetch('/mark_notifications_as_read', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        credentials: 'same-origin'
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (!data || !data.success) return;
+                        // Remove unread class from all items
+                        dropdown.querySelectorAll('.notification-item.unread').forEach(el => el.classList.remove('unread'));
+                        // Update badge to 0/hidden
+                        updateAdminNotificationCount();
+                    })
+                    .catch(err => console.error('Error marking all admin notifs as read:', err));
+                });
+            }
+
+            // --- Presence: admin heartbeat so admin appears online ---
+            const sendHeartbeat = () => {
+                fetch('/presence/heartbeat', { method: 'POST', credentials: 'same-origin' }).catch(()=>{});
+            };
+            sendHeartbeat();
+            setInterval(sendHeartbeat, 30000);
+
+            // --- Presence: poll user online statuses and update table ---
+            const presenceThresholdMs = 70000; // 70s considered online
+            function sortUsersByPresence() {
+                const tbody = document.getElementById('usersTableBody');
+                if (!tbody) return;
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+                const priority = { online: 0, suspended: 1, offline: 2 };
+                rows.sort((a, b) => {
+                    const sa = a.getAttribute('data-status') || 'offline';
+                    const sb = b.getAttribute('data-status') || 'offline';
+                    const pa = priority[sa] ?? 2;
+                    const pb = priority[sb] ?? 2;
+                    if (pa !== pb) return pa - pb;
+                    const na = (a.querySelector('td[data-label="Name"]')?.innerText || '').toLowerCase();
+                    const nb = (b.querySelector('td[data-label="Name"]')?.innerText || '').toLowerCase();
+                    return na.localeCompare(nb);
+                });
+                rows.forEach(r => tbody.appendChild(r));
+            }
+            function updatePresenceBadges(presenceList) {
+                const map = new Map();
+                presenceList.forEach(u => map.set(u.id, u));
+                document.querySelectorAll('#usersTableBody tr[data-user-id]').forEach(row => {
+                    const uid = row.getAttribute('data-user-id');
+                    const badge = row.querySelector('.user-presence');
+                    const isSuspended = row.querySelector('.status-badge.status-cancelled') && !badge; // Suspended row uses cancelled without user-presence
+                    if (!badge || isSuspended) return; // don't override Suspended
+                    const info = map.get(uid);
+                    let online = false;
+                    if (info && info.last_seen) {
+                        try {
+                            const last = new Date(info.last_seen).getTime();
+                            online = (Date.now() - last) <= presenceThresholdMs;
+                        } catch(_) {}
+                    }
+                    if (online) {
+                        badge.classList.remove('status-cancelled');
+                        badge.classList.add('status-approved');
+                        badge.textContent = 'Online';
+                        row.setAttribute('data-status', 'online');
+                    } else {
+                        badge.classList.remove('status-approved');
+                        badge.classList.add('status-cancelled');
+                        badge.textContent = 'Offline';
+                        row.setAttribute('data-status', 'offline');
+                    }
+                });
+                // After updating statuses, sort rows
+                sortUsersByPresence();
+            }
+            function pollPresence() {
+                fetch('/admin/users/online_status', { credentials: 'same-origin' })
+                    .then(r => r.json())
+                    .then(data => { if (data && data.success) updatePresenceBadges(data.data || []); })
+                    .catch(()=>{});
+            }
+            // Initial sort on load (before first poll)
+            sortUsersByPresence();
+            pollPresence();
+            setInterval(pollPresence, 30000);
 
             // Handle click on notification item
             document.querySelectorAll('.notification-item').forEach(item => {
@@ -2350,16 +2624,24 @@
                                                         equipmentHTML += `<li>${emoji} ${item.name}: ${item.quantity} pcs</li>`;
                                                     });
                                                 } else {
-                                                    equipmentHTML = '<li>No equipment specified</li>';
+                                                    equipmentHTML = '<li>Court Only Booking</li>';
                                                 }
                                                 const userName = booking.users ? `${booking.users.first_name} ${booking.users.last_name}` : (booking.first_name && booking.last_name ? `${booking.first_name} ${booking.last_name}` : `User #${booking.user_id}`);
+                                                const barangayId = (booking.users && booking.users.barangay_id) || booking.barangay_id || '';
                                                 detailsContent.innerHTML = `
                                                     <div class="booking-detail"><span class="detail-label">Ticket ID:</span><span class="detail-value">${booking.ticket_number || ''}</span></div>
                                                     <div class="booking-detail"><span class="detail-label">User:</span><span class="detail-value">${userName}</span></div>
+                                                    <div class="booking-detail"><span class="detail-label">Barangay ID:</span><span class="detail-value">${barangayId}</span></div>
                                                     <div class="booking-detail"><span class="detail-label">Event Type:</span><span class="detail-value">${booking.event_type || ''}</span></div>
                                                     <div class="booking-detail"><span class="detail-label">Event Date:</span><span class="detail-value">${booking.event_date || ''}</span></div>
                                                     <div class="booking-detail"><span class="detail-label">Booking Date:</span><span class="detail-value">${booking.booking_date || ''}</span></div>
-                                                    <div class="booking-detail"><span class="detail-label">Status:</span><span class="detail-value">${booking.status || ''}</span></div>
+                                                    <div class="booking-detail"><span class="detail-label">Status:</span><span class="detail-value"><span class="status-badge ${booking.status === 'Pending' ? 'status-pending' : booking.status === 'Approved' ? 'status-approved' : booking.status === 'Completed' ? 'status-completed' : (booking.status === 'Cancelled' || booking.status === 'Rejected') ? 'status-cancelled' : booking.status === 'Borrowed' ? 'status-borrowed' : ''}">${booking.status === 'Borrowed' ? 'In Progress' : (booking.status || '')}</span></span></div>
+                                                    ${(booking.status === 'Cancelled' && booking.cancel_reason) ? `
+                                                    <div class="booking-detail"><span class="detail-label">Cancel Reason:</span><span class="detail-value">${booking.cancel_reason}</span></div>
+                                                    ` : ''}
+                                                    ${(booking.status === 'Rejected' && booking.reject_reason) ? `
+                                                    <div class="booking-detail"><span class="detail-label">Reject Reason:</span><span class="detail-value">${booking.reject_reason}</span></div>
+                                                    ` : ''}
                                                     <div class="booking-detail"><span class="detail-label">Contact Number:</span><span class="detail-value">${booking.contact_number || ''}</span></div>
                                                     <div class="booking-detail"><span class="detail-label">Email:</span><span class="detail-value">${booking.email || ''}</span></div>
                                                     <div class="booking-detail"><span class="detail-label">Equipment:</span><span class="detail-value" style="flex:1;"><ul class="equipment-list" style="margin-top:8px;">${equipmentHTML}</ul></span></div>
@@ -2414,16 +2696,24 @@
                                                                 equipmentHTML += `<li>${emoji} ${item.name}: ${item.quantity} pcs</li>`;
                                                             });
                                                         } else {
-                                                            equipmentHTML = '<li>No equipment specified</li>';
+                                                            equipmentHTML = '<li>Court Only Booking</li>';
                                                         }
                                                         const userName = booking.users ? `${booking.users.first_name} ${booking.users.last_name}` : (booking.first_name && booking.last_name ? `${booking.first_name} ${booking.last_name}` : `User #${booking.user_id}`);
+                                                        const barangayId = (booking.users && booking.users.barangay_id) || booking.barangay_id || '';
                                                         detailsContent.innerHTML = `
                                                             <div class="booking-detail"><span class="detail-label">Ticket ID:</span><span class="detail-value">${booking.ticket_number || ''}</span></div>
                                                             <div class="booking-detail"><span class="detail-label">User:</span><span class="detail-value">${userName}</span></div>
+                                                            <div class="booking-detail"><span class="detail-label">Barangay ID:</span><span class="detail-value">${barangayId}</span></div>
                                                             <div class="booking-detail"><span class="detail-label">Event Type:</span><span class="detail-value">${booking.event_type || ''}</span></div>
                                                             <div class="booking-detail"><span class="detail-label">Event Date:</span><span class="detail-value">${booking.event_date || ''}</span></div>
                                                             <div class="booking-detail"><span class="detail-label">Booking Date:</span><span class="detail-value">${booking.booking_date || ''}</span></div>
-                                                            <div class="booking-detail"><span class="detail-label">Status:</span><span class="detail-value">${booking.status || ''}</span></div>
+                                                            <div class="booking-detail"><span class="detail-label">Status:</span><span class="detail-value"><span class="status-badge ${booking.status === 'Pending' ? 'status-pending' : booking.status === 'Approved' ? 'status-approved' : booking.status === 'Completed' ? 'status-completed' : (booking.status === 'Cancelled' || booking.status === 'Rejected') ? 'status-cancelled' : booking.status === 'Borrowed' ? 'status-borrowed' : ''}">${booking.status || ''}</span></span></div>
+                                                            ${(booking.status === 'Cancelled' && booking.cancel_reason) ? `
+                                                            <div class="booking-detail"><span class="detail-label">Cancel Reason:</span><span class="detail-value">${booking.cancel_reason}</span></div>
+                                                            ` : ''}
+                                                            ${(booking.status === 'Rejected' && booking.reject_reason) ? `
+                                                            <div class="booking-detail"><span class="detail-label">Reject Reason:</span><span class="detail-value">${booking.reject_reason}</span></div>
+                                                            ` : ''}
                                                             <div class="booking-detail"><span class="detail-label">Contact Number:</span><span class="detail-value">${booking.contact_number || ''}</span></div>
                                                             <div class="booking-detail"><span class="detail-label">Email:</span><span class="detail-value">${booking.email || ''}</span></div>
                                                             <div class="booking-detail"><span class="detail-label">Equipment:</span><span class="detail-value" style="flex:1;"><ul class="equipment-list" style="margin-top:8px;">${equipmentHTML}</ul></span></div>
@@ -2460,16 +2750,24 @@
                                                                 equipmentHTML += `<li>${emoji} ${item.name}: ${item.quantity} pcs</li>`;
                                                             });
                                                         } else {
-                                                            equipmentHTML = '<li>No equipment specified</li>';
+                                                            equipmentHTML = '<li>Court Only Booking</li>';
                                                         }
                                                         const userName = booking.users ? `${booking.users.first_name} ${booking.users.last_name}` : (booking.first_name && booking.last_name ? `${booking.first_name} ${booking.last_name}` : `User #${booking.user_id}`);
+                                                        const barangayId = (booking.users && booking.users.barangay_id) || booking.barangay_id || '';
                                                         detailsContent.innerHTML = `
                                                             <div class=\"booking-detail\"><span class=\"detail-label\">Ticket ID:</span><span class=\"detail-value\">${booking.ticket_number || ''}</span></div>
                                                             <div class=\"booking-detail\"><span class=\"detail-label\">User:</span><span class=\"detail-value\">${userName}</span></div>
+                                                            <div class=\"booking-detail\"><span class=\"detail-label\">Barangay ID:</span><span class=\"detail-value\">${barangayId}</span></div>
                                                             <div class=\"booking-detail\"><span class=\"detail-label\">Event Type:</span><span class=\"detail-value\">${booking.event_type || ''}</span></div>
                                                             <div class=\"booking-detail\"><span class=\"detail-label\">Event Date:</span><span class=\"detail-value\">${booking.event_date || ''}</span></div>
                                                             <div class=\"booking-detail\"><span class=\"detail-label\">Booking Date:</span><span class=\"detail-value\">${booking.booking_date || ''}</span></div>
-                                                            <div class=\"booking-detail\"><span class=\"detail-label\">Status:</span><span class=\"detail-value\">${booking.status || ''}</span></div>
+                                                            <div class=\"booking-detail\"><span class=\"detail-label\">Status:</span><span class=\"detail-value\"><span class=\"status-badge ${booking.status === 'Pending' ? 'status-pending' : booking.status === 'Approved' ? 'status-approved' : booking.status === 'Completed' ? 'status-completed' : (booking.status === 'Cancelled' || booking.status === 'Rejected') ? 'status-cancelled' : booking.status === 'Borrowed' ? 'status-borrowed' : ''}\">${booking.status || ''}</span></span></div>
+                                                            ${(booking.status === 'Cancelled' && booking.cancel_reason) ? `
+                                                            <div class=\"booking-detail\"><span class=\"detail-label\">Cancel Reason:</span><span class=\"detail-value\">${booking.cancel_reason}</span></div>
+                                                            ` : ''}
+                                                            ${(booking.status === 'Rejected' && booking.reject_reason) ? `
+                                                            <div class=\"booking-detail\"><span class=\"detail-label\">Reject Reason:</span><span class=\"detail-value\">${booking.reject_reason}</span></div>
+                                                            ` : ''}
                                                             <div class=\"booking-detail\"><span class=\"detail-label\">Contact Number:</span><span class=\"detail-value\">${booking.contact_number || ''}</span></div>
                                                             <div class=\"booking-detail\"><span class=\"detail-label\">Email:</span><span class=\"detail-value\">${booking.email || ''}</span></div>
                                                             <div class=\"booking-detail\"><span class=\"detail-label\">Equipment:</span><span class=\"detail-value\" style=\"flex:1;\"><ul class=\"equipment-list\" style=\"margin-top:8px;\">${equipmentHTML}</ul></span></div>
@@ -2526,7 +2824,7 @@
                                                             equipmentHTML += `<li>${emoji} ${item.name}: ${item.quantity} pcs</li>`;
                                                         });
                                                     } else {
-                                                        equipmentHTML = '<li>No equipment specified</li>';
+                                                        equipmentHTML = '<li>Court Only Booking</li>';
                                                     }
                                                     const userName = booking.users ? `${booking.users.first_name} ${booking.users.last_name}` : (booking.first_name && booking.last_name ? `${booking.first_name} ${booking.last_name}` : `User #${booking.user_id}`);
                                                     detailsContent.innerHTML = `
@@ -2535,7 +2833,13 @@
                                                         <div class=\"booking-detail\"><span class=\"detail-label\">Event Type:</span><span class=\"detail-value\">${booking.event_type || ''}</span></div>
                                                         <div class=\"booking-detail\"><span class=\"detail-label\">Event Date:</span><span class=\"detail-value\">${booking.event_date || ''}</span></div>
                                                         <div class=\"booking-detail\"><span class=\"detail-label\">Booking Date:</span><span class=\"detail-value\">${booking.booking_date || ''}</span></div>
-                                                        <div class=\"booking-detail\"><span class=\"detail-label\">Status:</span><span class=\"detail-value\">${booking.status || ''}</span></div>
+                                                        <div class=\"booking-detail\"><span class=\"detail-label\">Status:</span><span class=\"detail-value\"><span class=\"status-badge ${booking.status === 'Pending' ? 'status-pending' : booking.status === 'Approved' ? 'status-approved' : booking.status === 'Completed' ? 'status-completed' : (booking.status === 'Cancelled' || booking.status === 'Rejected') ? 'status-cancelled' : booking.status === 'Borrowed' ? 'status-borrowed' : ''}\">${booking.status === 'Borrowed' ? 'In Progress' : (booking.status || '')}</span></span></div>
+                                                        ${(booking.status === 'Cancelled' && booking.cancel_reason) ? `
+                                                        <div class=\"booking-detail\"><span class=\"detail-label\">Cancel Reason:</span><span class=\"detail-value\">${booking.cancel_reason}</span></div>
+                                                        ` : ''}
+                                                        ${(booking.status === 'Rejected' && booking.reject_reason) ? `
+                                                        <div class=\"booking-detail\"><span class=\"detail-label\">Reject Reason:</span><span class=\"detail-value\">${booking.reject_reason}</span></div>
+                                                        ` : ''}
                                                         <div class=\"booking-detail\"><span class=\"detail-label\">Contact Number:</span><span class=\"detail-value\">${booking.contact_number || ''}</span></div>
                                                         <div class=\"booking-detail\"><span class=\"detail-label\">Email:</span><span class=\"detail-value\">${booking.email || ''}</span></div>
                                                         <div class=\"booking-detail\"><span class=\"detail-label\">Equipment:</span><span class=\"detail-value\" style=\"flex:1;\"><ul class=\"equipment-list\" style=\"margin-top:8px;\">${equipmentHTML}</ul></span></div>
@@ -2572,9 +2876,12 @@
                 this.detailsModal = document.getElementById('detailsModal');
                 this.equipmentModal = document.getElementById('equipmentModal');
                 this.deleteModal = document.getElementById('deleteEquipmentModal');
+                this.suspendModal = document.getElementById('suspendUserModal');
+                this.unsuspendModal = document.getElementById('unsuspendConfirmModal');
                 this.currentBookingId = null;
                 this.currentAction = null;
                 this.currentItemId = null;
+                this.currentUserId = null;
                 this.init();
             }
             init() {
@@ -2583,6 +2890,7 @@
                 this.setupEquipmentCellExpansion();
                 this.setupSearchAndFilter();
                 this.initEquipmentManagement();
+                this.initReports();
             }
             bindEvents() {
                 // Toggle sidebar
@@ -2620,22 +2928,29 @@
                     button.addEventListener('click', async (e) => {
                         e.preventDefault();
                         const id = e.currentTarget.getAttribute('data-booking-id');
-                        try {
-                            const res = await fetch('/admin/mark_borrowed', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ booking_id: id })
-                            });
-                            const data = await res.json();
-                            if (data.success) {
-                                this.showFlashMessage('Marked as Borrowed', 'success');
-                                setTimeout(() => location.reload(), 1200);
-                            } else {
-                                this.showFlashMessage(data.message || 'Failed to mark as Borrowed', 'error');
+                        openActionConfirm(
+                            'Mark as In Progress',
+                            'Are you sure you want to mark this booking as In Progress?',
+                            'Yes, mark In Progress',
+                            async () => {
+                                try {
+                                    const res = await fetch('/admin/mark_borrowed', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ booking_id: id })
+                                    });
+                                    const data = await res.json();
+                                    if (data.success) {
+                                        this.showFlashMessage('Marked as In Progress', 'success');
+                                        setTimeout(() => location.reload(), 1200);
+                                    } else {
+                                        this.showFlashMessage(data.message || 'Failed to mark as In Progress', 'error');
+                                    }
+                                } catch (err) {
+                                    this.showFlashMessage('Network error. Please try again.', 'error');
+                                }
                             }
-                        } catch (err) {
-                            this.showFlashMessage('Network error. Please try again.', 'error');
-                        }
+                        );
                     });
                 });
                 // Completed buttons
@@ -2643,22 +2958,7 @@
                     button.addEventListener('click', async (e) => {
                         e.preventDefault();
                         const id = e.currentTarget.getAttribute('data-booking-id');
-                        try {
-                            const res = await fetch('/admin/mark_completed', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ booking_id: id })
-                            });
-                            const data = await res.json();
-                            if (data.success) {
-                                this.showFlashMessage('Marked as Completed', 'success');
-                                setTimeout(() => location.reload(), 1200);
-                            } else {
-                                this.showFlashMessage(data.message || 'Failed to mark as Completed', 'error');
-                            }
-                        } catch (err) {
-                            this.showFlashMessage('Network error. Please try again.', 'error');
-                        }
+                        this.openCompletionAdjustModal(id);
                     });
                 });
                 // View details buttons
@@ -2676,7 +2976,7 @@
 
 
                 // Close modals when clicking outside
-                [this.approvalModal, this.rejectionModal, this.detailsModal, this.equipmentModal, this.deleteModal].forEach(modal => {
+                [this.approvalModal, this.rejectionModal, this.detailsModal, this.equipmentModal, this.deleteModal, this.suspendModal, this.unsuspendModal].forEach(modal => {
                     modal?.addEventListener('click', (e) => {
                         if (e.target === modal) {
                             if (modal === this.approvalModal) this.hideApprovalModal();
@@ -2684,8 +2984,20 @@
                             if (modal === this.detailsModal) this.hideDetailsModal();
                             if (modal === this.equipmentModal) this.closeEquipmentModal();
                             if (modal === this.deleteModal) this.closeDeleteModal();
+                            if (modal === this.suspendModal) this.closeSuspendModal();
+                            if (modal === this.unsuspendModal) this.closeUnsuspendModal();
                         }
                     });
+                });
+                // Delegated click for dynamically added/available Reject buttons
+                document.addEventListener('click', (e) => {
+                    const rejBtn = e.target.closest('.btn-reject');
+                    if (rejBtn && rejBtn.getAttribute('data-booking-id')) {
+                        e.preventDefault();
+                        this.currentBookingId = rejBtn.getAttribute('data-booking-id');
+                        this.currentAction = 'reject';
+                        this.rejectionModal.style.display = 'flex';
+                    }
                 });
             }
             initEquipmentManagement() {
@@ -2706,7 +3018,11 @@
                 // Edit equipment buttons
                 document.querySelectorAll('.edit-equipment').forEach(btn => {
                     btn.addEventListener('click', (e) => {
-                        const itemId = e.target.closest('.edit-equipment').getAttribute('data-item-id');
+                        const itemId = (e.currentTarget.getAttribute('data-item-id') || '').trim();
+                        if (!itemId) {
+                            try { this.showFlashMessage('Missing equipment ID for edit', 'error'); } catch(_){}
+                            return;
+                        }
                         this.openEquipmentModal(itemId);
                     });
                 });
@@ -2758,37 +3074,26 @@
                     e.preventDefault();
                     this.saveEquipment();
                 });
-                // Keep Total, Available, Defective in sync
+                // Defective is admin-controlled; no auto-sync with Total/Available
+                // Show computed In Progress (Total - Available) as read-only display
                 const totalEl = document.getElementById('quantityTotal');
                 const availEl = document.getElementById('quantityAvailable');
                 const defEl = document.getElementById('quantityDefective');
-                let syncingQty = false;
-                const clamp = (n) => (isNaN(n) ? 0 : Math.max(0, n));
-                const updateDefective = () => {
-                    if (!defEl || syncingQty) return;
-                    syncingQty = true;
-                    const t = clamp(parseInt(totalEl?.value || '0', 10));
-                    const a = clamp(parseInt(availEl?.value || '0', 10));
-                    defEl.value = clamp(t - a);
-                    syncingQty = false;
+                const inProgEl = document.getElementById('quantityInProgress');
+                const computeInProgress = () => {
+                    if (!inProgEl) return;
+                    const t = parseInt(totalEl?.value || '0', 10) || 0;
+                    const a = parseInt(availEl?.value || '0', 10) || 0;
+                    const d = parseInt(defEl?.value || '0', 10) || 0;
+                    const val = Math.max(t - a - d, 0);
+                    inProgEl.value = val;
                 };
-                const updateAvailableFromDefective = () => {
-                    if (!availEl || syncingQty) return;
-                    syncingQty = true;
-                    const t = clamp(parseInt(totalEl?.value || '0', 10));
-                    const d = clamp(parseInt(defEl?.value || '0', 10));
-                    // Ensure available is not negative and not above total
-                    let a = clamp(t - d);
-                    if (a > t) a = t;
-                    availEl.value = a;
-                    syncingQty = false;
-                };
-                totalEl?.addEventListener('input', () => { updateDefective(); });
-                availEl?.addEventListener('input', () => { updateDefective(); });
-                defEl?.addEventListener('input', () => { updateAvailableFromDefective(); });
+                totalEl?.addEventListener('input', computeInProgress);
+                availEl?.addEventListener('input', computeInProgress);
+                defEl?.addEventListener('input', computeInProgress);
             }
             setupSearchAndFilter() {
-                // Setup search functionality for pending approvals
+                // Setup search functionality for Pending Approvals page
                 const approvalSearch = document.getElementById('approvalSearch');
                 const approvalTypeFilter = document.getElementById('typeFilter');
                 if (approvalSearch && approvalTypeFilter) {
@@ -2796,40 +3101,100 @@
                         const searchTerm = approvalSearch.value.toLowerCase();
                         const typeValue = approvalTypeFilter.value;
                         document.querySelectorAll('#pending-approvals .booking-table tbody tr').forEach(row => {
-                            const ticketId = row.querySelector('td[data-label="Ticket ID"]').textContent.toLowerCase();
-                            const userName = row.querySelector('td[data-label="User"]').textContent.toLowerCase();
-                            const eventType = row.querySelector('td[data-label="Event Type"]').textContent;
+                            const ticketEl = row.querySelector('td[data-label="Ticket ID"]');
+                            const userEl = row.querySelector('td[data-label="User"]');
+                            const typeEl = row.querySelector('td[data-label="Event Type"]');
+                            if (!ticketEl || !userEl || !typeEl) return;
+                            const ticketId = ticketEl.textContent.toLowerCase();
+                            const userName = userEl.textContent.toLowerCase();
+                            const eventType = typeEl.textContent;
+                            const rowCategory = (eventType === 'Equipment Booking') ? 'Equipment' : 'Court';
                             const matchesSearch = ticketId.includes(searchTerm) || userName.includes(searchTerm);
-                            const matchesType = !typeValue || eventType.includes(typeValue);
+                            const matchesType = !typeValue || rowCategory === typeValue;
                             row.style.display = (matchesSearch && matchesType) ? '' : 'none';
                         });
                     };
                     approvalSearch.addEventListener('input', filterApprovals);
                     approvalTypeFilter.addEventListener('change', filterApprovals);
                 }
-                // Setup search functionality for all bookings
-                const allBookingsSearch = document.getElementById('allBookingsSearch');
-                const statusFilter = document.getElementById('statusFilter');
-                const bookingTypeFilter = document.getElementById('bookingTypeFilter');
-                if (allBookingsSearch && statusFilter && bookingTypeFilter) {
-                    const filterAllBookings = () => {
-                        const searchTerm = allBookingsSearch.value.toLowerCase();
-                        const statusValue = statusFilter.value;
-                        const typeValue = bookingTypeFilter.value;
-                        document.querySelectorAll('#all-bookings .booking-table tbody tr').forEach(row => {
-                            const ticketId = row.querySelector('td[data-label="Ticket ID"]').textContent.toLowerCase();
-                            const userName = row.querySelector('td[data-label="User"]').textContent.toLowerCase();
-                            const eventType = row.querySelector('td[data-label="Event Type"]').textContent;
-                            const status = row.getAttribute('data-status');
-                            const matchesSearch = ticketId.includes(searchTerm) || userName.includes(searchTerm);
-                            const matchesStatus = !statusValue || status === statusValue;
-                            const matchesType = !typeValue || eventType.includes(typeValue);
-                            row.style.display = (matchesSearch && matchesStatus && matchesType) ? '' : 'none';
+
+                // Setup search for Dashboard: Recent Pending Approvals (top list)
+                const dashSearch = document.getElementById('dashboardPendingSearch');
+                const dashTypeFilter = document.getElementById('dashboardPendingTypeFilter');
+                const dashTbody = document.getElementById('dashboardPendingTbody');
+                if (dashSearch && dashTypeFilter && dashTbody) {
+                    const filterDashboardPending = () => {
+                        const term = dashSearch.value.toLowerCase();
+                        const typeVal = dashTypeFilter.value;
+                        dashTbody.querySelectorAll('tr').forEach(row => {
+                            const ticketEl = row.querySelector('td[data-label="Ticket ID"]');
+                            const userEl = row.querySelector('td[data-label="User"]');
+                            const typeEl = row.querySelector('td[data-label="Event Type"]');
+                            if (!ticketEl || !userEl || !typeEl) return;
+                            const ticketId = ticketEl.textContent.toLowerCase();
+                            const user = userEl.textContent.toLowerCase();
+                            const evType = typeEl.textContent;
+                            const rowCategory = (evType === 'Equipment Booking') ? 'Equipment' : 'Court';
+                            const matchesSearch = ticketId.includes(term) || user.includes(term);
+                            const matchesType = !typeVal || rowCategory === typeVal;
+                            row.style.display = (matchesSearch && matchesType) ? '' : 'none';
                         });
                     };
-                    allBookingsSearch.addEventListener('input', filterAllBookings);
-                    statusFilter.addEventListener('change', filterAllBookings);
-                    bookingTypeFilter.addEventListener('change', filterAllBookings);
+                    dashSearch.addEventListener('input', filterDashboardPending);
+                    dashTypeFilter.addEventListener('change', filterDashboardPending);
+                }
+
+                // Setup filtering for All Bookings
+                const allBookingsSection = document.getElementById('all-bookings');
+                if (allBookingsSection) {
+                    const allSearch = allBookingsSection.querySelector('#allBookingsSearch');
+                    const allStatus = allBookingsSection.querySelector('#statusFilter');
+                    const allType = allBookingsSection.querySelector('#bookingTypeFilter');
+                    const rowsSelector = '#all-bookings .booking-table tbody tr';
+
+                    const applyAllBookingsFilter = () => {
+                        const term = (allSearch?.value || '').toLowerCase();
+                        const statusVal = allStatus?.value || '';
+                        const typeVal = allType?.value || '';
+                        let visibleCount = 0;
+                        const rows = document.querySelectorAll(rowsSelector);
+                        const emptyRow = allBookingsSection.querySelector('#allBookingsEmpty');
+                        const emptyTitle = allBookingsSection.querySelector('#allBookingsEmptyTitle');
+                        rows.forEach(row => {
+                            const status = row.getAttribute('data-status') || '';
+                            const evType = row.getAttribute('data-type') || '';
+                            const text = row.textContent.toLowerCase();
+
+                            const matchesSearch = !term || text.includes(term);
+                            const matchesStatus = !statusVal || status === statusVal;
+                            const matchesType = !typeVal || ((evType === 'Equipment Booking') ? 'Equipment' : 'Court') === typeVal;
+                            const show = (matchesSearch && matchesStatus && matchesType);
+                            row.style.display = show ? '' : 'none';
+                            if (show) visibleCount++;
+                        });
+
+                        if (emptyRow) {
+                            if (visibleCount === 0) {
+                                let msg = 'No bookings match the current filters';
+                                if (statusVal) {
+                                    const proper = statusVal.charAt(0).toUpperCase() + statusVal.slice(1);
+                                    msg = `No ${proper} bookings right now`;
+                                }
+                                if (emptyTitle) emptyTitle.textContent = msg;
+                                emptyRow.style.display = '';
+                            } else {
+                                emptyRow.style.display = 'none';
+                            }
+                        }
+                    };
+
+                    // Listeners
+                    allSearch?.addEventListener('input', applyAllBookingsFilter);
+                    allStatus?.addEventListener('change', applyAllBookingsFilter);
+                    allType?.addEventListener('change', applyAllBookingsFilter);
+
+                    // Initial filter to respect default/linked state
+                    applyAllBookingsFilter();
                 }
             }
             setupEquipmentCellExpansion() {
@@ -2873,11 +3238,16 @@
                         // Trigger change to reuse existing filter logic
                         statusSelect.dispatchEvent(new Event('change', { bubbles: true }));
                     }
+                    // Hide filter dropdowns when coming from a specific status in the sidebar
+                    const filterControls = document.querySelector('#all-bookings .filter-controls');
+                    if (filterControls) {
+                        filterControls.style.display = statusFilterValue ? 'none' : '';
+                    }
                 }
                 // Update page title
                 this.updatePageTitle(link.textContent.trim());
                 // Close sidebar on mobile
-                if (window.innerWidth < 992) {
+                if (window.innerWidth <= 992) {
                     this.closeSidebar();
                 }
             }
@@ -2910,6 +3280,46 @@
                 // Set modal content for approval
                 document.getElementById('approvalModalTitle').textContent = 'Approve Booking';
                 document.getElementById('approvalModalMessage').textContent = 'Are you sure you want to approve this booking?';
+                // Populate editable quantities (if any)
+                const wrapper = document.getElementById('approvalItemsWrapper');
+                const container = document.getElementById('approvalItemsContainer');
+                if (wrapper && container) {
+                    wrapper.style.display = 'none';
+                    container.innerHTML = '';
+                    fetch(`/admin/booking_details/${this.currentBookingId}`)
+                        .then(r => r.json())
+                        .then(data => {
+                            if (!data || !data.success) return;
+                            const booking = data.data || {};
+                            let items = [];
+                            if (Array.isArray(booking.equipment_list) && booking.equipment_list.length) {
+                                items = booking.equipment_list.map(it => ({ name: it.name, quantity: parseInt(it.quantity || 0, 10) || 0 }));
+                            } else if (booking.other_items) {
+                                const parts = String(booking.other_items).split(', ');
+                                for (const part of parts) {
+                                    if (part.includes(' x')) {
+                                        const [n, q] = part.split(' x');
+                                        const qty = parseInt(q, 10);
+                                        if (n && !isNaN(qty)) items.push({ name: n.trim(), quantity: qty });
+                                    }
+                                }
+                            }
+                            if (items.length) {
+                                wrapper.style.display = 'block';
+                                for (const it of items) {
+                                    const id = `approve-item-${it.name.replace(/[^a-z0-9]/gi,'_').toLowerCase()}`;
+                                    const group = document.createElement('div');
+                                    group.className = 'form-group';
+                                    group.innerHTML = `
+                                        <label for="${id}" style="font-weight:600;color:#374151;">${it.name}</label>
+                                        <input type="number" min="0" id="${id}" class="approval-item-input" data-item-name="${it.name}" value="${it.quantity}" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;" />
+                                    `;
+                                    container.appendChild(group);
+                                }
+                            }
+                        })
+                        .catch(() => {});
+                }
                 this.approvalModal.style.display = 'flex';
             }
             showRejectionModal(e) {
@@ -2917,6 +3327,9 @@
                 const button = e.currentTarget;
                 this.currentBookingId = button.getAttribute('data-booking-id');
                 this.currentAction = 'reject';
+                // Set modal content for rejection
+                document.getElementById('rejectionModalTitle').textContent = 'Reject Booking';
+                document.getElementById('rejectionModalMessage').textContent = 'Are you sure you want to reject this booking?';
                 this.rejectionModal.style.display = 'flex';
             }
             hideApprovalModal() {
@@ -2928,6 +3341,94 @@
                 this.rejectionModal.style.display = 'none';
                 this.currentBookingId = null;
                 this.currentAction = null;
+            }
+            openSuspendModal(userId) {
+                this.currentUserId = userId;
+                const modal = this.suspendModal || document.getElementById('suspendUserModal');
+                this.suspendModal = modal;
+                const reasonInput = document.getElementById('suspendReasonInput');
+                const notesInput = document.getElementById('suspendNotesInput');
+                const errorEl = document.getElementById('suspendReasonError');
+                if (reasonInput) reasonInput.value = '';
+                if (notesInput) notesInput.value = '';
+                if (errorEl) errorEl.textContent = '';
+                if (modal) modal.style.display = 'flex';
+            }
+            closeSuspendModal() {
+                if (this.suspendModal) this.suspendModal.style.display = 'none';
+                this.currentUserId = null;
+            }
+            openUnsuspendConfirm(userId) {
+                this.currentUserId = userId;
+                const modal = this.unsuspendModal || document.getElementById('unsuspendConfirmModal');
+                this.unsuspendModal = modal;
+                if (modal) modal.style.display = 'flex';
+            }
+            closeUnsuspendModal() {
+                if (this.unsuspendModal) this.unsuspendModal.style.display = 'none';
+                this.currentUserId = null;
+            }
+            async confirmUnsuspendUser() {
+                const userId = this.currentUserId;
+                this.closeUnsuspendModal();
+                await this.unsuspendUser(userId);
+            }
+            async confirmSuspendUser() {
+                const userId = this.currentUserId;
+                const reasonEl = document.getElementById('suspendReasonInput');
+                const notesEl = document.getElementById('suspendNotesInput');
+                const errorEl = document.getElementById('suspendReasonError');
+                const btn = document.getElementById('confirmSuspendUser');
+                const reason = (reasonEl?.value || '').trim();
+                const notes = (notesEl?.value || '').trim();
+                if (!reason) {
+                    if (errorEl) errorEl.textContent = 'Reason is required.';
+                    reasonEl?.focus();
+                    return;
+                } else if (errorEl) {
+                    errorEl.textContent = '';
+                }
+                if (!userId) return;
+                if (btn) {
+                    btn.disabled = true;
+                    const original = btn.textContent;
+                    btn.innerHTML = '<span class="loading"></span> Suspending...';
+                    try {
+                        const res = await fetch(`/admin/users/${userId}/suspend`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ reason, notes })
+                        });
+                        const data = await res.json();
+                        if (data && data.success) {
+                            this.showFlashMessage('User suspended successfully', 'success');
+                            this.closeSuspendModal();
+                            setTimeout(() => location.reload(), 1200);
+                        } else {
+                            this.showFlashMessage(data.message || 'Failed to suspend user', 'error');
+                        }
+                    } catch (err) {
+                        this.showFlashMessage('Network error. Please try again.', 'error');
+                    } finally {
+                        btn.disabled = false;
+                        btn.textContent = original;
+                    }
+                }
+            }
+            async unsuspendUser(userId) {
+                if (!userId) return;
+                try {
+                    const res = await fetch(`/admin/users/${userId}/unsuspend`, { method: 'POST' });
+                    const data = await res.json();
+                    if (data && data.success) {
+                        this.showFlashMessage('User unsuspended successfully', 'success');
+                        setTimeout(() => location.reload(), 1200);
+                    } else {
+                        this.showFlashMessage(data.message || 'Failed to unsuspend user', 'error');
+                    }
+                } catch (err) {
+                    this.showFlashMessage('Network error. Please try again.', 'error');
+                }
             }
             async showDetailsModal(e) {
                 e.preventDefault();
@@ -2986,7 +3487,7 @@
                         equipmentHTML += `<li>📝 Other: ${booking.other_items}</li>`;
                     }
                 }
-                if (!equipmentHTML) equipmentHTML = '<li>No equipment specified</li>';
+                if (!equipmentHTML) equipmentHTML = '<li>Court Only Booking</li>';
                 // Get user name
                 let userName = 'User #' + booking.user_id;
                 if (booking.users) {
@@ -2994,6 +3495,7 @@
                 } else if (booking.first_name && booking.last_name) {
                     userName = `${booking.first_name} ${booking.last_name}`;
                 }
+                const barangayId = (booking.users && booking.users.barangay_id) || booking.barangay_id || 'N/A';
                 detailsContent.innerHTML = `
                 <div class="booking-detail">
                     <span class="detail-label">Ticket ID:</span>
@@ -3002,6 +3504,10 @@
                 <div class="booking-detail">
                     <span class="detail-label">User:</span>
                     <span class="detail-value">${userName}</span>
+                </div>
+                <div class="booking-detail">
+                    <span class="detail-label">Barangay ID:</span>
+                    <span class="detail-value">${barangayId}</span>
                 </div>
                 <div class="booking-detail">
                     <span class="detail-label">Event Type:</span>
@@ -3019,10 +3525,22 @@
                     <span class="detail-label">Status:</span>
                     <span class="detail-value">
                         <span class="status-badge ${this.getStatusClass(booking.status)}">
-                            ${booking.status}
+                            ${booking.status === 'Borrowed' ? 'In Progress' : booking.status}
                         </span>
                     </span>
                 </div>
+                ${(booking.status === 'Cancelled' && booking.cancel_reason) ? `
+                <div class="booking-detail">
+                    <span class="detail-label">Cancel Reason:</span>
+                    <span class="detail-value">${booking.cancel_reason}</span>
+                </div>
+                ` : ''}
+                ${(booking.status === 'Rejected' && booking.reject_reason) ? `
+                <div class="booking-detail">
+                    <span class="detail-label">Reject Reason:</span>
+                    <span class="detail-value">${booking.reject_reason}</span>
+                </div>
+                ` : ''}
                 <div class="booking-detail">
                     <span class="detail-label">Contact Number:</span>
                     <span class="detail-value">${booking.contact_number || 'N/A'}</span>
@@ -3039,6 +3557,19 @@
                         </ul>
                     </span>
                 </div>
+                ${(false) ? `
+                <div class="booking-detail" id="qtyEditActions" style="margin-top:10px;">
+                    <button class="btn" id="toggleQtyEdit">Edit Quantities</button>
+                </div>
+                <div id="qtyEditContainer" style="display:none;margin-top:10px;text-align:left;">
+                    <div id="qtyInputs" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;"></div>
+                    <div style="margin-top:10px;display:flex;gap:8px;">
+                        <button class="btn" id="saveQtyChanges">Save Changes</button>
+                        <button class="btn-action btn-cancel" id="cancelQtyEdit">Cancel</button>
+                    </div>
+                    <div style="font-size:.85rem;color:#6b7280;margin-top:6px;">Set a quantity to 0 to remove an item.</div>
+                </div>
+                ` : ''}
                 ${booking.additional_notes ? `
                 <div class="booking-detail">
                     <span class="detail-label">Additional Notes:</span>
@@ -3046,6 +3577,75 @@
                 </div>
                 ` : ''}
             `;
+
+            // Wire up quantity edit controls (non-intrusive)
+            try {
+                const toggleBtn = document.getElementById('toggleQtyEdit');
+                const container = document.getElementById('qtyEditContainer');
+                const inputsWrap = document.getElementById('qtyInputs');
+                const saveBtn = document.getElementById('saveQtyChanges');
+                const cancelBtn = document.getElementById('cancelQtyEdit');
+                // Build items list from booking
+                let items = [];
+                if (Array.isArray(booking.equipment_list) && booking.equipment_list.length > 0) {
+                    items = booking.equipment_list.map(it => ({ name: it.name, quantity: parseInt(it.quantity || 0, 10) || 0 }));
+                } else if (booking.other_items) {
+                    const parts = String(booking.other_items).split(', ');
+                    for (const part of parts) {
+                        if (part.includes(' x')) {
+                            const [n, q] = part.split(' x');
+                            const qty = parseInt(q, 10);
+                            if (n && !isNaN(qty)) items.push({ name: n.trim(), quantity: qty });
+                        }
+                    }
+                }
+                const renderInputs = () => {
+                    inputsWrap.innerHTML = '';
+                    for (const it of items) {
+                        const id = `qty-edit-${it.name.replace(/[^a-z0-9]/gi,'_').toLowerCase()}`;
+                        const div = document.createElement('div');
+                        div.className = 'form-group';
+                        div.innerHTML = `
+                            <label for="${id}" style="font-weight:600;color:#374151;">${it.name}</label>
+                            <input type="number" min="0" id="${id}" data-item-name="${it.name}" value="${it.quantity}" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;" />
+                        `;
+                        inputsWrap.appendChild(div);
+                    }
+                };
+                toggleBtn?.addEventListener('click', () => {
+                    if (!container) return;
+                    const isHidden = container.style.display === 'none';
+                    if (isHidden) renderInputs();
+                    container.style.display = isHidden ? 'block' : 'none';
+                });
+                cancelBtn?.addEventListener('click', () => {
+                    if (!container) return;
+                    container.style.display = 'none';
+                });
+                saveBtn?.addEventListener('click', async () => {
+                    try {
+                        const payloadItems = Array.from(inputsWrap.querySelectorAll('input[data-item-name]')).map(inp => ({
+                            name: inp.getAttribute('data-item-name'),
+                            quantity: Math.max(0, parseInt(inp.value || '0', 10) || 0)
+                        })).filter(it => it.name);
+                        const res = await fetch('/admin/booking_items/update', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ booking_id: this.currentBookingId, items: payloadItems })
+                        });
+                        const data = await res.json();
+                        if (data && data.success) {
+                            this.showFlashMessage('Quantities updated', 'success');
+                            // refresh details quickly
+                            setTimeout(() => location.reload(), 900);
+                        } else {
+                            this.showFlashMessage(data.message || 'Failed to update quantities', 'error');
+                        }
+                    } catch (err) {
+                        this.showFlashMessage('Network error. Please try again.', 'error');
+                    }
+                });
+            } catch (_) {}
             }
             getStatusClass(status) {
                 switch (status) {
@@ -3062,35 +3662,51 @@
             }
             async processApproval() {
                 if (!this.currentBookingId) return;
+                // Grab button and preserve text outside try/finally to reuse in all branches
+                const confirmButton = document.getElementById('confirmApproval');
+                const originalText = confirmButton ? confirmButton.textContent : 'Yes, Approve';
                 try {
                     // Show loading state
-                    const confirmButton = document.getElementById('confirmApproval');
-                    const originalText = confirmButton.textContent;
-                    confirmButton.innerHTML = '<span class="loading"></span> Processing...';
-                    confirmButton.disabled = true;
+                    if (confirmButton) {
+                        confirmButton.innerHTML = '<span class="loading"></span> Processing...';
+                        confirmButton.disabled = true;
+                    }
                     // Send approval request to server
+                    // Collect overrides (if any inputs present)
+                    let items = [];
+                    try {
+                        items = Array.from(document.querySelectorAll('.approval-item-input')).map(inp => ({
+                            name: inp.getAttribute('data-item-name'),
+                            quantity: Math.max(0, parseInt(inp.value || '0', 10) || 0)
+                        })).filter(it => it.name);
+                    } catch(_) {}
                     const response = await fetch('/admin/approve_booking', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify({
-                            booking_id: this.currentBookingId
-                        })
+                        body: JSON.stringify({ booking_id: this.currentBookingId, items })
                     });
                     const result = await response.json();
                     if (result.success) {
                         this.showFlashMessage('Booking approved successfully!', 'success');
-                        setTimeout(() => {
-                            location.reload();
-                        }, 1500);
+                        this.hideApprovalModal();
+                        setTimeout(() => { location.reload(); }, 1500);
                     } else {
                         this.showFlashMessage(result.message || 'Error approving booking', 'error');
+                        // Restore button and keep modal open for user to adjust quantities
+                        if (confirmButton) {
+                            confirmButton.textContent = originalText;
+                            confirmButton.disabled = false;
+                        }
                     }
                 } catch (error) {
                     this.showFlashMessage('Network error. Please try again.', 'error');
-                } finally {
-                    this.hideApprovalModal();
+                    // Restore button and keep modal open on network error
+                    if (confirmButton) {
+                        confirmButton.textContent = originalText;
+                        confirmButton.disabled = false;
+                    }
                 }
             }
             async processRejection() {
@@ -3098,6 +3714,20 @@
 
                 const rejectBtn = document.getElementById("confirmReject");
                 const originalText = rejectBtn.textContent;
+                const reasonEl = document.getElementById('rejectReasonInput');
+                const reasonErrEl = document.getElementById('rejectReasonError');
+                const rejectReason = (reasonEl?.value || '').trim();
+                const notesEl = document.getElementById('rejectNotesInput');
+                const rejectNotes = (notesEl?.value || '').trim();
+
+                // Validate reason
+                if (!rejectReason) {
+                    if (reasonErrEl) reasonErrEl.textContent = 'Reject reason is required.';
+                    reasonEl?.focus();
+                    return;
+                } else {
+                    if (reasonErrEl) reasonErrEl.textContent = '';
+                }
 
                 try {
                     // Show loading state
@@ -3107,7 +3737,7 @@
                     const response = await fetch("/admin/reject_booking", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ booking_id: this.currentBookingId })
+                        body: JSON.stringify({ booking_id: this.currentBookingId, reject_reason: rejectReason, reject_notes: rejectNotes })
                     });
 
                     const result = await response.json();
@@ -3141,14 +3771,17 @@
                     modalTitle.textContent = 'Add New Equipment';
                     form.reset();
                     document.getElementById('equipmentId').value = '';
-                    // Reset computed defective
-                    const totalEl = document.getElementById('quantityTotal');
-                    const availEl = document.getElementById('quantityAvailable');
+                    // Initialize defective to 0 for new items
                     const defEl = document.getElementById('quantityDefective');
-                    if (defEl) {
-                        const t = parseInt(totalEl?.value || '0', 10) || 0;
-                        const a = parseInt(availEl?.value || '0', 10) || 0;
-                        defEl.value = Math.max(t - a, 0);
+                    if (defEl) { defEl.value = 0; }
+                    // Initialize In Progress display
+                    const tEl = document.getElementById('quantityTotal');
+                    const aEl = document.getElementById('quantityAvailable');
+                    const ipEl = document.getElementById('quantityInProgress');
+                    if (ipEl) {
+                        const t = parseInt(tEl?.value || '0', 10) || 0;
+                        const a = parseInt(aEl?.value || '0', 10) || 0;
+                        ipEl.value = Math.max(t - a, 0);
                     }
                 }
                 this.equipmentModal.style.display = 'flex';
@@ -3161,28 +3794,634 @@
                 this.currentItemId = null;
             }
             async fetchEquipmentData(itemId) {
+                const showInlineError = (msg) => {
+                    try {
+                        const form = document.getElementById('equipmentForm');
+                        const stub = document.createElement('div');
+                        stub.style.cssText = 'margin:8px 0; padding:10px 12px; border:1px solid #fecaca; background:#fff1f2; color:#991b1b; border-radius:8px; font-size:14px;';
+                        stub.textContent = msg || 'Error loading equipment data';
+                        form?.prepend(stub);
+                    } catch(_) {}
+                };
                 try {
-                    const response = await fetch(`/admin/equipment/${itemId}`);
-                    const data = await response.json();
-                    if (data.success) {
-                        // Populate form with equipment data
-                        document.getElementById('equipmentName').value = data.item.name;
-                        document.getElementById('equipmentCategory').value = data.item.category_id;
-                        document.getElementById('quantityTotal').value = data.item.quantity_total;
-                        document.getElementById('quantityAvailable').value = data.item.quantity_available;
-                        // Compute defective = total - available
-                        const defEl = document.getElementById('quantityDefective');
-                        if (defEl) {
-                            const t = parseInt(data.item.quantity_total || 0, 10) || 0;
-                            const a = parseInt(data.item.quantity_available || 0, 10) || 0;
-                            defEl.value = Math.max(t - a, 0);
-                        }
-                        document.getElementById('equipmentStatus').value = data.item.is_active ? 'true' : 'false';
+                    const response = await fetch(`/admin/equipment/${encodeURIComponent(itemId)}`);
+                    // Guard: non-OK or non-JSON response
+                    if (!response.ok) {
+                        showInlineError(`Error loading equipment data (status ${response.status})`);
+                        return;
                     }
+                    let data = null;
+                    try {
+                        data = await response.json();
+                    } catch (_) {
+                        showInlineError('Error loading equipment data (invalid server response)');
+                        return;
+                    }
+                    if (!data || !data.success || !data.item) {
+                        showInlineError(data && data.message ? data.message : 'Error loading equipment data');
+                        return;
+                    }
+                    // Populate form with equipment data
+                    const item = data.item;
+                    const getInt = (v, d=0) => { const n = parseInt(v, 10); return isNaN(n) ? d : n; };
+                    document.getElementById('equipmentName').value = item.name || '';
+                    document.getElementById('equipmentCategory').value = item.category_id || '';
+                    document.getElementById('quantityTotal').value = getInt(item.quantity_total, 0);
+                    document.getElementById('quantityAvailable').value = getInt(item.quantity_available, 0);
+                    // Use admin-controlled defective field from backend
+                    const defEl = document.getElementById('quantityDefective');
+                    if (defEl) {
+                        defEl.value = getInt(item.quantity_defective, 0);
+                    }
+                    // Compute initial In Progress display
+                    const ipEl = document.getElementById('quantityInProgress');
+                    if (ipEl) {
+                        const t = getInt(item.quantity_total, 0);
+                        const a = getInt(item.quantity_available, 0);
+                        const d = getInt(item.quantity_defective, 0);
+                        ipEl.value = Math.max(t - a - d, 0);
+                    }
+                    document.getElementById('equipmentStatus').value = item.is_active ? 'true' : 'false';
                 } catch (error) {
                     console.error('Error fetching equipment data:', error);
                     this.showFlashMessage('Error loading equipment data', 'error');
+                    showInlineError('Error loading equipment data');
                 }
+            }
+            async openCompletionAdjustModal(bookingId) {
+                let modal = document.getElementById('completionAdjustModal');
+                if (!modal) {
+                    modal = document.createElement('div');
+                    modal.id = 'completionAdjustModal';
+                    modal.className = 'confirm-modal';
+                    modal.innerHTML = `
+                      <div class="box" style="max-width:920px; width:92%; text-align:left; position:relative;">
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+                          <div style="width:36px; height:36px; border-radius:8px; background:#e8f1ff; display:flex; align-items:center; justify-content:center; color:#2563eb; font-weight:700;">✓</div>
+                          <div style="flex:1; min-width:0;">
+                            <div class="title" style="margin:0; font-weight:700;">Mark as Completed</div>
+                            <div class="desc" style="margin-top:2px; color:#6b7280;">Adjust Defective, Return Qty, and In Progress per item. Values must sum to Requested.</div>
+                          </div>
+                          <div id="completionStatus" style="display:flex; align-items:center; gap:8px; background:#f3f4f6; border:1px solid #e5e7eb; color:#374151; padding:6px 10px; border-radius:999px; font-size:12px; white-space:nowrap;">
+                            <span class="status-spinner" style="width:14px; height:14px; border-radius:50%; border:2px solid #6b7280; border-right-color:transparent; animation:spin 0.8s linear infinite;"></span>
+                            <span class="status-text">Loading...</span>
+                          </div>
+                        </div>
+                        <div id="completionAdjustAlert" style="display:none; margin:8px 0; padding:10px 12px; border:1px solid #fecaca; background:#fff1f2; color:#991b1b; border-radius:8px; font-size:14px;"></div>
+                        <div id="completionAdjustBody" style="max-height:60vh; overflow:auto; padding-right:6px; margin-bottom:12px; border:1px solid #e5e7eb; border-radius:8px; background:#fff;">
+                        </div>
+                        <div class="actions" style="position:sticky; bottom:0; display:flex; gap:10px; justify-content:flex-end; padding-top:8px;">
+                          <button class="btn btn-confirm" id="completionAdjustSave" type="button" style="min-width:160px; display:inline-flex; align-items:center; justify-content:center; gap:8px;">
+                            <span class="btn-spinner" style="display:none; width:16px; height:16px; border-radius:50%; border:2px solid #fff; border-right-color:transparent; animation:spin 0.8s linear infinite;"></span>
+                            <span class="btn-text">Save & Complete</span>
+                          </button>
+                          <button class="btn btn-cancel" id="completionAdjustCancel" type="button">Cancel</button>
+                        </div>
+                        <div id="completionAdjustOverlay" style="display:none; position:absolute; inset:0; background:rgba(255,255,255,0.7); backdrop-filter:saturate(120%) blur(2px); z-index:10; align-items:center; justify-content:center;">
+                          <div style="display:flex; align-items:center; gap:10px; background:#fff; padding:10px 14px; border:1px solid #e5e7eb; border-radius:8px;">
+                            <div style="width:18px; height:18px; border-radius:50%; border:2px solid #2563eb; border-right-color:transparent; animation:spin 0.8s linear infinite;"></div>
+                            <div style="color:#111827; font-weight:600;">Processing...</div>
+                          </div>
+                        </div>
+                      </div>`;
+                    document.body.appendChild(modal);
+                    // simple spinner keyframes
+                    const style = document.createElement('style');
+                    style.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
+                    document.head.appendChild(style);
+                }
+
+                const close = () => { modal.style.display = 'none'; };
+                const body = modal.querySelector('#completionAdjustBody');
+                const statusEl = modal.querySelector('#completionStatus');
+                const saveBtnInit = modal.querySelector('#completionAdjustSave');
+                if (saveBtnInit) saveBtnInit.disabled = true;
+                body.innerHTML = `
+                  <div style="display:flex; align-items:center; justify-content:center; padding:26px; gap:12px; color:#374151;">
+                    <div style="width:18px; height:18px; border-radius:50%; border:2px solid #6b7280; border-right-color:transparent; animation:spin 0.8s linear infinite;"></div>
+                    <div>Loading booking items...</div>
+                  </div>`;
+                modal.style.display = 'flex';
+
+                try {
+                    // Load booking items
+                    const bdRes = await fetch(`/admin/booking_details/${bookingId}`);
+                    const bd = await bdRes.json();
+                    if (!bd.success || !bd.data) throw new Error('Failed to load booking details');
+                    const booking = bd.data;
+                    const items = (booking.equipment_list || []).map(it => ({ name: it.name, requested: parseInt(it.quantity || 0, 10) || 0 }));
+                    const names = [...new Set(items.map(i => i.name))];
+
+                    if (!names.length) {
+                        body.innerHTML = '<div class="empty-state">No equipment in this booking.</div>';
+                        modal.querySelector('#completionAdjustSave').onclick = async () => {
+                            await this.finishCompletion(bookingId, []);
+                            close();
+                        };
+                        modal.querySelector('#completionAdjustCancel').onclick = close;
+                        return;
+                    }
+
+                    // Fetch inventory snapshots
+                    const invRes = await fetch('/admin/inventory/by_names', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ names })
+                    });
+                    const inv = await invRes.json();
+                    const invMap = {};
+                    (inv.items || []).forEach(r => { invMap[r.name] = r; });
+
+                    // Render table with Defective, Return Qty, and editable In Progress (Requested is readonly)
+                    const rows = items.map(it => {
+                        const row = invMap[it.name] || {};
+                        const defective = 0; // default defective to 0 on open
+                        const initReturn = it.requested; // default return qty to requested
+                        const initInProg = 0; // default in progress to 0
+                        return `
+                          <tr data-name="${it.name}" data-requested="${it.requested}">
+                            <td style="font-weight:600; padding:10px 8px;">${it.name}</td>
+                            <td style="text-align:center; padding:10px 8px;">${it.requested}</td>
+                            <td style="padding:10px 8px;"><input type="number" class="adj-defective" min="0" max="${it.requested}" value="${defective}" style="width:120px; padding:6px 8px; border:1px solid #d1d5db; border-radius:8px;"></td>
+                            <td style="padding:10px 8px;"><input type="number" class="adj-return" min="0" max="${it.requested}" value="${initReturn}" style="width:120px; padding:6px 8px; border:1px solid #d1d5db; border-radius:8px;" title="How many items will be returned now"></td>
+                            <td style="padding:10px 8px;"><input type="number" class="adj-inprogress" min="0" max="${it.requested}" value="${initInProg}" style="width:120px; padding:6px 8px; border:1px solid #d1d5db; border-radius:8px;" title="Remaining items not returned"></td>
+                          </tr>`;
+                    }).join('');
+                    body.innerHTML = `
+                      <table style="width:100%; border-collapse:separate; border-spacing:0; font-size:14px;">
+                        <thead>
+                          <tr>
+                            <th style="text-align:left; padding:10px 8px; background:#f9fafb; border-bottom:1px solid #e5e7eb; position:sticky; top:0;">Item</th>
+                            <th style="text-align:center; padding:10px 8px; background:#f9fafb; border-bottom:1px solid #e5e7eb; position:sticky; top:0;">Requested</th>
+                            <th style="text-align:left; padding:10px 8px; background:#f9fafb; border-bottom:1px solid #e5e7eb; position:sticky; top:0;">Defective</th>
+                            <th style="text-align:left; padding:10px 8px; background:#f9fafb; border-bottom:1px solid #e5e7eb; position:sticky; top:0;">Return Qty</th>
+                            <th style="text-align:center; padding:10px 8px; background:#f9fafb; border-bottom:1px solid #e5e7eb; position:sticky; top:0;">In Progress</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          ${rows}
+                        </tbody>
+                      </table>`;
+                    // Update header status to Ready and enable Save
+                    if (statusEl) {
+                        const sp = statusEl.querySelector('.status-spinner');
+                        const tx = statusEl.querySelector('.status-text');
+                        if (sp) sp.style.display = 'none';
+                        if (tx) tx.textContent = 'Ready';
+                        statusEl.style.background = '#ecfdf5';
+                        statusEl.style.borderColor = '#a7f3d0';
+                        statusEl.style.color = '#065f46';
+                    }
+                    if (saveBtnInit) saveBtnInit.disabled = false;
+
+                    const saveBtn = modal.querySelector('#completionAdjustSave');
+                    const cancelBtn = modal.querySelector('#completionAdjustCancel');
+                    const alertBox = modal.querySelector('#completionAdjustAlert');
+                    let attemptedSubmit = false;
+                    cancelBtn.onclick = close;
+
+                    // Sync trio so: Defective + Return + In Progress = Requested
+                    let syncing = false;
+                    const allRows = Array.from(body.querySelectorAll('tbody tr'));
+                    body.querySelectorAll('tbody tr').forEach(tr => {
+                        const requested = parseInt(tr.getAttribute('data-requested') || '0', 10) || 0;
+                        const defInput = tr.querySelector('.adj-defective');
+                        const retInput = tr.querySelector('.adj-return');
+                        const inProgInput = tr.querySelector('.adj-inprogress');
+                        let lastEdited = null; // 'def' | 'ret' | 'prog'
+                        const clamp = (n) => (isNaN(n) ? 0 : Math.max(0, n));
+                        const showError = (msg) => {
+                            let err = tr.querySelector('.row-error');
+                            if (!err) {
+                                err = document.createElement('div');
+                                err.className = 'row-error';
+                                err.style.cssText = 'color:#b91c1c; font-size:12px; margin-top:4px; grid-column:1/-1;';
+                                const td = document.createElement('td');
+                                td.colSpan = 5;
+                                td.appendChild(err);
+                                const errorRow = document.createElement('tr');
+                                errorRow.className = 'row-error-holder';
+                                errorRow.appendChild(td);
+                                tr.after(errorRow);
+                            }
+                            err.textContent = msg;
+                        };
+                        const clearError = () => {
+                            const holder = tr.nextElementSibling;
+                            if (holder && holder.classList.contains('row-error-holder')) holder.remove();
+                            [defInput, retInput, inProgInput].forEach(inp => inp.classList.remove('input-error'));
+                        };
+                        const validateRow = (show = false) => {
+                            // If show=true, render inline error state; otherwise silent check
+                            const d = clamp(parseInt(defInput.value || '0', 10));
+                            const r = clamp(parseInt(retInput.value || '0', 10));
+                            const p = clamp(parseInt(inProgInput.value || '0', 10));
+                            const exceeds = (d > requested || r > requested || p > requested);
+                            const sums = (d + r + p === requested);
+                            if (!show) return (!exceeds && sums);
+                            // Render
+                            clearError();
+                            if (exceeds) {
+                                [defInput, retInput, inProgInput].forEach(inp => { if (parseInt(inp.value||'0',10) > requested) inp.classList.add('input-error'); });
+                                showError('Values cannot exceed Requested.');
+                                return false;
+                            }
+                            if (!sums) {
+                                showError('Defective + Return + In Progress must equal Requested.');
+                                return false;
+                            }
+                            return true;
+                        };
+                        const onDefChange = () => {
+                            if (syncing) return; syncing = true;
+                            lastEdited = 'def';
+                            let d = clamp(parseInt(defInput.value || '0', 10));
+                            // Keep last edited counterpart (prog) if it was last; otherwise update return
+                            let p = clamp(parseInt(inProgInput.value || '0', 10));
+                            if (lastEdited === 'prog') {
+                                // Adjust return to satisfy sum
+                                const rCalc = clamp(requested - d - p);
+                                retInput.value = rCalc;
+                            } else {
+                                // Default: set return; recompute in-progress from remaining
+                                const rCalc = clamp(requested - d);
+                                retInput.value = rCalc;
+                                p = clamp(requested - d - rCalc);
+                                inProgInput.value = p;
+                            }
+                            syncing = false;
+                        };
+                        const onRetChange = () => {
+                            if (syncing) return; syncing = true;
+                            // If previous edit was In Progress, adjust Defective; else adjust In Progress
+                            lastEdited = 'ret';
+                            const r = clamp(parseInt(retInput.value || '0', 10));
+                            if (lastEdited === 'prog') {
+                                // Keep in-progress, adjust defective
+                                const p = clamp(parseInt(inProgInput.value || '0', 10));
+                                const dCalc = clamp(requested - r - p);
+                                defInput.value = dCalc;
+                            } else {
+                                // Default: keep defective, adjust in-progress
+                                const d = clamp(parseInt(defInput.value || '0', 10));
+                                const pCalc = clamp(requested - d - r);
+                                inProgInput.value = pCalc;
+                            }
+                            syncing = false;
+                        };
+                        const onInProgChange = () => {
+                            if (syncing) return; syncing = true;
+                            lastEdited = 'prog';
+                            const d = clamp(parseInt(defInput.value || '0', 10));
+                            const p = clamp(parseInt(inProgInput.value || '0', 10));
+                            // Adjust return to satisfy sum; keep defective as is
+                            const r = clamp(requested - d - p);
+                            retInput.value = r;
+                            syncing = false;
+                        };
+                        const updateSaveState = () => {
+                            if (!attemptedSubmit) return; // only show/hide errors after Save is clicked once
+                            // Re-validate all rows silently to decide alert visibility
+                            const allOk = allRows.every(rtr => {
+                                const req = parseInt(rtr.getAttribute('data-requested')||'0',10)||0;
+                                const dI = rtr.querySelector('.adj-defective');
+                                const rI = rtr.querySelector('.adj-return');
+                                const pI = rtr.querySelector('.adj-inprogress');
+                                const clamp = (n) => (isNaN(n) ? 0 : Math.max(0, n));
+                                const d = clamp(parseInt(dI?.value||'0',10));
+                                const r = clamp(parseInt(rI?.value||'0',10));
+                                const p = clamp(parseInt(pI?.value||'0',10));
+                                const exceeds = (d > req || r > req || p > req);
+                                const sums = (d + r + p === req);
+                                return (!exceeds && sums);
+                            });
+                            if (alertBox) alertBox.style.display = allOk ? 'none' : 'block';
+                        };
+                        defInput.addEventListener('input', () => { onDefChange(); if (attemptedSubmit) validateRow(true); updateSaveState(); });
+                        retInput.addEventListener('input', () => { onRetChange(); if (attemptedSubmit) validateRow(true); updateSaveState(); });
+                        inProgInput.addEventListener('input', () => { onInProgChange(); if (attemptedSubmit) validateRow(true); updateSaveState(); });
+                        // Initialize once: keep Return = Requested as prefilled; just compute In Progress
+                        const initD = clamp(parseInt(defInput.value || '0', 10));
+                        const initR = clamp(parseInt(retInput.value || '0', 10));
+                        inProgInput.value = clamp(requested - initD - initR);
+                        // Do not disable Save preemptively; errors will show on submit
+                    });
+                    saveBtn.onclick = async () => {
+                        try {
+                            // Validate all rows on submit and show errors only now
+                            const rowsEls = Array.from(body.querySelectorAll('tbody tr')).filter(tr => !tr.classList.contains('row-error-holder'));
+                            let allValid = true;
+                            for (const tr of rowsEls) {
+                                const requested = parseInt(tr.getAttribute('data-requested') || '0', 10) || 0;
+                                const defInput = tr.querySelector('.adj-defective');
+                                const retInput = tr.querySelector('.adj-return');
+                                const inProgInput = tr.querySelector('.adj-inprogress');
+                                const clamp = (n) => (isNaN(n) ? 0 : Math.max(0, n));
+                                const d = clamp(parseInt(defInput.value || '0', 10));
+                                const r = clamp(parseInt(retInput.value || '0', 10));
+                                const p = clamp(parseInt(inProgInput.value || '0', 10));
+                                const exceeds = (d > requested || r > requested || p > requested);
+                                const sums = (d + r + p === requested);
+                                // Clear existing row error
+                                const holder = tr.nextElementSibling;
+                                if (holder && holder.classList.contains('row-error-holder')) holder.remove();
+                                [defInput, retInput, inProgInput].forEach(inp => inp.classList.remove('input-error'));
+                                if (exceeds || !sums) {
+                                    // Render error row and inputs highlight
+                                    const showErr = (msg) => {
+                                        let err = tr.querySelector('.row-error');
+                                        if (!err) {
+                                            err = document.createElement('div');
+                                            err.className = 'row-error';
+                                            err.style.cssText = 'color:#b91c1c; font-size:12px; margin-top:4px;';
+                                            const td = document.createElement('td');
+                                            td.colSpan = 5; td.appendChild(err);
+                                            const errorRow = document.createElement('tr');
+                                            errorRow.className = 'row-error-holder';
+                                            errorRow.appendChild(td);
+                                            tr.after(errorRow);
+                                        }
+                                        err.textContent = msg;
+                                    };
+                                    if (exceeds) {
+                                        [defInput, retInput, inProgInput].forEach(inp => { if (parseInt(inp.value||'0',10) > requested) inp.classList.add('input-error'); });
+                                        showErr(`Entered values cannot exceed Requested (${requested}).`);
+                                    } else {
+                                        showErr(`Defective + Return + In Progress must equal Requested (${requested}).`);
+                                    }
+                                    allValid = false;
+                                }
+                            }
+                            if (!allValid) {
+                                attemptedSubmit = true;
+                                const alertBox = document.getElementById('completionAdjustAlert');
+                                if (alertBox) {
+                                    alertBox.textContent = 'Please review highlighted rows. Values cannot exceed Requested and the three fields must sum to Requested. Adjust and try again.';
+                                    alertBox.style.display = 'block';
+                                }
+                                try { this.showFlashMessage('Fix errors: values must not exceed and must sum to Requested.', 'error'); } catch(_) {}
+                                return;
+                            }
+                            // Loading UI
+                            const overlay = document.getElementById('completionAdjustOverlay');
+                            const spinner = saveBtn.querySelector('.btn-spinner');
+                            const text = saveBtn.querySelector('.btn-text');
+                            saveBtn.disabled = true;
+                            if (spinner) spinner.style.display = 'inline-block';
+                            if (text) text.textContent = 'Saving...';
+                            if (overlay) { overlay.style.display = 'flex'; }
+                            // Disable inputs to avoid accidental edits
+                            body.querySelectorAll('input').forEach(i => i.disabled = true);
+                            const payload = [];
+                            body.querySelectorAll('tbody tr').forEach(tr => {
+                                const name = tr.getAttribute('data-name');
+                                const defective = parseInt(tr.querySelector('.adj-defective')?.value || '0', 10) || 0;
+                                const ret = parseInt(tr.querySelector('.adj-return')?.value || '0', 10) || 0;
+                                const prog = parseInt(tr.querySelector('.adj-inprogress')?.value || '0', 10) || 0;
+                                payload.push({ name, quantity_defective: Math.max(defective,0), return_qty: Math.max(ret,0), in_progress: Math.max(prog,0) });
+                            });
+                            await this.finishCompletion(bookingId, payload);
+                            close();
+                        } catch (err) {
+                            this.showFlashMessage('Network error. Please try again.', 'error');
+                        } finally {
+                            const overlay = document.getElementById('completionAdjustOverlay');
+                            const spinner = saveBtn.querySelector('.btn-spinner');
+                            const text = saveBtn.querySelector('.btn-text');
+                            if (overlay) { overlay.style.display = 'none'; }
+                            if (spinner) spinner.style.display = 'none';
+                            if (text) text.textContent = 'Save & Complete';
+                            saveBtn.disabled = false;
+                            // Re-enable inputs
+                            body.querySelectorAll('input').forEach(i => i.disabled = false);
+                        }
+                    };
+                } catch (e) {
+                    // Fallback: allow completion even if items failed to load
+                    body.innerHTML = '<div class="empty-state">No equipment in this booking or failed to load items. You can still mark as completed.</div>';
+                    const saveBtn = modal.querySelector('#completionAdjustSave');
+                    const cancelBtn = modal.querySelector('#completionAdjustCancel');
+                    if (cancelBtn) cancelBtn.onclick = () => { modal.style.display = 'none'; };
+                    if (saveBtn) {
+                        saveBtn.onclick = async () => {
+                            try {
+                                const overlay = document.getElementById('completionAdjustOverlay');
+                                const spinner = saveBtn.querySelector('.btn-spinner');
+                                const text = saveBtn.querySelector('.btn-text');
+                                saveBtn.disabled = true;
+                                if (spinner) spinner.style.display = 'inline-block';
+                                if (text) text.textContent = 'Saving...';
+                                if (overlay) { overlay.style.display = 'flex'; }
+                                await this.finishCompletion(bookingId, []);
+                                modal.style.display = 'none';
+                            } catch (_) {
+                                try { this.showFlashMessage('Network error. Please try again.', 'error'); } catch(_){}
+                            } finally {
+                                const overlay = document.getElementById('completionAdjustOverlay');
+                                const spinner = saveBtn.querySelector('.btn-spinner');
+                                const text = saveBtn.querySelector('.btn-text');
+                                if (overlay) { overlay.style.display = 'none'; }
+                                if (spinner) spinner.style.display = 'none';
+                                if (text) text.textContent = 'Save & Complete';
+                                saveBtn.disabled = false;
+                            }
+                        };
+                    }
+                }
+                modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; }, { once: true });
+            }
+            async finishCompletion(bookingId, items) {
+                try {
+                    const res = await fetch('/admin/complete_with_adjustments', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ booking_id: bookingId, items })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        this.showFlashMessage('Marked as Completed', 'success');
+                        setTimeout(() => location.reload(), 1200);
+                    } else {
+                        this.showFlashMessage(data.message || 'Failed to mark as Completed', 'error');
+                    }
+                } catch (err) {
+                    this.showFlashMessage('Network error. Please try again.', 'error');
+                }
+            }
+            // Reports: render and filters
+            initReports() {
+                try {
+                    const raw = document.getElementById('reportsData')?.textContent || '[]';
+                    this.reports = JSON.parse(raw);
+                } catch { this.reports = []; }
+                this.reportEls = {
+                    search: document.getElementById('reportSearch'),
+                    status: document.getElementById('reportStatus'),
+                    from: document.getElementById('reportFrom'),
+                    to: document.getElementById('reportTo'),
+                    body: document.getElementById('reportTableBody'),
+                    count: document.getElementById('reportCount'),
+                    exportBtn: document.getElementById('reportExportBtn')
+                };
+                const onChange = () => this.renderReports();
+                ['input','change'].forEach(ev => {
+                    this.reportEls.search?.addEventListener(ev, onChange);
+                    this.reportEls.status?.addEventListener(ev, onChange);
+                    this.reportEls.from?.addEventListener(ev, onChange);
+                    this.reportEls.to?.addEventListener(ev, onChange);
+                });
+                this.reportEls.exportBtn?.addEventListener('click', () => this.exportReports());
+                this.renderReports();
+            }
+            renderReports() {
+                const { search, status, from, to, body, count } = this.reportEls || {};
+                if (!body) return;
+                const q = (search?.value || '').toLowerCase();
+                const st = (status?.value || 'all');
+                // Build inclusive day range (local time)
+                const start = from?.value ? new Date(`${from.value}T00:00:00`) : null;
+                const end = to?.value ? new Date(`${to.value}T23:59:59.999`) : null;
+                const parseDateSafe = (str, asStartOfDay=false) => {
+                    if (!str) return null;
+                    // If date-only 'YYYY-MM-DD'
+                    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+                        const [y,m,d] = str.split('-').map(n=>parseInt(n,10));
+                        return new Date(y, m-1, d, asStartOfDay ? 0 : 0, 0, 0, 0);
+                    }
+                    // If 'YYYY-MM-DD HH:MM:SS'
+                    if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}/.test(str)) {
+                        const [datePart, timePart] = str.split(/\s+/);
+                        const [y,m,d] = datePart.split('-').map(n=>parseInt(n,10));
+                        const [hh,mm,ss] = timePart.split(':').map(n=>parseInt(n,10));
+                        return new Date(y, m-1, d, hh, mm, ss || 0, 0);
+                    }
+                    // Fallback: ISO or browser-parsable
+                    const d = new Date(str);
+                    return isNaN(d) ? null : d;
+                };
+                const inRange = (b) => {
+                    // Check both Event Date and Booking Date; include if either is in range
+                    const dEvent = b.event_date ? parseDateSafe(b.event_date, true) : null;
+                    const dBook = b.created_at ? parseDateSafe(b.created_at) : (b.createdAt ? parseDateSafe(b.createdAt) : null);
+                    const check = (d) => {
+                        if (!d || isNaN(d)) return false;
+                        if (start && d < start) return false;
+                        if (end && d > end) return false;
+                        return true;
+                    };
+                    // If no date filters set, allow
+                    if (!start && !end) return true;
+                    return check(dEvent) || check(dBook);
+                };
+                // Compute filtered data once and keep for export
+                this.reportsFiltered = (this.reports || []).filter(b => {
+                    // choose date: prefer event_date, else created_at
+                    const statusMatch = st === 'all' ? true : (String(b.status) === st);
+                    const text = `${b.ticket_number || ''} ${b.first_name || ''} ${b.last_name || ''} ${b.notes || ''}`.toLowerCase();
+                    const searchMatch = !q || text.includes(q);
+                    const dateMatch = inRange(b);
+                    return statusMatch && searchMatch && dateMatch;
+                });
+                const rowsHtml = this.reportsFiltered.map(b => {
+                    const itemsArr = (Array.isArray(b.parsed_items) && b.parsed_items) || (Array.isArray(b.equipment_list) && b.equipment_list) || [];
+                    const iconFor = (nm) => {
+                        const n = (nm || '').toLowerCase();
+                        if (n.includes('tent') || n.includes('shelter')) return '🏕️';
+                        if (n.includes('chair') || n.includes('table') || n.includes('furniture')) return '🪑';
+                        if (n.includes('basketball') || n.includes('volleyball') || n.includes('sports')) return '🏀';
+                        if (n.includes('microphone') || n.includes('speaker') || n.includes('sound')) return '🎤';
+                        if (n.includes('stove') || n.includes('cooking') || n.includes('pot')) return '🍳';
+                        return '📦';
+                    };
+                    const equipmentHtml = itemsArr.length
+                        ? itemsArr.map((it, idx) => {
+                            const nm = it.name || it.item || '';
+                            const qty = it.quantity || it.qty || 0;
+                            const icon = iconFor(nm);
+                            return `${icon} ${nm} x${qty}${idx < itemsArr.length - 1 ? '<br>' : ''}`;
+                        }).join('')
+                        : 'Court Only Booking';
+
+                    const created = b.created_at || b.createdAt || '';
+                    let bookingDateHtml = 'N/A';
+                    if (created) {
+                        const d = new Date(created);
+                        const y = d.getFullYear();
+                        const m = String(d.getMonth()+1).padStart(2,'0');
+                        const day = String(d.getDate()).padStart(2,'0');
+                        const hh = String(d.getHours()).padStart(2,'0');
+                        const mm = String(d.getMinutes()).padStart(2,'0');
+                        const ss = String(d.getSeconds()).padStart(2,'0');
+                        bookingDateHtml = `${y}-${m}-${day}<br><small class="text-muted">${hh}:${mm}:${ss}</small>`;
+                    }
+                    const eventDate = b.event_date || '';
+                    const userName = (b.users && (`${b.users.first_name||''} ${b.users.last_name||''}`.trim())) || `${b.first_name||''} ${b.last_name||''}`.trim() || (b.user_name || `User #${b.user_id || '-'}`);
+                    const eventType = b.event_type || b.type || 'Equipment Booking';
+                    const statusText = (b.status === 'Borrowed') ? 'In Progress' : (b.status || '-');
+                    const statusClass = this.getStatusClass(b.status);
+                    return `<tr data-status="${b.status}" data-type="${eventType}">
+                        <td data-label="Ticket ID">${b.ticket_number || '-'}</td>
+                        <td data-label="User">${userName}</td>
+                        <td data-label="Event Type"><span class="event-type">${eventType}</span></td>
+                        <td data-label="Booking Date">${bookingDateHtml}</td>
+                        <td data-label="Event Date">${eventDate || '-'}</td>
+                        <td data-label="Equipment" class="equipment-cell expandable" title="Click to view full details">${equipmentHtml}</td>
+                        <td data-label="Status"><span class="status-badge ${statusClass}">${statusText}</span></td>
+                        <td data-label="Action"><button class="btn-action btn-view view-details" data-booking-id="${b.id}"><i class="fas fa-eye"></i> Details</button></td>
+                    </tr>`;
+                }).join('');
+                body.innerHTML = rowsHtml || '<tr><td colspan="8" style="text-align:center; color:#6b7280; padding:12px;">No results found</td></tr>';
+                // Bind view buttons
+                body.querySelectorAll('.view-details').forEach(btn => {
+                    btn.addEventListener('click', (e) => this.showDetailsModal(e));
+                });
+                if (count) count.textContent = `${(this.reports || []).length} total | ${rowsHtml ? body.querySelectorAll('tr').length : 0} shown`;
+            }
+            exportReports() {
+                const data = this.reportsFiltered || [];
+                if (!data.length) { try { this.showFlashMessage('No rows to export.', 'error'); } catch(_) {}; return; }
+                const esc = (v) => {
+                    if (v === null || v === undefined) return '';
+                    const s = String(v).replace(/"/g, '""');
+                    return s.includes(',') || s.includes('\n') || s.includes('"') ? `"${s}"` : s;
+                };
+                const formatDate = (str) => {
+                    if (!str) return '';
+                    const d = new Date(str);
+                    if (isNaN(d)) return str;
+                    const pad = (n)=>String(n).padStart(2,'0');
+                    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+                };
+                const header = ['Ticket ID','User','Event Type','Booking Date','Event Date','Equipment','Status'];
+                const rows = data.map(b => {
+                    const userName = (b.users && (`${b.users.first_name||''} ${b.users.last_name||''}`.trim())) || `${b.first_name||''} ${b.last_name||''}`.trim() || (b.user_name || `User #${b.user_id || '-'}`);
+                    const eventType = b.event_type || b.type || 'Equipment Booking';
+                    const created = b.created_at || b.createdAt || '';
+                    const eventDate = b.event_date || '';
+                    const itemsArr = (Array.isArray(b.parsed_items) && b.parsed_items) || (Array.isArray(b.equipment_list) && b.equipment_list) || [];
+                    const equip = itemsArr.map(it => `${it.name || it.item || ''} x${it.quantity || it.qty || 0}`).join(' | ');
+                    const statusText = (b.status === 'Borrowed') ? 'In Progress' : (b.status || '-');
+                    return [
+                        esc(b.ticket_number || '-'),
+                        esc(userName),
+                        esc(eventType),
+                        esc(formatDate(created)),
+                        esc(eventDate || ''),
+                        esc(equip),
+                        esc(statusText)
+                    ].join(',');
+                });
+                const csv = [header.join(','), ...rows].join('\n');
+                const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' }); // BOM for Excel
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const today = new Date();
+                const pad = (n)=>String(n).padStart(2,'0');
+                const fname = `reports_${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}.csv`;
+                a.download = fname;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
             }
             filterEquipment(category) {
                 const rows = document.querySelectorAll('#equipment-management .booking-table tbody tr');
@@ -3261,11 +4500,6 @@
             }
             // User Management Methods
             initUserManagement() {
-                // Add user button
-                document.getElementById('addUserBtn')?.addEventListener('click', () => {
-                    this.openUserFormModal();
-                });
-
                 // Search functionality
                 const userSearch = document.getElementById('userSearch');
                 if (userSearch) {
@@ -3295,11 +4529,22 @@
                     if (e.target.closest('.view-user')) {
                         const userId = e.target.closest('.view-user').getAttribute('data-user-id');
                         this.viewUserDetails(userId);
-                    } else if (e.target.closest('.edit-user')) {
-                        const userId = e.target.closest('.edit-user').getAttribute('data-user-id');
-                        this.editUser(userId);
+                    } else if (e.target.closest('.user-suspend-action')) {
+                        const userId = e.target.closest('.user-suspend-action').getAttribute('data-user-id');
+                        this.openSuspendModal(userId);
+                    } else if (e.target.closest('.user-unsuspend-action')) {
+                        const userId = e.target.closest('.user-unsuspend-action').getAttribute('data-user-id');
+                        this.openUnsuspendConfirm(userId);
                     }
                 });
+
+                // Suspend modal controls
+                document.getElementById('closeSuspendModal')?.addEventListener('click', () => this.closeSuspendModal());
+                document.getElementById('confirmSuspendUser')?.addEventListener('click', () => this.confirmSuspendUser());
+                document.getElementById('closeUnsuspendModal')?.addEventListener('click', () => this.closeUnsuspendModal());
+                document.getElementById('confirmUnsuspendUser')?.addEventListener('click', () => this.confirmUnsuspendUser());
+
+                // Fallback bindings removed to avoid duplicate handlers; using delegated click handler above
 
                 // User form submission
                 const userForm = document.getElementById('userForm');
@@ -3335,45 +4580,65 @@
                     const response = await fetch(`/admin/users/${userId}`);
                     const user = await response.json();
 
-                    // Render user details
+                    // Render user details - modern card UI
+                    const initials = `${(user.first_name||'')[0]||''}${(user.last_name||'')[0]||''}`.toUpperCase();
+                    const roleBadgeClass = user.role === 'admin' ? 'status-approved' : 'status-pending';
+                    const statusBadgeClass = user.is_active ? 'status-approved' : 'status-cancelled';
+                    const statusLabel = user.is_active ? 'Active' : 'Inactive';
+
                     content.innerHTML = `
-                        <h3>User Details</h3>
-                        <div class="user-details">
-                            <div class="detail-row">
-                                <span class="detail-label">Name:</span>
-                                <span class="detail-value">${user.first_name} ${user.last_name}</span>
+                        <div style="display:flex;flex-direction:column;gap:16px;">
+                          <div style="display:flex;align-items:center;gap:14px;">
+                            <div style="width:56px;height:56px;border-radius:50%;background:#3498db;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;">${initials || 'U'}</div>
+                            <div style="flex:1;">
+                              <div style="font-size:1.1rem;font-weight:700;color:#1f2937;">${(user.first_name||'') + ' ' + (user.last_name||'')}</div>
+                              <div style="color:#6b7280;font-size:.92rem;">${user.email||''}</div>
+                              <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
+                                <span class="status-badge ${roleBadgeClass}" style="text-transform:capitalize;">${(user.role||'user')}</span>
+                                <span class="status-badge ${statusBadgeClass}">${statusLabel}</span>
+                              </div>
                             </div>
-                            <div class="detail-row">
-                                <span class="detail-label">Email:</span>
-                                <span class="detail-value">${user.email}</span>
+                          </div>
+
+                          <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:16px;">
+                            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;">
+                              <div>
+                                <div style="font-size:.78rem;color:#6b7280;">Barangay ID</div>
+                                <div style="font-weight:600;color:#111827;">${user.barangay_id || 'N/A'}</div>
+                              </div>
+                              <div>
+                                <div style="font-size:.78rem;color:#6b7280;">Address</div>
+                                <div style="font-weight:600;color:#111827;">${user.address || 'N/A'}</div>
+                              </div>
+                              <div>
+                                <div style="font-size:.78rem;color:#6b7280;">Date Joined</div>
+                                <div style="font-weight:600;color:#111827;">${user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}</div>
+                              </div>
                             </div>
-                            <div class="detail-row">
-                                <span class="detail-label">Barangay ID:</span>
-                                <span class="detail-value">${user.barangay_id || 'N/A'}</span>
+                          </div>
+
+                          ${user.is_suspended ? `
+                          <div style="margin-top:12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:16px;">
+                            <div style="font-weight:700;color:#9a3412;margin-bottom:8px;display:flex;align-items:center;gap:8px;">
+                              <span class="status-badge status-cancelled">Suspended</span>
+                              <span style="font-size:.86rem;color:#9a3412;">${user.suspended_at ? 'since ' + new Date(user.suspended_at).toLocaleString() : ''}</span>
                             </div>
-                            <div class="detail-row">
-                                <span class="detail-label">Role:</span>
-                                <span class="status-badge ${user.role === 'admin' ? 'status-approved' : 'status-pending'}">
-                                    ${user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                                </span>
+                            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;">
+                              <div>
+                                <div style="font-size:.78rem;color:#6b7280;">Suspension Reason</div>
+                                <div style="font-weight:600;color:#111827;">${user.suspend_reason || 'N/A'}</div>
+                              </div>
+                              <div>
+                                <div style="font-size:.78rem;color:#6b7280;">Suspension Notes</div>
+                                <div style="font-weight:600;color:#111827;">${user.suspend_notes || 'N/A'}</div>
+                              </div>
                             </div>
-                            <div class="detail-row">
-                                <span class="detail-label">Status:</span>
-                                <span class="status-badge ${user.is_active ? 'status-approved' : 'status-cancelled'}">
-                                    ${user.is_active ? 'Active' : 'Inactive'}
-                                </span>
-                            </div>
-                            <div class="detail-row">
-                                <span class="detail-label">Address:</span>
-                                <span class="detail-value">${user.address || 'N/A'}</span>
-                            </div>
-                            <div class="detail-row">
-                                <span class="detail-label">Date Joined:</span>
-                                <span class="detail-value">${new Date(user.created_at).toLocaleDateString()}</span>
-                            </div>
-                        </div>
-                        <div class="modal-buttons" style="margin-top: 20px;">
+                          </div>
+                          ` : ''}
+
+                          <div class="modal-buttons" style="margin-top: 4px;">
                             <button class="btn" id="closeUserDetailsModal">Close</button>
+                          </div>
                         </div>
                     `;
 
@@ -3418,12 +4683,6 @@
                             console.error('Error fetching user data:', error);
                             this.showFlashMessage('Error loading user data', 'error');
                         });
-                } else {
-                    // Add new user mode
-                    title.textContent = 'Add New User';
-                    passwordField.style.display = 'block';
-                    form.querySelector('#password').setAttribute('required', '');
-                    document.getElementById('userId').value = '';
                 }
                 
                 modal.style.display = 'flex';
@@ -3616,7 +4875,7 @@
                                 flashContainer.parentNode.removeChild(flashContainer);
                             }
                         }, 500);
-                    }, 3000);
+                    }, 6000);
                 }
             }
         }
@@ -3640,7 +4899,101 @@
                     }
                 }
             });
+
+            // Intercept admin logout submit with confirm dialog
+            try {
+                const adminLogoutForm = document.getElementById('logoutForm');
+                if (adminLogoutForm) {
+                    adminLogoutForm.addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        openSignoutConfirm(() => adminLogoutForm.submit());
+                    });
+                }
+            } catch (_) {}
         });
+        
+        // Reusable signout confirm
+        function openSignoutConfirm(onConfirm) {
+            let modal = document.getElementById('signoutConfirmModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'signoutConfirmModal';
+                modal.className = 'confirm-modal';
+                modal.innerHTML = `
+                  <div class="box">
+                    <div class="title">Sign out?</div>
+                    <div class="desc">Are you sure you want to sign out?</div>
+                    <div class="actions">
+                      <button class="btn btn-confirm" id="signoutConfirmBtn" type="button">Yes, sign out</button>
+                      <button class="btn btn-cancel" id="signoutCancelBtn" type="button">Cancel</button>
+                    </div>
+                  </div>`;
+                document.body.appendChild(modal);
+            }
+            modal.style.display = 'flex';
+            const cancelBtn = document.getElementById('signoutCancelBtn');
+            const confirmBtn = document.getElementById('signoutConfirmBtn');
+            const close = () => { modal.style.display = 'none'; };
+            cancelBtn.onclick = close;
+            confirmBtn.onclick = () => { close(); if (typeof onConfirm === 'function') onConfirm(); };
+            modal.addEventListener('click', (e) => { if (e.target === modal) close(); }, { once: true });
+        }
+
+        // Reusable action confirm (styled like sign out confirm)
+        function openActionConfirm(title, message, confirmLabel, onConfirm) {
+            let modal = document.getElementById('actionConfirmModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'actionConfirmModal';
+                modal.className = 'confirm-modal';
+                modal.innerHTML = `
+                  <div class="box">
+                    <div class="title" id="actionConfirmTitle"></div>
+                    <div class="desc" id="actionConfirmDesc"></div>
+                    <div class="actions">
+                      <button class="btn btn-confirm" id="actionConfirmBtn" type="button" style="display:inline-flex;align-items:center;gap:8px;justify-content:center;">
+                        <span class="btn-spinner" style="display:none; width:16px; height:16px; border-radius:50%; border:2px solid #fff; border-right-color:transparent; animation:spin 0.8s linear infinite;"></span>
+                        <span class="btn-text"></span>
+                      </button>
+                      <button class="btn btn-cancel" id="actionCancelBtn" type="button">Cancel</button>
+                    </div>
+                  </div>`;
+                document.body.appendChild(modal);
+            }
+            modal.querySelector('#actionConfirmTitle').textContent = title || 'Confirm Action';
+            modal.querySelector('#actionConfirmDesc').textContent = message || 'Are you sure?';
+            const confirmBtn = modal.querySelector('#actionConfirmBtn');
+            const confirmSpinner = confirmBtn.querySelector('.btn-spinner');
+            const confirmText = confirmBtn.querySelector('.btn-text');
+            confirmText.textContent = confirmLabel || 'Confirm';
+            const cancelBtn = modal.querySelector('#actionCancelBtn');
+
+            modal.style.display = 'flex';
+            const close = () => { modal.style.display = 'none'; };
+            const confirmHandler = async () => {
+                try {
+                    confirmBtn.disabled = true; cancelBtn.disabled = true;
+                    if (confirmSpinner) confirmSpinner.style.display = 'inline-block';
+                    if (confirmText) confirmText.textContent = 'Processing...';
+                    if (typeof onConfirm === 'function') {
+                        const maybePromise = onConfirm();
+                        if (maybePromise && typeof maybePromise.then === 'function') {
+                            await maybePromise;
+                        }
+                    }
+                    close();
+                } catch (_) {
+                    close();
+                } finally {
+                    confirmBtn.disabled = false; cancelBtn.disabled = false;
+                    if (confirmSpinner) confirmSpinner.style.display = 'none';
+                    if (confirmText) confirmText.textContent = confirmLabel || 'Confirm';
+                }
+            };
+            confirmBtn.onclick = confirmHandler;
+            cancelBtn.onclick = close;
+            modal.addEventListener('click', (e) => { if (e.target === modal) close(); }, { once: true });
+        }
         // Add smooth scrolling for better UX
         document.documentElement.style.scrollBehavior = 'smooth';
         // Optimize images loading
