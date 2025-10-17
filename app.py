@@ -2225,6 +2225,24 @@ def update_equipment():
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 
+@app.post('/admin/equipment/delete')
+def delete_equipment():
+    try:
+        if "user" not in session or session["user"].get("role") != "admin":
+            return jsonify({"success": False, "message": "Unauthorized"}), 403
+        data = request.get_json(force=True) or {}
+        item_id = (data.get('id') or '').strip()
+        if not item_id:
+            return jsonify({"success": False, "message": "Missing id"}), 400
+        # Ensure item exists before delete
+        existing = supabase.table("inventory").select("id").eq("id", item_id).limit(1).execute()
+        if not existing.data:
+            return jsonify({"success": False, "message": "Item not found"}), 404
+        supabase.table("inventory").delete().eq("id", item_id).execute()
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
 @app.post('/admin/inventory/by_names')
 def inventory_by_names():
     try:
